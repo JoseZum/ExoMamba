@@ -96,7 +96,7 @@ def valid_fraction(flux: np.ndarray, quality: np.ndarray) -> float:
 
 # 4) Interpolar linealmente gaps cortos de NaN.
 def interpolate_short_gaps(x: np.ndarray, max_gap: int) -> np.ndarray:
-    """Interpola linealmente runs de NaN de longitud <= max_gap. Gaps largos quedan NaN."""
+    """Interpola linealmente secuencias de NaN de longitud <= max_gap. Las más largas quedan NaN."""
     x = x.copy()
     n = len(x)
     isnan = ~np.isfinite(x)

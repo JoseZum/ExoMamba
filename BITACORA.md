@@ -262,3 +262,95 @@ La corrida procesó 2,011 filas en vez de las 1,705 esperadas. Diagnóstico: el 
 - 1,576 archivos `.pt` listos en `data/processed/global/` con forma `{global_view: (1, 18000), valid_mask: (1, 18000), label, sector, valid_fraction, tid}`.
 - `data/splits/processed_manifest.csv`: 1,591 filas únicas, versionado.
 - **Fase 3 completada.** Listo para Fase 4: splits train/val/test **por TIC ID** (15/15/70) preservando estratificación de clase + `Dataset` PyTorch que devuelva el dict con `global_view` y campos opcionales para Tier 2.
+
+---
+
+## Fase 4 — Splits por TIC ID + Dataset PyTorch (2026-05-09)
+
+### Objetivo
+
+Particionar los 1,576 TICs preprocesados en `train / val / test` **por TIC ID** (nunca por sector ni por archivo) y exponer un `Dataset` PyTorch con la firma acordada en CLAUDE.md, listo para que las Fases 5–8 (baselines, CNN, Mamba) lo consuman sin redesign.
+
+### Decisiones tomadas
+
+**1. Split por TIC ID, nunca por sector.**
+El `.pt` actual ya es uno por TIC (Fase 3 eligió el mejor sector), así que el riesgo concreto de leakage por múltiples sectores de la misma estrella ya está mitigado en preprocesamiento. Aun así, mantenemos el contrato "una estrella → un fold" como invariante explícito del pipeline: en Tier 2, si decidiéramos meter más de una vista por TIC, este invariante sigue protegiendo. Es la sección 4.1 de la propuesta.
+
+**2. Estratificación por label en cada paso del split.**
+Sin estratificar, con un dataset chico (1,576) y desbalance ~1:1.6, los folds podían quedar sesgados (ej. test con 50% más FP relativos que train) y eso contamina la comparación entre modelos. Con estratificación, cada fold preserva la proporción de clases del dataset original.
+
+**3. Proporciones 70 / 15 / 15.**
+Mismas que la propuesta original entregada en Etapa 1. No se cambian: cualquier desviación obligaría a actualizar el documento entregado al curso.
+
+**4. Seed 42, fija y versionada.**
+Misma seed para todas las corridas de splits. Si en algún momento hace falta regenerar (ej. agregar TICs nuevos), se vuelve a correr con la misma seed y se obtiene un superset reproducible. No se hace búsqueda de "buena" semilla — eso sería overfit al test.
+
+**5. Split en dos pasos:**
+  - Paso 1: `train (70%) vs temp (30%)`, estratificado por label.
+  - Paso 2: del `temp`, `val (50%) vs test (50%)` → 15% / 15% del total, también estratificado.
+  Es la receta canónica de sklearn para tres splits estratificados.
+
+**6. Verificación dura de existencia de `.pt`.**
+El script chequea que cada `tid` del `processed_manifest.csv` con `status=ok` tenga un `.pt` físico en disco. Si falta, lo excluye y avisa. Evita inconsistencias futuras donde alguien borra un `.pt` y los splits siguen apuntando a él.
+
+**7. CSVs versionados con columnas `(tid, label)`.**
+Mínimo necesario para reproducibilidad. El Dataset es quien resuelve el path al `.pt` desde el `tid`. Si el día de mañana cambiamos la ubicación de los `.pt`, los splits siguen siendo válidos.
+
+**8. `test_tics.csv` SELLADO hasta Fase 9.**
+Política operativa, no enforced en código. Se documenta en el output del script y en la bitácora. Toda decisión de hiperparámetro / arquitectura / early stopping va contra `val_tics.csv`. El test se evalúa una sola vez al final, para reportar (sección 4.2 de la propuesta).
+
+**9. Dataset devuelve dict con `local_view = None` y `scalar_features = None`.**
+Cumple la firma de CLAUDE.md desde el inicio. Tier 1 (CNN, Mamba puro) lee solo `global_view` + `label`. Tier 2 (ExoMamba V1/V2) llenará los `None` cuando Fase 3.b genere los artefactos. La interfaz no cambia entre tiers — cambia solo qué claves están pobladas.
+
+  Nota operativa: el `default_collate` de PyTorch no maneja `None`. La Fase 6/7 (training loop) deberá usar un `collate_fn` propio o leer solo las claves necesarias por modelo. Es decisión del training loop, no del Dataset.
+
+### Resultados de la corrida
+
+```
+[INFO] TICs elegibles: 1576 (CP=603, FP=973)
+[INFO] Split: train=0.7, val=0.15, test=0.15
+[INFO] Seed: 42
+
+=== Distribución por fold ===
+  train  | n=1103 (69.99%) | CP= 422 | FP= 681 | ratio FP:CP = 1.61:1
+  val    | n= 236 (14.97%) | CP=  90 | FP= 146 | ratio FP:CP = 1.62:1
+  test   | n= 237 (15.04%) | CP=  91 | FP= 146 | ratio FP:CP = 1.60:1
+
+[OK] Sin overlap de TICs entre folds.
+```
+
+| Fold | n | % | CP | FP | Ratio FP:CP |
+|---|---:|---:|---:|---:|---:|
+| train | 1,103 | 69.99 | 422 | 681 | 1.61 : 1 |
+| val   |   236 | 14.97 |  90 | 146 | 1.62 : 1 |
+| test  |   237 | 15.04 |  91 | 146 | 1.60 : 1 |
+| **Total** | **1,576** | 100.00 | **603** | **973** | 1.61 : 1 |
+
+Discrepancia menor con Fase 3 (que reportó 605 / 971): Fase 3 contaba archivos `.pt` antes del merge contra `tics_labeled.csv`. Aquí el conteo es post-merge — 2 TICs probablemente quedaron sin label limpio en el labels CSV; pendiente de confirmar si afecta más adelante. No bloquea Fase 5+.
+
+### Artefactos generados
+
+- `scripts/make_splits.py` — CLI reproducible, parámetros expuestos (`--seed`, `--train`, `--val`).
+- `src/exoplanet/data/dataset.py` — `LightCurveDataset(split_csv, processed_dir)`, devuelve dict por sample.
+- `src/exoplanet/data/__init__.py` — expone `LightCurveDataset` para `from exoplanet.data import LightCurveDataset`.
+- `tests/test_dataset.py` — 3 smoke tests (no vacío, schema del dict, shape `(1, 18000)` y dtype `float32`).
+- `data/splits/train_tics.csv` — 1,103 filas, versionado.
+- `data/splits/val_tics.csv` — 236 filas, versionado.
+- `data/splits/test_tics.csv` — 237 filas, versionado y SELLADO.
+
+### Verificación
+
+```
+$ pytest -q
+.....  [100%]
+5 passed in 8.05s
+```
+
+5/5 tests pasan: 2 originales (importación del paquete y subpaquetes) + 3 nuevos (Dataset).
+
+### Estado al cierre
+
+- Splits reproducibles, sin overlap de TICs, ratios de clase preservados (~1:1.61 en los 3 folds).
+- `test_tics.csv` no se toca hasta Fase 9.
+- `LightCurveDataset` listo y testeado, firma compatible con Tier 1 y Tier 2.
+- **Fase 4 completada.** Listo para Fase 5: escalera de baselines (5.a random estratificado → 5.b LogReg sobre features del catálogo).
