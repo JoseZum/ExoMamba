@@ -1,0 +1,62 @@
+# Mamba puro sobre vista global — Tier 1, Fase 8.
+#
+# REQUIERE WSL2 + Ubuntu 24.04 + mamba-ssm. NO corre en Windows nativo.
+# Antes de correr este config:
+#   1. Asegurate de tener WSL2 con Ubuntu 24.04.
+#   2. pip install causal-conv1d mamba-ssm
+#   3. Correr `python scripts/smoke_train_mamba.py` para validar el entorno.
+#   4. Solo entonces correr este config con datos reales.
+#
+# Tamaño "small" pensado para caber en 4 GB VRAM (RTX 3050) con batch=16.
+# Si se observa OOM: bajar d_model, activar gradient_checkpointing,
+# o bajar batch_size.
+
+experiment:
+  name: "mamba_small"
+  seed: 42
+  output_dir: "experiments"
+
+data:
+  train_csv: "data/splits/train_tics.csv"
+  val_csv: "data/splits/val_tics.csv"
+  processed_dir: "data/processed/global"
+  batch_size: 16
+  num_workers: 2
+
+model:
+  type: "mamba_baseline"
+  params:
+    in_channels: 1
+    d_model: 64
+    d_state: 16
+    d_conv: 4
+    expand: 2
+    n_layers: 4
+    dropout: 0.1
+    standardize: true     # mismo fix que CNN v2+ (z-score por muestra)
+
+training:
+  optimizer:
+    type: "adamw"         # adamw es preferido para Mamba por la literatura
+    lr: 5.0e-4
+    weight_decay: 1.0e-5
+  scheduler:
+    type: "cosine"
+    t_max: 50
+    eta_min: 1.0e-7
+  loss:
+    type: "bce"
+    pos_weight: "balanced"
+  epochs: 50
+  fp16: true              # Mamba aprovecha FP16 para caber en 4 GB
+  gradient_checkpointing: false   # activar a true si hay OOM
+
+early_stopping:
+  enabled: true
+  metric: "val_auc"
+  patience: 10
+  mode: "max"
+
+logging:
+  tensorboard: true
+  log_every_n_steps: 10

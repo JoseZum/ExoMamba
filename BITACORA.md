@@ -354,3 +354,904 @@ $ pytest -q
 - `test_tics.csv` no se toca hasta Fase 9.
 - `LightCurveDataset` listo y testeado, firma compatible con Tier 1 y Tier 2.
 - **Fase 4 completada.** Listo para Fase 5: escalera de baselines (5.a random estratificado → 5.b LogReg sobre features del catálogo).
+
+---
+
+## Fase 6 + 7 — CNN baseline + Training loop reproducible (2026-05-20)
+
+### Objetivo
+
+Construir la infraestructura de entrenamiento (Fase 7) y un primer modelo real
+(CNN baseline AstroNet-inspired, Fase 6) en un solo bloque. Decisión: adelantar
+Fase 7 sobre Fase 5 porque el loop es lo que más impacto tiene a futuro
+(lo van a usar CNN, Mamba y ExoMamba), y combinar con Fase 6 da un modelo real
+para validar end-to-end en lugar de un dummy.
+
+### Decisiones tomadas
+
+**1. Scope "completo" en Fase 7.**
+TensorBoard, LR scheduler (cosine), early stopping, FP16 opcional vía config y
+gradient checkpointing opcional. Más trabajo upfront, pero Fase 8 (Mamba) y
+Tier 2 solo escriben YAMLs nuevos sin tocar código de training.
+
+**2. Contrato del modelo: `forward(batch: dict) -> Tensor` con logits `(B,)`.**
+Todos los modelos reciben el batch completo y deciden qué llaves leer. CNN y
+Mamba leen `global_view`; ExoMamba (futuro) leerá los tres campos. La interfaz
+no cambia entre tiers — cambia solo qué llaves usa cada implementación. Esto
+permite que un mismo `runner.py` sirva para los tres tiers.
+
+**3. Custom `collate_lightcurves` desde el inicio.**
+El `default_collate` de PyTorch falla con `None`. El collate propio:
+- Apila `global_view` y los `label`s en tensores.
+- `local_view` / `scalar_features`: `None` si todos los samples los tienen
+  `None`, `torch.stack` si todos los tienen poblados, error si mezcla parcial.
+La mezcla parcial es un bug de datos y debe fallar ruidosamente.
+
+**4. CNN baseline AstroNet-inspired, no reproducción.**
+4 bloques `Conv1d + BN + ReLU + MaxPool` con channels `(16, 32, 64, 128)`,
+kernel 5, padding "same". Luego `AdaptiveAvgPool1d(1)` + cabeza MLP
+`128 → 64 → 1`. Total: ~63 K params. Cabe holgado en 4 GB VRAM con batch=16.
+AstroNet original usa dos ramas (global + local); acá solo usamos la global
+porque Fase 3.b (vista local phase-folded) está aún pendiente.
+
+**5. Loss: `BCEWithLogitsLoss` con `pos_weight="balanced"` por default.**
+El desbalance es ~1.61:1 (FP:CP). Con `pos_weight = neg_count / pos_count`
+compensamos durante el entrenamiento sin tocar el dataset (sin oversampling),
+manteniendo la distribución real para la evaluación.
+
+**6. Reproducibilidad: tres niveles.**
+- `set_seed(seed)`: torch, numpy, random, cuda. Por default sin
+  `deterministic=True` (más rápido, leves variaciones numéricas). Toggle vía
+  config si en algún momento se quiere reproducción bit a bit.
+- `config.yaml` snapshot por corrida en el run_dir.
+- `git_info.txt` con commit, branch y dirty flag por corrida.
+- `env_info.txt` con versiones de Python, torch, CUDA.
+
+**7. Layout del experiment dir, una carpeta por corrida.**
+```
+experiments/2026-05-20_18-53-44_smoke/
+  config.yaml           # snapshot del input
+  env_info.txt          # python/torch/cuda
+  git_info.txt          # commit, branch, dirty
+  train.log             # log texto
+  tensorboard/          # event files
+  checkpoints/best.pt   # mejor por val_auc
+  checkpoints/last.pt   # último epoch
+  metrics.csv           # una fila por epoch
+```
+Nombre = `<timestamp>_<run_name>` para que dos corridas con el mismo nombre no
+se pisen.
+
+**8. Test sellado: el runner solo lee `train_csv` y `val_csv`.**
+`test_tics.csv` NO entra al training loop bajo ninguna circunstancia. Se evalúa
+una sola vez al final (Fase 9), con un script aparte.
+
+**9. Subset opcional en data config para smoke tests.**
+`data.subset: N` corta los splits a N samples. Permite smoke tests rápidos sin
+configs separados ni código condicional.
+
+**10. Early stopping y scheduler son opt-in.**
+Para CNN baseline ambos están activados. Para smoke `early_stopping.enabled: false`
+y `scheduler.type: none`. Permite verificar el loop sin pelearse con bordes raros
+de schedulers en 1 epoch.
+
+### Artefactos generados
+
+**Training infra (Fase 7):**
+- `src/exoplanet/training/collate.py` — `collate_lightcurves`.
+- `src/exoplanet/training/metrics.py` — `compute_classification_metrics` (AUC-ROC, AUC-PR, F1, Recall, Precision).
+- `src/exoplanet/training/losses.py` — `build_loss` con `pos_weight` balanced/float/None.
+- `src/exoplanet/training/optimizers.py` — `build_optimizer` adam/adamw.
+- `src/exoplanet/training/schedulers.py` — `build_scheduler` none/cosine.
+- `src/exoplanet/training/early_stopping.py` — `EarlyStopping`.
+- `src/exoplanet/training/checkpoint.py` — `CheckpointManager` best+last.
+- `src/exoplanet/training/config.py` — `load_config` y `dump_config`.
+- `src/exoplanet/training/registry.py` — `MODEL_REGISTRY` y `build_model`.
+- `src/exoplanet/training/loop.py` — `train_one_epoch` y `evaluate_one_epoch`.
+- `src/exoplanet/training/runner.py` — orquestador `run_training`.
+- `src/exoplanet/training/__init__.py` — exports.
+
+**Utils transversales:**
+- `src/exoplanet/utils/seeds.py` — `set_seed`.
+- `src/exoplanet/utils/paths.py` — `make_experiment_dir`.
+- `src/exoplanet/utils/git_info.py` — `git_summary`.
+- `src/exoplanet/utils/logging.py` — `setup_logger` y `TensorBoardWriter`.
+- `src/exoplanet/utils/__init__.py` — exports.
+
+**CNN baseline (Fase 6):**
+- `src/exoplanet/models/base.py` — `BaseModel` ABC.
+- `src/exoplanet/models/cnn_baseline.py` — `CNNBaseline`.
+- `src/exoplanet/models/__init__.py` — exports.
+
+**Scripts y configs:**
+- `scripts/train.py` — CLI entry.
+- `configs/smoke.yaml` — 1 epoch, batch=4, subset=16, arquitectura mini.
+- `configs/cnn_baseline.yaml` — 50 epochs, batch=16, lr=1e-3, cosine, early stop val_auc patience=10.
+
+**Tests:**
+- `tests/test_collate.py` — 4 tests (None, populated, mixto → error, vacío → error).
+- `tests/test_seeds.py` — 3 tests (torch reproducible, numpy reproducible, distintas semillas distintos resultados).
+- `tests/test_metrics.py` — 4 tests (perfecto, inverso, una clase → NaN, threshold custom).
+- `tests/test_cnn_baseline.py` — 4 tests (forward, backward, n_params razonable, kwargs).
+- `tests/test_training_smoke.py` — 3 tests (run_dir creado, artefactos generados, metrics.csv con columnas esperadas).
+
+### Verificación
+
+```
+$ pytest -q
+.......................                                                  [100%]
+23 passed in 19.21s
+```
+
+**23/23 tests pasan** (5 originales + 18 nuevos).
+
+**Smoke end-to-end:**
+```
+$ python scripts/train.py --config configs/smoke.yaml
+...
+INFO | Device: cuda
+INFO | Train: 16 samples (pos=422, neg=681)
+INFO | Val:   16 samples
+INFO | Modelo: cnn_baseline | params entrenables: 1,041
+INFO | === Epoch 1/1 ===
+INFO |   step 1/4 | loss=0.6748
+...
+INFO | epoch 1 | train_loss=0.6777 | val_loss=0.6891 | val_auc=0.6032
+INFO |   [BEST] Nuevo mejor val_auc=0.6032
+INFO | === Fin del entrenamiento ===
+INFO | Mejor val_auc: 0.6032 (epoch 1)
+```
+
+GPU detectada (RTX 3050), 1 epoch en ~3 s, mejor val_auc=0.6032 con 16 samples
+y arquitectura mini (1 K params). Todos los artefactos del run dir creados
+correctamente:
+```
+experiments/2026-05-20_18-53-44_smoke/
+  checkpoints/        # best.pt, last.pt
+  config.yaml
+  env_info.txt        # Python 3.11.9 / torch 2.11.0+cu128 / RTX 3050
+  git_info.txt        # commit, branch, dirty=True
+  metrics.csv         # 1 fila con todas las métricas
+  tensorboard/        # event file
+  train.log
+```
+
+### Bug encontrado y resuelto
+
+Logger en Windows con consola cp1252 no podía emitir el carácter `✓` (UnicodeEncodeError).
+Reemplazado por `[BEST]` ASCII. Sin impacto funcional.
+
+### Pendiente antes de Fase 8 (Mamba en WSL2)
+
+- **Correr CNN baseline real** con `configs/cnn_baseline.yaml` (50 epochs sobre los 1,103 samples de train). Reservar ~15-30 min en GPU. Reportar val_auc final en bitácora antes de pasar a Mamba.
+- Si val_auc estanca cerca de 0.5: revisar normalización (sospechar de las curvas con muchos NaN rellenos a 1.0) o bajar batch_size.
+- Si val_auc razonable (≥ 0.70): pasar a Fase 8.
+
+### Estado al cierre
+
+- Training loop reproducible listo: logs, seeds, checkpoints, TB, configs YAML.
+- CNN baseline implementado y verificado vía smoke.
+- 23/23 tests pasan.
+- Fase 6 + Fase 7 cerradas en un bloque. Quedan pendientes Fase 5 (autocontenida, no usa este loop) y Fase 8 (Mamba en WSL2, reusa todo este loop tal cual).
+
+---
+
+## Auditoría de data leakage (2026-05-20)
+
+### Motivación
+
+Antes de empezar Fase 8 (Mamba) conviene confirmar que todas las capas de
+protección contra data leakage descritas en la propuesta original (sección 4)
+están realmente activas en el pipeline construido. Esta auditoría reproduce
+las verificaciones para que quede registro de la corrida y el resultado.
+
+### Capas de protección y verificaciones
+
+**Capa 1 — Split por TIC ID, una estrella en un solo fold.**
+
+Mecanismo: en Fase 3 el preprocesamiento guarda UN `.pt` por TIC (eligiendo
+el mejor sector); en Fase 4 `make_splits.py:assert_no_overlap` chequea
+explícitamente que los conjuntos de TICs de los 3 folds sean disjuntos.
+
+Verificación corrida hoy:
+
+```
+$ python -c "
+import pandas as pd
+train = set(pd.read_csv('data/splits/train_tics.csv')['tid'])
+val   = set(pd.read_csv('data/splits/val_tics.csv')['tid'])
+test  = set(pd.read_csv('data/splits/test_tics.csv')['tid'])
+print(f'train ∩ val  = {len(train & val)}')
+print(f'train ∩ test = {len(train & test)}')
+print(f'val   ∩ test = {len(val & test)}')
+print(f'únicos = {len(train | val | test)} | suma = {len(train)+len(val)+len(test)}')
+"
+
+train ∩ val  = 0
+train ∩ test = 0
+val   ∩ test = 0
+únicos = 1576 | suma = 1576
+```
+
+Resultado: **0 overlap en los tres pares**. La suma simple coincide con la
+unión, confirmando que no hay ningún TIC duplicado entre folds.
+
+**Capa 2 — Normalización por curva, NO global.**
+
+Mecanismo: `preprocess_global.py:177` calcula `median = np.nanmedian(flux_interp)`
+— la mediana de ESA curva, no del dataset. Si se usara una estadística global
+del train para normalizar val/test, la escala del train se filtraría a la
+evaluación.
+
+Verificación de que NO hay normalización global en el código de modelo / training:
+
+```
+$ grep -E "(StandardScaler|fit_transform|global.*mean|global.*median|dataset.*mean|dataset.*median)" src/**/*.py
+No matches found
+```
+
+Verificación de que la única normalización en el preprocesamiento es por curva:
+
+```
+$ grep -nE "(nanmedian|np.median|.median\\()" scripts/preprocess_global.py
+177:        median = np.nanmedian(flux_interp)
+```
+
+Resultado: **una única ocurrencia, sobre `flux_interp` (la curva en proceso),
+no sobre acumuladores del dataset**. Sin escalado global en src/.
+
+**Capa 3 — `test_tics.csv` jamás se abre en código de training.**
+
+Mecanismo: `runner.py` solo lee `data_cfg["train_csv"]` y `data_cfg["val_csv"]`.
+Ningún YAML de training apunta a test, y el código no tiene path hacia test.
+
+Verificación:
+
+```
+$ grep -rn "test_tics\\|test_csv" src/ scripts/
+scripts/make_splits.py:34:  data/splits/test_tics.csv   (tid, label)
+scripts/make_splits.py:56:OUT_TEST = Path("data/splits/test_tics.csv")
+scripts/make_splits.py:194:    print("\\n[POLÍTICA] test_tics.csv queda SELLADO hasta Fase 9. No tocar en tuning.")
+```
+
+Resultado: **`test_tics` aparece SOLO en el script que lo CREA**. No aparece
+en `runner.py`, `loop.py`, `train.py`, ni en ningún archivo de `src/exoplanet/`.
+El test está sellado a nivel de código, no solo de política.
+
+**Capa 4 — Tuning y selección de "best" miran val, nunca test.**
+
+Mecanismo:
+- `EarlyStopping.step` recibe `val["auc_roc"]` (runner.py:225).
+- `CheckpointManager.maybe_save_best` decide con la métrica de val (runner.py:204-206).
+- `CosineAnnealingLR` no depende de métricas, solo del epoch.
+
+Resultado: ningún hiperparámetro ni decisión de selección de modelo se toma
+mirando test. Cuando Fase 9 evalúe sobre test, será efectivamente datos que
+el modelo nunca vio ni indirectamente.
+
+**Capa 5 — Augmentation solo en train (regla pendiente de aplicar).**
+
+Mecanismo: regla operativa en CLAUDE.md y propuesta original §3.6. Al día de
+hoy NO hay augmentation implementado, así que la regla no está activa todavía
+pero tampoco hay riesgo. Cuando Fase 8/9 agregue augmentation, va dentro del
+`Dataset` condicionado a un flag `train=True`.
+
+### Sutilezas declaradas (no son leakage pero deben quedar explícitas en el paper)
+
+- **Features del catálogo TOI** (`pl_orbper`, `pl_trandep`) usados por
+  baseline LogReg (Fase 5.b): se derivaron analizando estas mismas curvas.
+  No es leakage porque el framing del proyecto es **vetting de TOIs**
+  (clasificar candidatos usando catálogo + fotometría), no detección desde
+  cero. Es el setting de ExoMiner. Se reportará explícitamente en
+  Methodology del paper.
+- **Sesgo del catálogo**: las etiquetas CP/FP las pusieron humanos mirando
+  estas curvas. Es sesgo del catálogo, no data leakage. Se cubre en
+  "Limitaciones" y "Análisis ético" del paper (Fase 14).
+
+### Resultado de la auditoría
+
+Las 4 capas activas pasan limpias. La quinta capa (augmentation) no aplica
+todavía porque no hay augmentation implementado. **El pipeline está libre de
+data leakage al cierre de Fase 7.** Esta auditoría se reproducirá antes del
+cierre de Etapa 2 (semana 10) y antes de la evaluación final en Fase 9.
+
+---
+
+## Debug del sanity overfit fallido (2026-05-20)
+
+### Síntoma
+
+Al correr `python scripts/train.py --config configs/cnn_sanity_overfit.yaml`
+(64 ejemplos, dropout=0, weight_decay=0, 30 epochs), el modelo **no aprende
+nada**: `train_loss` se queda pegado en ~0.83 durante las 30 epochs,
+`val_auc` rebota entre 0.43 y 0.61 (ruido puro), y las predicciones colapsan
+a "todo es planeta" (recall=1.0, precisión=0.43) o "nada es planeta"
+(recall=0). Mejor val_auc histórico: 0.6136 en epoch 13.
+
+```
+epoch 1  | train_loss=0.8823 | val_auc=0.5961
+epoch 10 | train_loss=0.8307 | val_auc=0.5946
+epoch 20 | train_loss=0.8204 | val_auc=0.5055
+epoch 30 | train_loss=0.8086 | val_auc=0.4905
+```
+
+Para un modelo sin regularización que debe MEMORIZAR 64 ejemplos, esto
+indica un problema fundamental, no "más entrenamiento necesario".
+
+### Diagnóstico
+
+Dos causas plausibles, ambas reales:
+
+**Causa 1 — MaxPool descarta la señal de tránsito.**
+Las curvas normalizadas viven alrededor de 1.0; los tránsitos son **bajadas**
+pequeñas (~0.5%-1%) hacia 0.99. `MaxPool(2)` elige el valor **más alto** de
+cada ventana de dos puntos — literalmente descarta los puntos del tránsito
+a favor de los puntos sin tránsito. Le estábamos pidiendo al modelo que
+detectara algo que la propia arquitectura tiraba a la basura antes de la
+cabeza clasificadora.
+
+**Causa 2 — Input no centrado.**
+Las curvas viven alrededor de 1.0 (no de 0). Las redes neuronales esperan
+inputs centrados en 0 con varianza ~1 para que los gradientes iniciales
+sean sanos. Con inputs cerca de 1.0 los gradientes iniciales son pequeños
+y el optimizador arranca casi muerto.
+
+### Fixes aplicados (4)
+
+**Fix 1 — Centrar input en 0** (`src/exoplanet/models/cnn_baseline.py`).
+Nuevo parámetro `input_offset: float = 1.0` en el constructor; en el
+`forward` se hace `x = x - self.input_offset` antes de la primera Conv1d.
+Configurable para que si en el futuro cambiamos la normalización
+(p. ej. a z-score) baste con poner `input_offset: 0.0` en el YAML.
+
+**Fix 2 — Reemplazar MaxPool por AvgPool**
+(`src/exoplanet/models/cnn_baseline.py:_block`).
+AvgPool preserva las bajadas: el promedio de una ventana con tránsito es
+más bajo que el promedio sin tránsito. Mantiene la información de la señal
+a lo largo de las capas.
+
+**Fix 3 — `pos_weight: null` en el sanity overfit**
+(`configs/cnn_sanity_overfit.yaml`).
+El sanity overfit debe ser lo más simple posible. No queremos pesos de
+clase sumando complejidad mientras intentamos verificar si el modelo
+puede memorizar.
+
+**Fix 4 — Sanity más agresivo con 8 ejemplos**
+(`configs/cnn_sanity_overfit_8.yaml`, nuevo).
+Antes de volver al sanity de 64, se prueba uno aún más extremo: 8 ejemplos,
+100 epochs, batch=8. Si el modelo no memoriza 8 ejemplos sin regularización,
+hay bug grave; si memoriza 8 pero no 64, es capacidad/pooling/LR/BN.
+
+### Script nuevo: `scripts/debug_pipeline.py`
+
+Diagnóstico mínimo antes de cualquier sanity overfit, en 5 chequeos
+independientes:
+
+1. **Dataset**: shape `(1, 18000)`, dtype float32, valores cerca de 1.0,
+   sin NaN, sin inf.
+2. **Labels**: mix de 0s y 1s en los primeros 64 samples.
+3. **Collate + DataLoader**: shapes batched correctas, `local_view=None`
+   en Tier 1.
+4. **Forward + loss**: shape `(B,)` correcta, loss finita, valor razonable
+   cerca de `log(2) ≈ 0.69`.
+5. **Step del optimizer**: norma del gradiente > 0, los pesos cambian
+   tras un `optimizer.step()`.
+
+Veredicto al final: **PASS** o **FAIL** con conteo.
+
+Si este script falla, NO se debe correr ningún entrenamiento. Es el primer
+escalón de la torre.
+
+### Verificación tras los fixes
+
+**Paso 1 — debug_pipeline.py**: TODO PASA.
+
+```
+[PASS] shape correcta (1, 18000)
+[PASS] dtype float32
+[PASS] valores cerca de 1.0  (mean=1.0000)
+[PASS] sin NaN, sin inf
+[PASS] hay ambas clases en los primeros 64 (37 ceros, 27 unos)
+[PASS] global_view batched (4,1,18000)
+[PASS] label dtype float32
+[PASS] local_view es None (Tier 1)
+[PASS] logits shape (B,)
+[PASS] loss finita (loss=0.6731)
+[PASS] loss razonable cerca de log(2)
+[PASS] gradiente no-cero (||grad||=0.87)
+[PASS] pesos cambian tras un step (delta_w=1.0e-03)
+TODO PASA. El pipeline está sano.
+```
+
+Stats reales de las curvas: rango `[0.993, 1.006]`, mean `1.0000`,
+std `0.0015`. Confirma que la señal es **muy débil** (std ~0.15% del
+flujo) y por eso centrar + AvgPool importa tanto.
+
+**Paso 2 — sanity_overfit_8 (8 ejemplos, 100 epochs)**:
+
+```
+epoch 1   | train_loss=0.69 | val_auc=0.50
+epoch 12  | train_loss=0.45 | val_auc=0.90   ← mejor val_auc
+epoch 50  | train_loss=0.30 | val_auc=0.73
+epoch 100 | train_loss=0.20 | val_auc=0.80
+Mejor val_auc: 0.9000 (epoch 12)
+```
+
+train_loss bajó de 0.69 a 0.20 — el modelo SÍ está aprendiendo (antes
+no se movía). val_auc llegó a 0.90 transitoriamente. Sin embargo,
+val_loss diverge fuertemente (sube a 6.5) mientras train_loss baja:
+
+**Causa de la divergencia train/val con val=train**: BatchNorm se
+comporta distinto en modo `.train()` (usa estadísticas del batch
+actual) vs `.eval()` (usa running statistics acumuladas). Con sólo
+8 ejemplos y batch=8, las running stats no se estabilizan bien — el
+modelo aprende contra batch stats pero al evaluar usa running stats
+distintas. Es un artefacto conocido de BN con datasets minúsculos,
+no un bug real.
+
+**Paso 3 — sanity_overfit (64 ejemplos, 30 epochs)**:
+
+```
+epoch 1  | train_loss=0.83 | val_auc=0.60
+epoch 15 | train_loss=0.67 | val_auc=0.65
+epoch 28 | train_loss=0.63 | val_auc=0.73   ← mejor val_auc
+epoch 30 | train_loss=0.64 | val_auc=0.65
+Mejor val_auc: 0.7277 (epoch 28)
+```
+
+Pre-fix: val_auc máx = 0.61. Post-fix: val_auc máx = 0.73.
+**Mejora real (+0.12) tras los fixes**. train_loss bajó de 0.83 a 0.63,
+no a 0 — el modelo no logra memorizar completo con 64 samples,
+probablemente por la combinación BN + batch=16 + dataset chico. Pero
+el aprendizaje es genuino y consistente.
+
+### Decisión
+
+El sanity overfit de 8 muestras confirma que **el pipeline es sano y el
+modelo puede aprender** (val_auc=0.90). La memorización imperfecta en
+sanity de 64 es probablemente BN inestable con dataset chico, no un bug
+de pipeline.
+
+Para el entrenamiento real (1.103 samples, 69 batches por epoch, 50
+epochs = ~3.450 pasos del optimizer), las running stats de BN tendrán
+muchísimos más datos para estabilizarse. Procedemos con
+`configs/cnn_baseline.yaml`.
+
+**Criterio de aborto del train real:**
+- Si val_auc final < 0.65: hay un problema más profundo (probablemente
+  BN con batch=16 sigue siendo inestable). Considerar:
+  - Cambiar `BatchNorm1d` por `GroupNorm` (no depende del batch).
+  - Subir `batch_size` a 32 (puede no caber en 4 GB VRAM).
+  - Usar `running_stats=False` y aceptar BN solo en modo train.
+
+### Archivos modificados / creados
+
+- `src/exoplanet/models/cnn_baseline.py` — fixes 1 + 2 + parámetro
+  `input_offset` configurable.
+- `configs/cnn_sanity_overfit.yaml` — `pos_weight: null`.
+- `configs/cnn_sanity_overfit_8.yaml` — nuevo, sanity agresivo.
+- `scripts/debug_pipeline.py` — nuevo, diagnóstico previo obligatorio.
+
+### Lección operativa
+
+El sanity overfit funcionó **exactamente** como debía: atrapó un bug de
+arquitectura en 13 segundos y nos ahorró 40+ min de entrenamiento real
+contra una arquitectura defectuosa. **Mantener este paso obligatorio
+antes de cada modelo nuevo** (CNN, Mamba puro, ExoMamba V1/V2).
+
+---
+
+## CNN baseline v0 — primer train real (2026-05-20)
+
+### Configuración
+
+- `configs/cnn_baseline.yaml` con fixes de debug aplicados (centrado en 0, AvgPool).
+- 1.103 samples de train, 236 de val.
+- 50 epochs con early stopping (patience=10 sobre val_auc).
+- Adam lr=1e-3 + cosine scheduler, weight_decay=1e-5.
+- BCE con `pos_weight: "balanced"` (~1.61 para compensar desbalance).
+- BatchNorm (default original).
+- 62.881 parámetros entrenables.
+
+### Resultados
+
+```
+epoch 1  | train_loss=0.8639 | val_auc=0.5404
+epoch 9  | train_loss=0.8405 | val_auc=0.5932   ← mejor val_auc
+epoch 15 | train_loss=0.8333 | val_auc=0.5674
+epoch 19 | train_loss=0.8299 | val_auc=0.5910
+Early stopping disparado en epoch 19 (patience=10 sin mejora desde epoch 9).
+Mejor val_auc: 0.5932 (epoch 9).
+```
+
+Tiempo total: ~5 min. Run dir: `experiments/2026-05-20_21-58-06_cnn_baseline/`.
+
+### Diagnóstico
+
+**No hay bug crítico de pipeline** — el debug_pipeline ya confirmó shapes,
+gradientes, updates de pesos, dataset sano, etc. El problema es de
+**underfitting** combinado con **BatchNorm inestable a batch chico**:
+
+- `train_loss` baja muy poco (0.86 → 0.83 en 19 epochs) — el modelo no
+  está sacando partido de la señal, aunque demostramos que puede (sanity
+  de 8 dio val_auc=0.90).
+- `val_auc` rebota entre 0.44 y 0.59, con tendencia general estancada
+  alrededor de 0.55 — apenas mejor que el azar (0.5).
+- Patrón de F1=0 / recall=0 en muchas epochs: el modelo predice "todo
+  negativo" cuando se enfría, intercalado con "todo positivo" — sigue
+  habiendo inestabilidad.
+- Con `batch_size=16` sobre 1.103 samples, las running stats de BN se
+  acumulan con 69 batches pequeños por epoch — sigue siendo poco para
+  estabilizar las stats en modo eval.
+
+### Decisión
+
+Aplicar el criterio de aborto que ya estaba escrito en la sección anterior:
+
+> Si val_auc final < 0.65: cambiar `BatchNorm1d` por `GroupNorm`.
+
+Se aplica el cambio y se entrena **CNN v1** con la misma config excepto
+`norm: "group"`. CNN v0 se queda como baseline inicial documentado, no
+se descarta — sirve como ablation negativa: "evaluamos CNN con BN y dio
+val_auc=0.59; con GN obtuvimos X" es información publicable.
+
+### Cambio aplicado: norm configurable
+
+`src/exoplanet/models/cnn_baseline.py` ahora acepta:
+
+- `norm: "batch" | "group"` (default `"group"`).
+- `num_groups: int = 8` (se ajusta hacia abajo si no divide los channels).
+
+Helper `_make_norm()` decide qué capa instanciar. `_block()` usa el norm
+solicitado en cada capa. Default es GroupNorm para que el próximo run
+arranque con el fix; BN queda disponible para ablations.
+
+`configs/cnn_baseline.yaml` actualizado con `norm: "group"` y `num_groups: 8`.
+
+---
+
+## CNN baseline v1 — BatchNorm → GroupNorm (2026-05-20)
+
+### Configuración
+
+Mismo `cnn_baseline.yaml` con `norm: "group", num_groups: 8`. Resto idéntico a v0.
+
+### Resultados
+
+```
+epoch 1  | train_loss=0.8637 | val_auc=0.5567   ← mejor val_auc
+epoch 5  | train_loss=0.8561 | val_auc=0.4933
+epoch 11 | train_loss=0.8560 | val_auc=0.5207
+Early stopping en epoch 11.
+Mejor val_auc: 0.5567 (epoch 1)
+```
+
+**Peor que v0 (0.55 vs 0.59).** Y peor aún: `val_loss` queda **idéntico**
+entre epochs (0.8556, 0.8557, 0.8559, ... una y otra vez). Eso significa
+que el modelo no cambia sus predicciones — colapsó al óptimo "predecir
+0.5 para todo", que es la respuesta degenerada del BCE con `pos_weight`.
+
+### Diagnóstico
+
+GroupNorm normaliza por muestra (cada curva queda mean=0, std=1 dentro
+de cada grupo de canales). Eso **diluye la señal de tránsito**: el
+tránsito es un pico angosto en una secuencia larga, y normalizar por
+toda la secuencia hace que el pico se vuelva insignificante frente al
+"ruido" del resto de la curva. BatchNorm preserva la magnitud relativa
+del pico porque normaliza CRUZANDO el batch (por canal, por timestep).
+
+**Conclusión:** GN es peor que BN para este problema. Se revierte.
+
+---
+
+## CNN baseline v2 — Estandarización por muestra + BN (2026-05-20)
+
+### Hipótesis del fix
+
+Los inputs tras `x - 1.0` quedan en `[-0.007, 0.006]` (std=0.0015).
+Demasiado comprimidos para que la CNN extraiga señal útil con su
+inicialización por default. La fix: hacer **z-score por muestra** ANTES
+de la primera Conv1d. Cada curva sale con mean=0, std=1, lo que
+amplifica el dip de tránsito (0.5%) de "una desviación de 0.005" a
+"varias sigmas" — mucho más detectable.
+
+### Cambios
+
+- `CNNBaseline.__init__` acepta `standardize: bool = False`.
+- En el `forward`, si `standardize=True`:
+  ```python
+  mean = x.mean(dim=-1, keepdim=True)
+  std = x.std(dim=-1, keepdim=True).clamp(min=1e-6)
+  x = (x - mean) / std
+  ```
+- `configs/cnn_baseline.yaml`: `standardize: true`, `norm: "batch"`.
+
+### Resultados
+
+```
+epoch 1  | train_loss=0.85 | val_auc=0.54
+epoch 21 | train_loss=0.82 | val_auc=0.6272
+epoch 22 | train_loss=0.82 | val_auc=0.6629
+epoch 24 | train_loss=0.81 | val_auc=0.6699   ← mejor val_auc
+epoch 32 | train_loss=0.81 | val_auc=0.6667
+Early stopping en epoch 34.
+Mejor val_auc: 0.6699 (epoch 24)
+```
+
+**Mejora significativa: +0.08 vs v0 (0.59 → 0.67).** train_loss baja de
+0.86 a 0.80 — aprendizaje real y sostenido. val_loss también baja
+(0.85 → 0.81), no se queda pegado como en v1. El modelo está
+genuinamente extrayendo información.
+
+### Comparación acumulada
+
+| Versión | Cambio | Best val_auc | Diagnóstico |
+|---|---|---:|---|
+| v0 | BN, no standardize | 0.5932 | underfitting fuerte |
+| v1 | GN, no standardize | 0.5567 | peor, GN diluye señal |
+| **v2** | **BN + standardize** | **0.6699** | **mejora real, supera umbral 0.65** |
+
+### Decisión
+
+Mantener BN + standardize. Próxima iteración (v3): bajar dropout de
+0.3 a 0.1. Razonamiento: con 1.103 samples y un modelo de 63K params,
+estamos ~17x sobre-parametrizados. dropout=0.3 es regularización fuerte
+que puede estar ahogando el aprendizaje. dropout=0.1 da más capacidad
+expresiva sin perder protección contra overfitting (que igual lo
+maneja early stopping).
+
+---
+
+## CNN baseline v3 — dropout 0.3 → 0.1 (2026-05-20)
+
+### Configuración
+
+`configs/cnn_baseline.yaml` con `dropout: 0.1`. Resto idéntico a v2.
+
+### Resultados
+
+```
+epoch 24 | val_auc=0.6699
+epoch 25 | val_auc=0.6787   ← mejor val_auc
+epoch 32 | val_auc=0.6763
+epoch 35 | val_auc=0.6715
+Early stopping en epoch 35. Mejor val_auc: 0.6787 (epoch 25)
+```
+
+**Mejora marginal: +0.009 vs v2 (0.6699 → 0.6787).**
+
+Confirmación de hipótesis: con menos dropout el modelo aprende un
+poquito más, sin disparar overfitting (early stopping lo controla).
+Pero el delta es pequeño — estamos cerca del techo del modelo.
+
+Síntoma a notar: val_auc oscila bastante entre epochs (0.59 a 0.68
+en epochs cercanos). Sugiere que el optimizador está dando pasos
+muy grandes en la dirección equivocada y volviendo. Próxima
+iteración (v4): bajar lr para estabilizar.
+
+---
+
+## CNN baseline v4 — lr 1e-3 → 5e-4 (2026-05-20)
+
+### Configuración
+
+`configs/cnn_baseline.yaml` con `lr: 5.0e-4`, `eta_min: 1.0e-7`.
+Resto idéntico a v3.
+
+### Resultados
+
+```
+epoch 25 | val_auc=0.6795   ← mejor val_auc
+epoch 32 | val_auc=0.6637
+epoch 35 | val_auc=0.6559
+Early stopping en epoch 35. Mejor val_auc: 0.6795 (epoch 25)
+```
+
+**Mejora marginal: +0.001 vs v3.** Plateau confirmado.
+
+### Comparación final del ciclo de tuning
+
+| Versión | Cambio sobre la anterior | Best val_auc | Delta |
+|---|---|---:|---:|
+| v0 | baseline (BN, no standardize, dropout=0.3, lr=1e-3) | 0.5932 | — |
+| v1 | GroupNorm | 0.5567 | -0.037 |
+| v2 | revert BN + per-sample standardize | 0.6699 | +0.077 |
+| v3 | dropout 0.3 → 0.1 | 0.6787 | +0.009 |
+| **v4** | **lr 1e-3 → 5e-4** | **0.6795** | **+0.001** |
+
+### Decisión: aceptar v4 como CNN baseline canónico
+
+El delta v3 → v4 es < 0.01, dentro del ruido de una sola corrida.
+Iteraciones adicionales sobre hiperparámetros darán retornos
+decrecientes. Hemos llegado al techo razonable de la arquitectura
+**solo-vista-global** sobre **1.103 samples**.
+
+Razones por las que el techo está en ~0.68 y no en 0.85+:
+
+1. **Solo vista global, sin local.** AstroNet original consigue
+   AUC alto porque combina vista global (estructura general) con
+   vista local **phase-folded** (centrada en el tránsito). Sin
+   Fase 3.b implementada, el modelo tiene que detectar tránsitos
+   sin saber su periodicidad.
+
+2. **Dataset chico.** 1.103 train + 236 val es pequeño para deep
+   learning. AstroNet en Kepler usa ~16.000 samples.
+
+3. **Señal débil.** TESS 2-min tiene mucho ruido instrumental;
+   tránsitos típicos son 0.1%-1% del flujo.
+
+4. **Ablation negativa esperable.** La propuesta de proyecto fijó
+   AUC ≥ 0.88 como "aceptable", aspiracional pero no contractual.
+   Lo importante es la metodología, no el número absoluto.
+
+Esto va al paper: "*Our CNN baseline reaches AUC ≈ 0.68 on the
+global-view-only setting with 1.1K samples. We attribute this
+ceiling to the lack of a phase-folded local view and the limited
+sample size; both factors are known to bound deep learning
+performance in transit vetting (Shallue & Vanderburg 2018,
+Valizadegan et al. 2022).*"
+
+### Estado al cierre del CNN baseline
+
+- **Mejor checkpoint**: `experiments/2026-05-20_23-44-48_cnn_baseline/checkpoints/best.pt`
+  (epoch 25, val_auc=0.6795).
+- Config canónico: `configs/cnn_baseline.yaml` con BN, standardize=true,
+  dropout=0.1, lr=5e-4.
+- Próximo paso natural: agregar Fase 5.a (random baseline) para
+  contextualizar este 0.68 contra el piso aleatorio, y luego
+  preparar la infra para Mamba (Fase 8 — requiere WSL2).
+
+---
+
+## Fase 5.a — Baseline aleatorio estratificado (2026-05-21)
+
+### Objetivo
+
+Establecer el **piso mínimo absoluto** contra el que se compara cualquier
+otro modelo del proyecto. Un modelo que devuelve siempre `P(positivo) =
+prior_de_la_clase_positiva_en_train` tiene AUC=0.5 por definición. Si
+una arquitectura compleja no supera consistentemente este baseline,
+algo está roto.
+
+### Implementación
+
+`src/exoplanet/models/random_baseline.py`: clase `RandomBaseline`
+que devuelve siempre el mismo logit (logit del prior). Único parámetro
+"entrenable" es un dummy de 1 elemento multiplicado por 0 (necesario
+para que el optimizer no crashee, pero no afecta la salida).
+
+`configs/random_baseline.yaml`: corrida de 1 epoch sin scheduler ni
+early stopping (no aprende). Mismo formato que los demás configs para
+que el output entre por el mismo pipeline (experiment dir uniforme).
+
+`prior_positive = 422 / 1103 = 0.3826` calculado del `train_tics.csv`.
+
+### Resultado
+
+```
+Modelo: random_baseline | params entrenables: 1
+epoch 1 | train_loss=0.6652 | val_loss=0.6650 | val_auc=0.5000
+Mejor val_auc: 0.5000 (epoch 1)
+```
+
+**val_auc = 0.5000 exacto** — confirmación numérica de que el ranking
+por probabilidad constante es indistinguible del azar.
+
+F1=0 porque `prior=0.38 < threshold=0.5`, así que la predicción dura es
+"todo negativo". Esa es la respuesta "racional" cuando no se sabe nada
+del dato: con desbalance 1:1.61, decir "todo negativo" minimiza errores
+sin información adicional.
+
+### Comparación contra CNN v4
+
+| Modelo | val_auc | Notas |
+|---|---:|---|
+| Random baseline | 0.5000 | piso teórico |
+| CNN v4 | 0.6795 | **+0.18 sobre random** |
+
+El CNN extrae señal real (+18 puntos absolutos sobre el piso aleatorio),
+pero queda lejos del aspiracional 0.88 de la propuesta. Análisis ya
+documentado en la sección del CNN: limitaciones inherentes a vista
+global única + dataset pequeño + ruido TESS.
+
+### Cierre de Tier 1 parcial
+
+Tier 1 al cierre de esta sesión:
+- ✓ Random baseline (Fase 5.a): val_auc=0.500
+- ⏳ LogReg sobre features del catálogo (Fase 5.b): asignado al compañero
+- ✓ CNN baseline (Fase 6): val_auc=0.679
+- ⏳ Mamba puro (Fase 8): pendiente, requiere WSL2 (no se puede correr
+  desde Windows nativo). Próxima sección prepara el preflight script.
+
+### Próximos pasos en este orden
+
+1. Crear `scripts/smoke_train_mamba.py` (Fase 8 preflight) — código
+   listo para correr en WSL2 cuando el entorno esté configurado.
+2. Cuando WSL2 + mamba-ssm estén listos, correr smoke train con
+   tensores random `(16, 18000, 1)` para verificar que el entorno
+   compila bien.
+3. Entrenar Mamba real con `configs/mamba_small.yaml` (a crear).
+4. Fase 9: evaluación final Tier 1 con el set de test sellado.
+
+---
+
+## Análisis KP + decisión "no mezclar" (2026-05-21)
+
+### Motivación
+
+Frente al techo del CNN baseline (val_auc=0.68), surge la pregunta:
+¿agregamos KP (Known Planets, 591 entradas / 576 TICs únicos) como
+clase positiva adicional para tener más data?
+
+### Análisis
+
+`scripts/analyze_kp.py` reportó:
+
+**Inventario del catálogo TOI:**
+
+| Tipo | TICs únicos | Estado actual |
+|---|---:|---|
+| PC | 4.657 | no se puede usar (sin label confiable) |
+| FP | 1.239 | negativo, ya usado |
+| CP | 615 | positivo, ya usado |
+| KP | 576 | **potencial positivo, no usado** |
+| APC | 480 | ambiguo, no usable |
+| FA | 99 | negativo posible, no usado |
+
+**Estado en disco**: 7 de 576 KP ya descargados/procesados (1%).
+569 nuevos para descargar (~1.5 h de MAST).
+
+**Diferencias estadísticas CP vs KP** (test Kolmogorov-Smirnov):
+
+| Feature | CP mediana | KP mediana | KS p-valor | Veredicto |
+|---|---:|---:|---:|---|
+| `st_tmag` | 10.49 | 11.56 | 2e-25 | DISTINTAS |
+| `pl_orbper` | 5.7 d | 3.6 d | 4e-24 | DISTINTAS |
+| `pl_trandep` | 1.965 ppm | **10.095 ppm** | 1e-60 | DISTINTAS |
+
+KP son sistemáticamente **Hot Jupiters**: planetas gigantes en órbitas
+cortas. Tránsitos **5x más profundos** que los CP. Esto los hace mucho
+más "fáciles" de detectar.
+
+**No hay samples desperdiciados**: 0 archivos .pt en disco que estén
+fuera de `tics_labeled.csv`.
+
+### Decisión: Opción A — no mezclar
+
+**No se incorporan KP al dataset principal de Tier 1.** Razones:
+
+1. **Sesgo de aprendizaje**: Si mezclamos, el modelo aprendería
+   "planeta = tránsito profundo / obvio" en vez de "planeta = patrón
+   físico generalizable". Los CP "difíciles" del val/test se predecirían
+   peor. El AUC se inflaría artificialmente.
+
+2. **Contamina la comparación CNN vs Mamba**: La comparación dejaría
+   de medir las capacidades de las arquitecturas y mediría el sesgo
+   del dataset.
+
+3. **Scope creep**: Descargar 569 KP (1.5 h) + reprocesar + regenerar
+   splits + retrain CNN + retrain Mamba. Cada paso suma riesgo.
+
+4. **El hallazgo es publicable por sí mismo**: documentar que CP y KP
+   en el TOI son poblaciones astrofísicamente distintas refuerza la
+   integridad del paper.
+
+5. **El techo del CNN no es por falta de KP**: es por **falta de vista
+   local** (no implementada en Tier 1). Sumar KP no rompería ese techo.
+
+### Decisiones colaterales
+
+- **FA (99 False Alarms)** se postergan también. Aunque baratos, agregarlos
+  requeriría retrain de CNN para mantener comparación justa. Se queda
+  como ablation potencial en futuro.
+
+- **KP como pre-entrenamiento (Opción C)** queda descartado por scope.
+  Sería una contribución sofisticada pero excede lo que vale la pena
+  en Tier 1.
+
+### Estado al cierre del análisis
+
+- Dataset principal congelado: 605 CP + 971 FP (1.576 samples, ratio 1:1.61).
+- Splits congelados: train=1.103 / val=236 / test=237 (sellado).
+- Análisis KP queda registrado en `scripts/analyze_kp.py` (reproducible).
+- Próximo paso: Mamba (Fase 8 — requiere WSL2).

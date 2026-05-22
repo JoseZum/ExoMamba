@@ -61,6 +61,12 @@ dev = [
     "ipykernel>=6.29",
     "jupyterlab>=4.0",
 ]
+# Solo Linux/WSL2 — mamba-ssm no tiene wheels para Windows.
+# Instalar con: pip install -e ".[dev,mamba]"
+mamba = [
+    "causal-conv1d>=1.4.0",
+    "mamba-ssm>=2.2.0",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]

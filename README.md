@@ -193,52 +193,25 @@ python -c "import torch; print('CUDA OK' if torch.cuda.is_available() else 'CPU 
 
 ### Paso 5 - (Fases 8–9) Setup WSL2 para Mamba
 
-`mamba-ssm` requiere compilar extensiones CUDA con `nvcc` y no tiene wheels pre-construidos para Windows nativo. **Decisión tomada: el modelo Mamba se desarrolla y entrena en WSL2 con Ubuntu.** Las fases 0–7 (exploración, preprocesamiento, CNN baseline) corren en Windows normalmente.
+`mamba-ssm` requiere compilar extensiones CUDA con `nvcc` y no tiene wheels pre-construidos para Windows nativo. **Decisión tomada: el modelo Mamba se desarrolla y entrena en WSL2 con Ubuntu 24.04.** Las fases 0–7 (exploración, preprocesamiento, CNN baseline) corren en Windows normalmente.
 
-#### 5a - Activar WSL2 y Ubuntu (una sola vez, como administrador en PowerShell)
+**Camino rápido (recomendado):** ver `docs/WSL2_SETUP.md` para guía completa. Resumen:
 
 ```powershell
+# 1) En PowerShell admin (Windows):
 wsl --install -d Ubuntu-24.04
-# Reiniciar si el sistema lo pide, luego abrir Ubuntu desde el menú inicio
 ```
-
-#### 5b - Instalar CUDA Toolkit en WSL2
 
 ```bash
-# Dentro de Ubuntu WSL2:
-wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
-sudo dpkg -i cuda-keyring_1.1-1_all.deb
-sudo apt-get update
-sudo apt-get -y install cuda-toolkit-12-8
+# 2) Dentro de Ubuntu WSL2:
+cd /mnt/c/Users/jfzum/Downloads/Proyecto-IA/mamba-exoplanet
+chmod +x scripts/setup_wsl2.sh
+./scripts/setup_wsl2.sh
 ```
 
-Verificar que la GPU es visible:
+El script `setup_wsl2.sh` es idempotente y hace todo: apt deps, nvcc, venv, torch+cuda, `pip install -e ".[dev,mamba]"`, y corre `verify_wsl2_env.py` al final.
 
-```bash
-nvidia-smi     # debe mostrar la RTX 3050 con CUDA 12.8
-nvcc --version # debe mostrar release 12.8
-```
-
-#### 5c - Clonar el repo y crear entorno en WSL2
-
-```bash
-# Dentro de Ubuntu WSL2:
-git clone <url-del-repo> ~/mamba-exoplanet
-cd ~/mamba-exoplanet
-python3.11 -m venv .venv
-source .venv/bin/activate
-pip install --upgrade pip
-pip install -e ".[dev]"
-pip uninstall -y torch
-pip install torch --index-url https://download.pytorch.org/whl/cu128
-```
-
-#### 5d - Instalar mamba-ssm en WSL2
-
-```bash
-pip install causal-conv1d mamba-ssm
-python -c "from mamba_ssm import Mamba; print('mamba-ssm OK')"
-```
+**Camino manual (si el script falla):** ver `docs/WSL2_SETUP.md` sección "Troubleshooting".
 
 ### Paso 6 - Verificación final
 

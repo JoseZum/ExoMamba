@@ -1,0 +1,46 @@
+# Config mínimo para smoke test del training loop.
+# 1 epoch, batch chico, subset de 16 ejemplos.
+# Sirve para verificar que el pipeline corre end-to-end en segundos.
+
+experiment:
+  name: "smoke"
+  seed: 42
+  output_dir: "experiments"
+
+data:
+  train_csv: "data/splits/train_tics.csv"
+  val_csv: "data/splits/val_tics.csv"
+  processed_dir: "data/processed/global"
+  batch_size: 4
+  num_workers: 0
+  subset: 16
+
+model:
+  type: "cnn_baseline"
+  params:
+    in_channels: 1
+    channels: [8, 16]
+    kernel_size: 5
+    hidden_dim: 16
+    dropout: 0.1
+
+training:
+  optimizer:
+    type: "adam"
+    lr: 1.0e-3
+    weight_decay: 0.0
+  scheduler:
+    type: "none"
+  loss:
+    type: "bce"
+    pos_weight: null
+  epochs: 1
+  fp16: false
+  gradient_checkpointing: false
+
+early_stopping:
+  enabled: false
+
+logging:
+  tensorboard: true
+  log_every_n_steps: 1

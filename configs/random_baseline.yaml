@@ -1,0 +1,47 @@
+# Baseline aleatorio estratificado (Fase 5.a).
+# Devuelve siempre la misma probabilidad = prior de la clase positiva en train.
+# AUC esperado: ~0.5. Es el piso mínimo absoluto.
+#
+# El "entrenamiento" es de 1 epoch (no aprende, no necesita más). Lo corremos
+# por el training loop para tener output uniforme con los demás modelos
+# (mismo experiment dir, métricas en CSV, etc).
+#
+# prior_positive = 422 / 1103 = 0.3826 (calculado del train_tics.csv).
+
+experiment:
+  name: "random_baseline"
+  seed: 42
+  output_dir: "experiments"
+
+data:
+  train_csv: "data/splits/train_tics.csv"
+  val_csv: "data/splits/val_tics.csv"
+  processed_dir: "data/processed/global"
+  batch_size: 16
+  num_workers: 0
+
+model:
+  type: "random_baseline"
+  params:
+    prior_positive: 0.3826
+
+training:
+  optimizer:
+    type: "adam"
+    lr: 1.0e-3
+    weight_decay: 0.0
+  scheduler:
+    type: "none"
+  loss:
+    type: "bce"
+    pos_weight: null
+  epochs: 1
+  fp16: false
+  gradient_checkpointing: false
+
+early_stopping:
+  enabled: false
+
+logging:
+  tensorboard: false
+  log_every_n_steps: 100

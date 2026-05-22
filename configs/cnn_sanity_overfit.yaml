@@ -1,0 +1,48 @@
+# Sanity overfit: verificamos que el CNN puede aprender en absoluto.
+# 64 ejemplos, dropout=0, weight_decay=0, early stopping desactivado.
+# Si el modelo es sano, debe MEMORIZAR esos 64 ejemplos →
+# val_loss debe bajar a casi 0 y val_auc subir a casi 1.0 en pocas epochs.
+# Si no llega, hay un bug en arquitectura o pipeline de datos.
+
+experiment:
+  name: "cnn_sanity_overfit"
+  seed: 42
+  output_dir: "experiments"
+
+data:
+  train_csv: "data/splits/train_tics.csv"
+  val_csv: "data/splits/train_tics.csv"   # SÍ, val = train (a propósito, para verificar memorización)
+  processed_dir: "data/processed/global"
+  batch_size: 16
+  num_workers: 0
+  subset: 64
+
+model:
+  type: "cnn_baseline"
+  params:
+    in_channels: 1
+    channels: [16, 32, 64, 128]
+    kernel_size: 5
+    hidden_dim: 64
+    dropout: 0.0
+
+training:
+  optimizer:
+    type: "adam"
+    lr: 1.0e-3
+    weight_decay: 0.0
+  scheduler:
+    type: "none"
+  loss:
+    type: "bce"
+    pos_weight: null   # sanity overfit debe ser lo más simple posible (sin pesos de clase)
+  epochs: 30
+  fp16: false
+  gradient_checkpointing: false
+
+early_stopping:
+  enabled: false
+
+logging:
+  tensorboard: true
+  log_every_n_steps: 5

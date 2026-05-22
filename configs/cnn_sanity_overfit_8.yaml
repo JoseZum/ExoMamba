@@ -1,0 +1,53 @@
+# Sanity overfit AGRESIVO: 8 ejemplos, 100 epochs, batch=8.
+# Si el modelo NO memoriza 8 ejemplos sin regularización, hay bug serio en
+# pipeline (labels, loss, shapes, optimizer, dataset corrupto, etc.) y NO se
+# debe pasar al sanity de 64 ni mucho menos al training real.
+#
+# Resultado esperado si todo está bien:
+#   train_loss baja a < 0.05 antes de la epoch 50
+#   val_loss (= train_loss) hace lo mismo
+#   val_auc llega a 1.0
+
+experiment:
+  name: "cnn_sanity_overfit_8"
+  seed: 42
+  output_dir: "experiments"
+
+data:
+  train_csv: "data/splits/train_tics.csv"
+  val_csv: "data/splits/train_tics.csv"   # val = train (a propósito)
+  processed_dir: "data/processed/global"
+  batch_size: 8
+  num_workers: 0
+  subset: 8
+
+model:
+  type: "cnn_baseline"
+  params:
+    in_channels: 1
+    channels: [16, 32, 64, 128]
+    kernel_size: 5
+    hidden_dim: 64
+    dropout: 0.0
+    input_offset: 1.0
+
+training:
+  optimizer:
+    type: "adam"
+    lr: 1.0e-3
+    weight_decay: 0.0
+  scheduler:
+    type: "none"
+  loss:
+    type: "bce"
+    pos_weight: null
+  epochs: 100
+  fp16: false
+  gradient_checkpointing: false
+
+early_stopping:
+  enabled: false
+
+logging:
+  tensorboard: true
+  log_every_n_steps: 1
