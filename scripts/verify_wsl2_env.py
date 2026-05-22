@@ -69,7 +69,7 @@ def main() -> int:
         "Python ≥ 3.10",
         py_ok,
         sys.version.split()[0],
-        "sudo apt install python3.11 python3.11-venv python3.11-dev",
+        "sudo apt install python3 python3-venv python3-dev",
     )
 
     section("3) PyTorch + CUDA")

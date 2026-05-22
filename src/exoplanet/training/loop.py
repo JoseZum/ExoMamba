@@ -51,7 +51,7 @@ def train_one_epoch(
         optimizer.zero_grad(set_to_none=True)
 
         if use_amp:
-            with torch.cuda.amp.autocast():
+            with torch.amp.autocast("cuda"):
                 logits = model(batch)
                 loss = loss_fn(logits, labels)
             scaler.scale(loss).backward()

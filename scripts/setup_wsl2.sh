@@ -39,9 +39,9 @@ sudo apt update
 sudo apt install -y \
     build-essential \
     git \
-    python3.11 \
-    python3.11-venv \
-    python3.11-dev \
+    python3 \
+    python3-venv \
+    python3-dev \
     python3-pip \
     nvidia-cuda-toolkit
 
@@ -59,7 +59,9 @@ nvcc --version | grep release || true
 echo
 echo "--- Verificando GPU NVIDIA (debe verse desde WSL2) ---"
 if command -v nvidia-smi >/dev/null 2>&1; then
-    nvidia-smi | head -15
+    # head cierra el pipe antes de que nvidia-smi termine de escribir, lo que provoca
+    # SIGPIPE. Con `set -euo pipefail`, eso mataría el script. `|| true` lo evita.
+    nvidia-smi | head -15 || true
 else
     echo "[WARN] nvidia-smi no encontrado en WSL2."
     echo "       Asegurate de tener el driver NVIDIA instalado en Windows host."
@@ -67,12 +69,18 @@ fi
 
 # --- 5) Crear venv si no existe ---
 echo
-echo "--- Setup venv Python 3.11 ---"
+echo "--- Setup venv Python ---"
+# Si existe un .venv/ pero sin bin/activate, es de Windows (tiene Scripts/activate).
+# Lo borramos para crear uno nativo de Linux.
+if [ -d ".venv" ] && [ ! -f ".venv/bin/activate" ]; then
+    echo "[WARN] Detectado .venv/ de Windows (sin bin/activate). Recreando para Linux..."
+    rm -rf .venv
+fi
 if [ ! -d ".venv" ]; then
-    python3.11 -m venv .venv
-    echo "[OK] venv creado en .venv/"
+    python3 -m venv .venv
+    echo "[OK] venv creado en .venv/ (usando $(python3 --version))"
 else
-    echo "[OK] venv ya existe."
+    echo "[OK] venv ya existe y es de Linux."
 fi
 
 # shellcheck source=/dev/null
@@ -92,12 +100,30 @@ pip install -e ".[dev]"
 
 # Instalar mamba aparte porque a veces falla y querés ver el error claro
 echo
-echo "--- Instalando causal-conv1d ---"
-pip install --no-build-isolation causal-conv1d>=1.4.0
+echo "--- Instalando herramientas de build (necesarias para --no-build-isolation) ---"
+# Sin esto, causal-conv1d y mamba-ssm fallan con "ModuleNotFoundError: No module named 'wheel'"
+# porque --no-build-isolation les hace usar el venv actual en vez de un entorno aislado.
+pip install --upgrade pip setuptools wheel packaging ninja
 
 echo
-echo "--- Instalando mamba-ssm ---"
-pip install --no-build-isolation mamba-ssm>=2.2.0
+echo "--- Instalando causal-conv1d ---"
+pip install --no-build-isolation "causal-conv1d>=1.4.0"
+
+echo
+echo "--- Instalando mamba-ssm (sin deps, pinned <2.3 por compat con triton 3.1) ---"
+# CRÍTICO #1: mamba-ssm reciente arrastra transformers 5.x, que requiere torch>=2.12.
+# Eso desinstalaría nuestro torch 2.5.1+cu121 y rompería el ABI compilado de
+# causal-conv1d (undefined symbol al importar). --no-deps evita esto.
+# CRÍTICO #2: mamba-ssm 2.3+ requiere triton>=3.5, que solo viene con torch 2.12.
+# Con torch 2.5.1 (triton 3.1) tenemos que quedarnos en la rama 2.2.x.
+pip install --no-build-isolation --no-deps "mamba-ssm>=2.2.0,<2.3.0"
+
+# Aunque usemos la clase Mamba directamente en nuestro modelo, el __init__.py del
+# paquete sí importa MambaLMHeadModel (que necesita transformers). Por eso lo
+# instalamos manualmente, pinned a 4.x para no traer la 5.x que rompe torch.
+echo
+echo "--- Instalando transformers <5 (necesario para el import de mamba_ssm) ---"
+pip install "transformers<5"
 
 # --- 8) Verificación final ---
 echo

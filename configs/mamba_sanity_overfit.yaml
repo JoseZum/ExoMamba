@@ -1,0 +1,52 @@
+# Mamba — sanity overfit: verifica que el modelo PUEDE aprender en absoluto.
+# 64 ejemplos, dropout=0, weight_decay=0, early stopping off, val=train.
+# Si Mamba está sano, debe MEMORIZAR esos 64 ejemplos → val_auc → ~1.0.
+# Si no llega, hay bug en arquitectura / pipeline (no en hiperparams).
+#
+# Esperado: ~5-10 min en RTX 3050.
+
+experiment:
+  name: "mamba_sanity_overfit"
+  seed: 42
+  output_dir: "experiments"
+
+data:
+  train_csv: "data/splits/train_tics.csv"
+  val_csv: "data/splits/train_tics.csv"   # SÍ, val = train (verificar memorización)
+  processed_dir: "data/processed/global"
+  batch_size: 16
+  num_workers: 0
+  subset: 64
+
+model:
+  type: "mamba_baseline"
+  params:
+    in_channels: 1
+    d_model: 64
+    d_state: 16
+    d_conv: 4
+    expand: 2
+    n_layers: 4
+    dropout: 0.0
+    standardize: true
+
+training:
+  optimizer:
+    type: "adamw"
+    lr: 3.0e-3            # Mamba típicamente necesita LR más alto que CNN (literatura: 3e-3 a 5e-3)
+    weight_decay: 0.0
+  scheduler:
+    type: "none"
+  loss:
+    type: "bce"
+    pos_weight: null   # sanity overfit lo más simple posible (sin pesos de clase)
+  epochs: 60            # Mamba tiene fase de warm-up larga; con 30 no alcanza para overfit
+  fp16: true
+  gradient_checkpointing: false
+
+early_stopping:
+  enabled: false
+
+logging:
+  tensorboard: true
+  log_every_n_steps: 5

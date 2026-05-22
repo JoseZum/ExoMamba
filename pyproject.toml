@@ -63,9 +63,11 @@ dev = [
 ]
 # Solo Linux/WSL2 — mamba-ssm no tiene wheels para Windows.
 # Instalar con: pip install -e ".[dev,mamba]"
+# Pin <2.3 porque 2.3+ requiere triton>=3.5 (solo viene con torch>=2.12).
+# Con torch 2.5.1+cu121 (triton 3.1) tenemos que quedarnos en 2.2.x.
 mamba = [
     "causal-conv1d>=1.4.0",
-    "mamba-ssm>=2.2.0",
+    "mamba-ssm>=2.2.0,<2.3.0",
 ]
 
 [tool.setuptools.packages.find]

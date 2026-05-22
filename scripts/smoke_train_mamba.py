@@ -95,7 +95,7 @@ def main() -> int:
     section("4) Forward + backward + step (x3)")
     optimizer = torch.optim.Adam(model.parameters(), lr=LR)
     loss_fn = nn.BCEWithLogitsLoss()
-    scaler = torch.cuda.amp.GradScaler() if USE_FP16 else None
+    scaler = torch.amp.GradScaler("cuda") if USE_FP16 else None
 
     for step in range(1, N_STEPS + 1):
         x = torch.randn(BATCH_SIZE, SEQ_LEN, 1, device=device)
@@ -104,7 +104,7 @@ def main() -> int:
         t0 = time.time()
         optimizer.zero_grad(set_to_none=True)
         if USE_FP16:
-            with torch.cuda.amp.autocast():
+            with torch.amp.autocast("cuda"):
                 logits = model(x)
                 loss = loss_fn(logits, y)
             scaler.scale(loss).backward()

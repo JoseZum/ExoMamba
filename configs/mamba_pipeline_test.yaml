@@ -1,0 +1,52 @@
+# Mamba — pipeline test (2 epochs sobre data real).
+#
+# Propósito: verificar end-to-end que el loop entero anda con datos reales antes
+# de gastar 1-2h en el run de mamba_small. Si esto pasa, el de 50 epochs no va a
+# caer por bugs de plumbing (loader, collate, OOM, NaN, etc.).
+#
+# Esperado: ~5-10 min en RTX 3050. val_auc puede ser cualquier cosa (random ~0.5).
+
+experiment:
+  name: "mamba_pipeline_test"
+  seed: 42
+  output_dir: "experiments"
+
+data:
+  train_csv: "data/splits/train_tics.csv"
+  val_csv: "data/splits/val_tics.csv"
+  processed_dir: "data/processed/global"
+  batch_size: 16
+  num_workers: 2
+
+model:
+  type: "mamba_baseline"
+  params:
+    in_channels: 1
+    d_model: 64
+    d_state: 16
+    d_conv: 4
+    expand: 2
+    n_layers: 4
+    dropout: 0.1
+    standardize: true
+
+training:
+  optimizer:
+    type: "adamw"
+    lr: 5.0e-4
+    weight_decay: 1.0e-5
+  scheduler:
+    type: "none"
+  loss:
+    type: "bce"
+    pos_weight: "balanced"
+  epochs: 2
+  fp16: true
+  gradient_checkpointing: false
+
+early_stopping:
+  enabled: false
+
+logging:
+  tensorboard: true
+  log_every_n_steps: 10

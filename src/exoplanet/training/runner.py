@@ -128,7 +128,7 @@ def run_training(cfg: dict[str, Any]) -> dict[str, Any]:
     scheduler = build_scheduler(optimizer, cfg["training"].get("scheduler"))
 
     fp16 = bool(cfg["training"].get("fp16", False)) and device.type == "cuda"
-    scaler = torch.cuda.amp.GradScaler() if fp16 else None
+    scaler = torch.amp.GradScaler("cuda") if fp16 else None
     if fp16:
         logger.info("Mixed precision (FP16): ACTIVADO")
 
