@@ -1255,3 +1255,89 @@ fuera de `tics_labeled.csv`.
 - Splits congelados: train=1.103 / val=236 / test=237 (sellado).
 - Análisis KP queda registrado en `scripts/analyze_kp.py` (reproducible).
 - Próximo paso: Mamba (Fase 8 — requiere WSL2).
+
+---
+
+## 2026-05-22 | Fase 8 (parte 1): Setup WSL2 + sanity overfit de Mamba
+
+### Lo que se hizo
+
+- Instalación de WSL2 + Ubuntu 24.04 en Windows host.
+- Configuración del entorno Linux para `mamba-ssm` via `scripts/setup_wsl2.sh`
+  (idempotente, una corrida).
+- Smoke train (`scripts/smoke_train_mamba.py`) con tensores random `(16, 18000, 1)`
+  en GPU: PASA — confirma que el entorno corre Mamba+FP16 sin errores.
+- Sanity overfit con datos reales (subset 64, val=train, dropout=0, wd=0):
+  PASA con val_auc=1.0000 en epoch 78, consolidado 21 epochs estables al final.
+
+### Problemas encontrados durante el setup WSL2 (todos resueltos)
+
+1. **Ubuntu 24.04 no tiene `python3.11` en repos** → usar `python3` (3.12.3 por defecto).
+2. **SIGPIPE en `nvidia-smi | head -15`** con `set -euo pipefail` → agregado `|| true`.
+3. **`.venv/` viejo de Windows** detectado por `bin/activate` ausente → setup lo recrea.
+4. **`mamba-ssm` arrastra `transformers 5.x`** que requiere `torch>=2.12` y desinstala
+   nuestro `torch 2.5.1+cu121` → instalar con `--no-deps`.
+5. **`mamba-ssm 2.3+` requiere `triton>=3.5`** que solo viene con torch 2.12 →
+   pinned a `mamba-ssm>=2.2.0,<2.3.0`.
+6. **`mamba_ssm/__init__.py` importa `MambaLMHeadModel`** que necesita `transformers`
+   → instalar `transformers<5` aparte (versión 4.x compatible con torch 2.5).
+7. **`causal-conv1d` con ABI roto** tras downgrade de torch → reinstalar con
+   `--no-build-isolation` para recompilar contra el torch correcto.
+
+`scripts/setup_wsl2.sh` quedó actualizado para que toda esta secuencia funcione
+de una corrida limpia en futuros setups (incluido del compañero).
+
+### Iteraciones del sanity overfit
+
+| Versión | LR | Epochs | FP16 | Grad clip | Resultado |
+|---|---|---|---|---|---|
+| v1 | 1e-3 | 30 | true | no | val_auc=0.76 (lento, no llegó) |
+| v2 | 3e-3 | 60 | true | no | val_auc=0.86 pero NaN en epochs 25-41 (FP16 overflow) |
+| v3 | 3e-3 | 60 | false | 1.0 | val_auc=0.96 (sin NaN, pero rebote al final sin scheduler) |
+| **v4 (final)** | **3e-3 cosine→1e-6** | **120** | **false** | **1.0** | **val_auc=1.0000 estable** |
+
+### Decisiones tomadas
+
+**Gradient clipping (max_norm=1.0) obligatorio para Mamba.**
+Sin esto, Mamba+FP16 sobre secuencias de 18k pasos produce NaN en el backward
+(activations del SSM crecen, gradientes explotan). El `GradScaler` skipea el
+update pero el modelo queda envenenado parcial y nunca se recupera. Implementado
+en `loop.py` con `unscale_(optimizer)` antes del clip para que opere sobre los
+gradientes reales y no los escalados.
+
+**Protección anti-NaN en best checkpoint.**
+Si `train_loss` o `val_loss` no son finitos en un epoch, NO se considera para
+"best". Sin esto, el modelo podría guardar un checkpoint de un estado inestable
+que después no se reproduce (visto en v2).
+
+**FP32 para sanity, FP16 reservado para baseline FP32 estable primero.**
+La regla operativa: primero baseline limpio en FP32, después optimización a FP16.
+Si FP16 reproduce métricas → se queda como default; si caen → se reporta como
+"FP16 deteriora" en la bitácora.
+
+**Cosine scheduler crítico para llegar a AUC=1.0.**
+Con LR sostenido a 3e-3, el modelo "baila" entre 0.94 y 0.99 y no se asienta.
+Con cosine que decae a 1e-6, los últimos 40 epochs son fine-tune que consolida
+en 1.0000 estable.
+
+### Bug encontrado y arreglado
+
+`runner.py` reportaba conteos de pos/neg del CSV completo en vez del subset
+realmente cargado: `Train: 64 samples (pos=422, neg=681)`. Confunde mucho al
+debuggear. Reemplazado por `_count_labels_from_dataset` que itera el dataset
+realmente construido. Ahora reporta: `Train: 64 samples (pos=27, neg=37)`.
+
+### Configs producidos
+
+- `configs/mamba_sanity_overfit.yaml` — congelado como PASADO (val_auc=1.0).
+  NO modificar; sirve como prueba reproducible.
+- `configs/mamba_pipeline_test.yaml` — 2 epochs sobre data real con FP16,
+  solo verifica que no truena.
+- `configs/mamba_small.yaml` — baseline real FP32, lr=1.5e-3, 50 epochs.
+- `configs/mamba_small_fp16.yaml` — variante FP16 para comparar A/B después.
+
+### Estado al cierre
+
+- Entorno WSL2 listo y verificado (verify_wsl2_env.py PASS 7/7).
+- Pipeline de training validado de punta a punta con Mamba sobre datos reales.
+- Listo para arrancar el baseline real (`mamba_small.yaml`) — 1-2h en RTX 3050.
