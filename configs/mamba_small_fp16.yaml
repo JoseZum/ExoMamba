@@ -1,0 +1,58 @@
+# Mamba small — variante FP16 (run B). Correr DESPUÉS de mamba_small.yaml en FP32.
+#
+# Objetivo: medir si FP16 + grad_clip reproduce las métricas del run FP32
+# (con menos VRAM y posiblemente más rápido). Si las métricas se mantienen,
+# usamos FP16 como default; si caen, FP32 queda como el run de referencia.
+#
+# Reportar ambos runs en BITACORA con: val_auc final, tiempo por epoch, pico de VRAM.
+
+experiment:
+  name: "mamba_small_fp16"
+  seed: 42
+  output_dir: "experiments"
+
+data:
+  train_csv: "data/splits/train_tics.csv"
+  val_csv: "data/splits/val_tics.csv"
+  processed_dir: "data/processed/global"
+  batch_size: 16
+  num_workers: 2
+
+model:
+  type: "mamba_baseline"
+  params:
+    in_channels: 1
+    d_model: 64
+    d_state: 16
+    d_conv: 4
+    expand: 2
+    n_layers: 4
+    dropout: 0.1
+    standardize: true
+
+training:
+  optimizer:
+    type: "adamw"
+    lr: 1.5e-3
+    weight_decay: 1.0e-4
+  scheduler:
+    type: "cosine"
+    t_max: 50
+    eta_min: 1.0e-6
+  loss:
+    type: "bce"
+    pos_weight: "balanced"
+  epochs: 50
+  fp16: true              # variante FP16 — único cambio vs mamba_small.yaml
+  gradient_checkpointing: false
+  grad_clip: 1.0          # CRÍTICO con FP16
+
+early_stopping:
+  enabled: true
+  metric: "val_auc"
+  patience: 10
+  mode: "max"
+
+logging:
+  tensorboard: true
+  log_every_n_steps: 10

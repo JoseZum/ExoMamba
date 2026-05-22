@@ -2,14 +2,21 @@
 #
 # REQUIERE WSL2 + Ubuntu 24.04 + mamba-ssm. NO corre en Windows nativo.
 # Antes de correr este config:
-#   1. Asegurate de tener WSL2 con Ubuntu 24.04.
-#   2. pip install causal-conv1d mamba-ssm
-#   3. Correr `python scripts/smoke_train_mamba.py` para validar el entorno.
-#   4. Solo entonces correr este config con datos reales.
+#   1. Setup WSL2: ver docs/WSL2_SETUP.md
+#   2. python scripts/smoke_train_mamba.py     # preflight con tensores random
+#   3. python scripts/train.py --config configs/mamba_sanity_overfit.yaml  # debe llegar >0.9
+#   4. Recién entonces este config con datos reales.
 #
 # Tamaño "small" pensado para caber en 4 GB VRAM (RTX 3050) con batch=16.
-# Si se observa OOM: bajar d_model, activar gradient_checkpointing,
-# o bajar batch_size.
+# Si se observa OOM: bajar d_model, activar gradient_checkpointing, o bajar batch_size.
+#
+# DECISIONES (post-sanity 2026-05-22):
+#   - lr=1.5e-3: el sanity confirmó que 3e-3 aprende pero hace bounce; 5e-4 es muy lento.
+#     1.5e-3 es el sweet spot conservador.
+#   - fp16=false ARRANCANDO: primero conseguimos un baseline estable en FP32. Si OOM o
+#     muy lento, activamos FP16 en un segundo run y reportamos las dos corridas.
+#   - weight_decay=1e-4: regularización real (sanity era 0 a propósito para overfitear).
+#   - grad_clip=1.0: defensa estándar para Mamba aunque sea FP32.
 
 experiment:
   name: "mamba_small"
@@ -38,18 +45,19 @@ model:
 training:
   optimizer:
     type: "adamw"         # adamw es preferido para Mamba por la literatura
-    lr: 5.0e-4
-    weight_decay: 1.0e-5
+    lr: 1.5e-3            # sweet spot: 5e-4 es lento, 3e-3 inestable (visto en sanity)
+    weight_decay: 1.0e-4  # regularización real para el run productivo
   scheduler:
-    type: "cosine"
+    type: "cosine"        # decae LR hacia el final → permite asentamiento fino
     t_max: 50
-    eta_min: 1.0e-7
+    eta_min: 1.0e-6
   loss:
     type: "bce"
     pos_weight: "balanced"
   epochs: 50
-  fp16: true              # Mamba aprovecha FP16 para caber en 4 GB
+  fp16: false             # ARRANCAR en FP32 para baseline estable. Activar FP16 en run B si hace falta.
   gradient_checkpointing: false   # activar a true si hay OOM
+  grad_clip: 1.0          # defensa estándar para Mamba (necesario aunque sea FP32)
 
 early_stopping:
   enabled: true

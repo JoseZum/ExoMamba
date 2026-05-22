@@ -34,12 +34,18 @@ def train_one_epoch(
     *,
     fp16: bool = False,
     scaler: torch.cuda.amp.GradScaler | None = None,
+    grad_clip: float | None = 1.0,
     log_every_n_steps: int = 10,
     logger=None,
     tb_writer=None,
     global_step_start: int = 0,
 ) -> tuple[float, int]:
-    """Una epoch de entrenamiento. Devuelve (loss promedio, global_step final)."""
+    """Una epoch de entrenamiento. Devuelve (loss promedio, global_step final).
+
+    grad_clip: norma máxima de gradientes (clip_grad_norm_). Crítico para Mamba
+    sobre secuencias largas con FP16 — sin esto, los activations del SSM
+    pueden explotar y producir NaN en el backward. None desactiva el clipping.
+    """
     model.train()
     losses: list[float] = []
     global_step = global_step_start
@@ -55,12 +61,19 @@ def train_one_epoch(
                 logits = model(batch)
                 loss = loss_fn(logits, labels)
             scaler.scale(loss).backward()
+            if grad_clip is not None:
+                # Hay que des-escalar antes de clipear: scaler.scale() multiplicó los grads
+                # por un factor grande para evitar underflow en FP16.
+                scaler.unscale_(optimizer)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=grad_clip)
             scaler.step(optimizer)
             scaler.update()
         else:
             logits = model(batch)
             loss = loss_fn(logits, labels)
             loss.backward()
+            if grad_clip is not None:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=grad_clip)
             optimizer.step()
 
         loss_val = loss.item()

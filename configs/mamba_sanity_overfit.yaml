@@ -1,9 +1,12 @@
 # Mamba — sanity overfit: verifica que el modelo PUEDE aprender en absoluto.
 # 64 ejemplos, dropout=0, weight_decay=0, early stopping off, val=train.
-# Si Mamba está sano, debe MEMORIZAR esos 64 ejemplos → val_auc → ~1.0.
-# Si no llega, hay bug en arquitectura / pipeline (no en hiperparams).
+# Si Mamba está sano, debe MEMORIZAR esos 64 ejemplos → val_auc → 1.0.
 #
-# Esperado: ~5-10 min en RTX 3050.
+# HISTORIA:
+#   - v1 (60 ep, sin scheduler): peak val_auc=0.96, rebote al final → no consolidaba en 1.0.
+#   - v2 (120 ep, cosine scheduler 3e-3 → 1e-6): objetivo 1.0 con LR decay al final.
+#
+# Tiempo esperado: ~12-15 min en RTX 3050.
 
 experiment:
   name: "mamba_sanity_overfit"
@@ -33,16 +36,19 @@ model:
 training:
   optimizer:
     type: "adamw"
-    lr: 3.0e-3            # Mamba típicamente necesita LR más alto que CNN (literatura: 3e-3 a 5e-3)
+    lr: 3.0e-3            # LR alto al principio para escapar warm-up; cosine lo baja al final
     weight_decay: 0.0
   scheduler:
-    type: "none"
+    type: "cosine"        # crítico para llegar a 1.0: decae LR de 3e-3 → 1e-6 a lo largo del run
+    t_max: 120            # cubre todo el run
+    eta_min: 1.0e-6       # LR final bajo permite que el modelo se asiente fino
   loss:
     type: "bce"
     pos_weight: null   # sanity overfit lo más simple posible (sin pesos de clase)
-  epochs: 60            # Mamba tiene fase de warm-up larga; con 30 no alcanza para overfit
-  fp16: true
+  epochs: 120           # más epochs para llegar a 1.0 (con cosine, los últimos 30-40 son fine-tune)
+  fp16: false           # SANITY: FP32 para descartar inestabilidad de mixed precision como culpable
   gradient_checkpointing: false
+  grad_clip: 1.0        # CRÍTICO para Mamba: previene NaN en secuencias largas (más aún con FP16 en el run real)
 
 early_stopping:
   enabled: false

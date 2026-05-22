@@ -35,6 +35,18 @@ def _count_labels(csv_path: str | Path) -> tuple[int, int]:
     return pos, neg
 
 
+def _count_labels_from_dataset(dataset) -> tuple[int, int]:
+    """Cuenta labels iterando el dataset realmente cargado. Respeta subset/filtros."""
+    pos = neg = 0
+    for i in range(len(dataset)):
+        label = int(dataset[i]["label"])
+        if label == 1:
+            pos += 1
+        else:
+            neg += 1
+    return pos, neg
+
+
 def _write_env_info(path: Path) -> None:
     info = {
         "python": sys.version.replace("\n", " "),
@@ -110,9 +122,12 @@ def run_training(cfg: dict[str, Any]) -> dict[str, Any]:
         num_workers=int(data_cfg.get("num_workers", 0)),
         shuffle=False, subset=subset,
     )
-    pos_count, neg_count = _count_labels(data_cfg["train_csv"])
+    # Contamos sobre el dataset realmente cargado (respeta subset si aplica),
+    # no sobre el CSV crudo — antes mezclábamos los dos y el log mentía con subset.
+    pos_count, neg_count = _count_labels_from_dataset(train_loader.dataset)
+    val_pos, val_neg = _count_labels_from_dataset(val_loader.dataset)
     logger.info(f"Train: {len(train_loader.dataset)} samples (pos={pos_count}, neg={neg_count})")
-    logger.info(f"Val:   {len(val_loader.dataset)} samples")
+    logger.info(f"Val:   {len(val_loader.dataset)} samples (pos={val_pos}, neg={val_neg})")
 
     # 5) Modelo, loss, optimizer, scheduler
     model = build_model(cfg["model"]).to(device)
@@ -161,12 +176,20 @@ def run_training(cfg: dict[str, Any]) -> dict[str, Any]:
     with metrics_csv.open("w", newline="", encoding="utf-8") as f:
         csv.writer(f).writerow(metrics_header)
 
+    # grad_clip: defensa contra NaN en Mamba+FP16. Default 1.0 (norma global).
+    # Para desactivar pasar null en el YAML.
+    grad_clip_cfg = cfg["training"].get("grad_clip", 1.0)
+    grad_clip = float(grad_clip_cfg) if grad_clip_cfg is not None else None
+    if grad_clip is not None:
+        logger.info(f"Gradient clipping: max_norm={grad_clip}")
+
     global_step = 0
     for epoch in range(1, epochs + 1):
         logger.info(f"=== Epoch {epoch}/{epochs} ===")
         train_loss, global_step = train_one_epoch(
             model, train_loader, loss_fn, optimizer, device,
-            fp16=fp16, scaler=scaler, log_every_n_steps=log_every,
+            fp16=fp16, scaler=scaler, grad_clip=grad_clip,
+            log_every_n_steps=log_every,
             logger=logger, tb_writer=tb_writer, global_step_start=global_step,
         )
         val = evaluate_one_epoch(model, val_loader, loss_fn, device)
@@ -199,11 +222,23 @@ def run_training(cfg: dict[str, Any]) -> dict[str, Any]:
             ])
 
         # Checkpoints
-        renamed = ckpt_mgr.maybe_save_best(
-            model, optimizer, epoch, {"val_auc": val["auc_roc"], **val}
-        )
-        if renamed:
-            logger.info(f"  [BEST] Nuevo mejor val_auc={val['auc_roc']:.4f}")
+        # Si train_loss o val_loss son NaN/inf, NO consideramos este epoch como "best":
+        # el modelo está envenenado (típicamente FP16 overflow) y aunque val_auc parezca
+        # alto, el checkpoint guardado sería el de un estado roto que no se reproduce.
+        import math as _m
+        train_ok = _m.isfinite(train_loss)
+        val_ok = _m.isfinite(val["loss"])
+        if not train_ok or not val_ok:
+            logger.warning(
+                f"  [SKIP-BEST] Epoch {epoch}: train_loss={train_loss}, val_loss={val['loss']}. "
+                "No se considera como candidato a best (estado inestable)."
+            )
+        else:
+            renamed = ckpt_mgr.maybe_save_best(
+                model, optimizer, epoch, {"val_auc": val["auc_roc"], **val}
+            )
+            if renamed:
+                logger.info(f"  [BEST] Nuevo mejor val_auc={val['auc_roc']:.4f}")
         ckpt_mgr.save_last(model, optimizer, epoch, val)
 
         # Scheduler step (cosine se actualiza por epoch)
