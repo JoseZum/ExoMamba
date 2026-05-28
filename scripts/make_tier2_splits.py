@@ -74,7 +74,7 @@ def main() -> int:
             f"{cp_t1:>6} {fp_t1:>6} {cp_t2:>6} {fp_t2:>6} "
             f"{cp_loss:>8} {fp_loss:>8}"
         )
-        print(f"       → {SPLITS_OUT[name]}")
+        print(f"       -> {SPLITS_OUT[name]}")
 
     print("\nNOTA: Tier 2 es subset estricto de Tier 1. Los TICs NO se reasignan "
           "de split (eso sería data leakage). Solo se filtran los TICs sin "

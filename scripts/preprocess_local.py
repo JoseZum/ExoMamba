@@ -67,15 +67,41 @@ MANIFEST_COLS = [
 ]
 
 
+# Cache global: tid (int) -> { sector (int): Path }. Se llena perezosamente
+# en build_fits_index() para evitar globs O(N) por TIC.
+_FITS_INDEX: dict[int, dict[int, Path]] | None = None
+
+
+def build_fits_index() -> dict[int, dict[int, Path]]:
+    """Construye un índice tid → {sector → Path} recorriendo RAW_DIR una sola vez."""
+    global _FITS_INDEX
+    if _FITS_INDEX is not None:
+        return _FITS_INDEX
+    index: dict[int, dict[int, Path]] = {}
+    # Nombre típico: tessYYYYDDDHHMMSS-sSSSS-TIIIIIIIIIIIIIIII-XXXX-s_lc.fits
+    import re
+    pat = re.compile(r"-s(\d{4})-(\d{16})-")
+    for p in RAW_DIR.rglob("*_lc.fits"):
+        m = pat.search(p.name)
+        if not m:
+            continue
+        sector = int(m.group(1))
+        tid = int(m.group(2))
+        index.setdefault(tid, {})[sector] = p
+    _FITS_INDEX = index
+    return index
+
+
 def find_fits_for_tic_sector(tid: int, sector: int) -> Path | None:
     """Devuelve el FITS de `tid` correspondiente a `sector`. None si no existe."""
-    pattern = f"**/*-s{sector:04d}-*{tid:016d}*_lc.fits"
-    hits = list(RAW_DIR.glob(pattern))
-    if hits:
-        return hits[0]
-    # Fallback: ignora el sector y trae cualquiera (debería rara vez aplicar).
-    hits = list(RAW_DIR.glob(f"**/*{tid:016d}*_lc.fits"))
-    return hits[0] if hits else None
+    index = build_fits_index()
+    by_sector = index.get(tid)
+    if not by_sector:
+        return None
+    if sector in by_sector:
+        return by_sector[sector]
+    # Fallback: cualquier sector del TIC.
+    return next(iter(by_sector.values()))
 
 
 def load_time_flux(path: Path) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
