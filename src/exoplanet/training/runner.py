@@ -75,6 +75,7 @@ def _build_loader(
     shuffle: bool,
     subset: int | None = None,
     augment_cfg: dict | None = None,
+    local_dir: str | Path | None = None,
 ) -> DataLoader:
     """Construye un DataLoader sobre LightCurveDataset.
 
@@ -82,6 +83,9 @@ def _build_loader(
     construye un Compose desde `augment_cfg["pipeline"]` y se pasa al dataset.
     El caller es responsable de invocar este builder con `augment_cfg=None`
     para val/test (restricción operativa: augmentation solo en train).
+
+    `local_dir` (opcional): si se pasa, el dataset cargará `<local_dir>/<tic>.pt`
+    como `local_view`. Necesario para modelos Tier 2 (ExoMamba V1, AstroNet).
     """
     augment = None
     if augment_cfg is not None and augment_cfg.get("enabled", False):
@@ -89,7 +93,9 @@ def _build_loader(
         if pipeline_spec:
             augment = build_augment_pipeline(pipeline_spec)
 
-    ds = LightCurveDataset(split_csv, processed_dir=processed_dir, augment=augment)
+    ds = LightCurveDataset(
+        split_csv, processed_dir=processed_dir, augment=augment, local_dir=local_dir
+    )
     if subset is not None and subset < len(ds):
         ds = Subset(ds, list(range(subset)))
     return DataLoader(
@@ -125,12 +131,14 @@ def run_training(cfg: dict[str, Any]) -> dict[str, Any]:
     data_cfg = cfg["data"]
     subset = data_cfg.get("subset")  # None o int (para smoke tests)
     augment_cfg = data_cfg.get("augment")  # solo se aplica al train loader
+    local_dir = data_cfg.get("local_dir")  # None para Tier 1; ruta para Tier 2
     train_loader = _build_loader(
         data_cfg["train_csv"], data_cfg["processed_dir"],
         batch_size=int(data_cfg.get("batch_size", 16)),
         num_workers=int(data_cfg.get("num_workers", 0)),
         shuffle=True, subset=subset,
         augment_cfg=augment_cfg,
+        local_dir=local_dir,
     )
     val_loader = _build_loader(
         data_cfg["val_csv"], data_cfg["processed_dir"],
@@ -138,6 +146,7 @@ def run_training(cfg: dict[str, Any]) -> dict[str, Any]:
         num_workers=int(data_cfg.get("num_workers", 0)),
         shuffle=False, subset=subset,
         augment_cfg=None,  # val NUNCA con augmentation
+        local_dir=local_dir,
     )
     if augment_cfg is not None and augment_cfg.get("enabled", False):
         aug_repr = getattr(train_loader.dataset, "augment", None)

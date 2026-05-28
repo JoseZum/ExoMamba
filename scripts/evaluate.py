@@ -259,6 +259,7 @@ def main() -> int:
         split_csv,
         processed_dir=data_cfg.get("processed_dir", "data/processed/global"),
         augment=None,  # NUNCA augmentation en eval
+        local_dir=data_cfg.get("local_dir"),  # Tier 2 requiere local_view
     )
     loader = DataLoader(
         dataset,

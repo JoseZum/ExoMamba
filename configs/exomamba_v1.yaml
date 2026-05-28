@@ -19,6 +19,7 @@ experiment:
 data:
   train_csv: "data/splits/tier2_train_tics.csv"
   val_csv: "data/splits/tier2_val_tics.csv"
+  test_csv: "data/splits/tier2_test_tics.csv"   # consumido por scripts/evaluate.py --split test
   processed_dir: "data/processed/global"
   local_dir: "data/processed/local"
   batch_size: 16
