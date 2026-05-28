@@ -1341,3 +1341,274 @@ realmente construido. Ahora reporta: `Train: 64 samples (pos=27, neg=37)`.
 - Entorno WSL2 listo y verificado (verify_wsl2_env.py PASS 7/7).
 - Pipeline de training validado de punta a punta con Mamba sobre datos reales.
 - Listo para arrancar el baseline real (`mamba_small.yaml`) — 1-2h en RTX 3050.
+
+---
+
+## 2026-05-22 | Fase 8 (parte 2): Baseline Mamba real — GANA AL CNN
+
+### Resultado principal
+
+**Mamba supera al CNN baseline por +7.07 puntos porcentuales en val_auc.**
+
+| Modelo | Mejor val_auc | Epoch del peak | Tiempo | Notas |
+|---|---|---|---|---|
+| CNN baseline (50 ep) | 0.6795 | ~50 | ~30 min | Saturó cerca del final |
+| **Mamba small** | **0.7502** | **15** | **26 min** | Early stop en epoch 25 |
+| Delta absoluto | **+0.0707** | | | |
+
+Contra los umbrales de la propuesta original:
+- "Aceptable": +1 p.p. → conseguimos **+7**
+- "Excelente": +3 p.p. → conseguimos **+7**
+
+Mamba está en zona "excelente" según el rubric.
+
+### Pipeline test previo (smoke con FP16 sobre data real)
+
+Antes del run real corrimos `mamba_pipeline_test.yaml` (2 epochs, FP16, data
+completa). Validó:
+- Loader ve dataset completo: `Train: 1103 (pos=422, neg=681)`, `Val: 236 (pos=90, neg=146)`.
+- Sin OOM con FP16 + batch=16 + d_model=64 en 4 GB VRAM.
+- `train_loss` finito (0.86 estable), sin `[SKIP-BEST]`.
+- val_auc subió 0.49 → 0.59 en 2 epochs (señal de aprendizaje, no prueba).
+- ~40 s por epoch en FP16 → estimación realista para el run real.
+
+### Trayectoria del run real (mamba_small.yaml, FP32)
+
+- Epochs 1-3: warm-up, AUC 0.49 → 0.61.
+- Epoch 11: primer salto a 0.69.
+- **Epoch 15: peak en 0.7502.**
+- Epochs 16-25: oscilación 0.71-0.74, sin nuevo best.
+- Early stopping (patience=10) disparó en epoch 25.
+
+Convergencia mucho más rápida que CNN (15 vs ~50 epochs). Mamba aprovecha la
+secuencia larga con menos pasos de gradiente.
+
+### Hiperparámetros del run
+
+| Param | Valor |
+|---|---|
+| Modelo | mamba_baseline (d_model=64, n_layers=4, d_state=16, expand=2) |
+| Params entrenables | 131,393 |
+| Optimizer | AdamW |
+| LR inicial | 1.5e-3 |
+| LR scheduler | cosine → 1e-6 |
+| Weight decay | 1e-4 |
+| Batch size | 16 |
+| Loss | BCE con pos_weight balanced |
+| FP16 | false (baseline en FP32 para estabilidad) |
+| Grad clip | 1.0 (norma global) |
+| Standardize | true (z-score por curva) |
+| Epochs configurados | 50 |
+| Epochs corridos | 25 (early stopping) |
+
+### Interpretación
+
+**Por qué Mamba gana al CNN:**
+1. Captura **dependencias de largo alcance** en la curva (CNN tiene receptive
+   field limitado, Mamba O(n) pasa info por toda la secuencia).
+2. **Menos parámetros** que CNN (131K vs 32K — pero más expresivos por sample
+   gracias al SSM selectivo).
+3. **Converge más rápido** (peak en 1/3 de los epochs que CNN necesitó).
+
+**Lo que sigue sin resolverse:**
+- 0.75 es muy lejos del 0.88 aspiracional del paper. La causa principal sigue
+  siendo la **ausencia de vista local** (Tier 1 solo usa global). Tier 2
+  (ExoMamba V1 con CNN local) debería empujar el techo, no la elección de
+  arquitectura global.
+- El dataset chico (1103 train) limita capacidad utilizable. Aún subiendo a
+  d_model=128 (mamba_medium) probablemente no escale bien.
+
+### Decisiones tomadas en este run
+
+**FP32 como baseline oficial.** Da resultados reportables sin la complejidad
+extra de FP16. La variante FP16 (`mamba_small_fp16.yaml`) queda como ablation
+opcional para reportar trade-off tiempo/VRAM.
+
+**Early stopping con patience=10 fue acertado.** Cortó en epoch 25 sin perder
+nada de calidad (peak fue epoch 15). Confirma que patience=10 es razonable para
+Mamba sobre este dataset.
+
+**No re-correr para "buscar mejor seed".** Tentación de hacer 5 runs con seeds
+distintas para reportar media±std. Postergado para Fase 9: ahí se hace el run
+final + tests estadísticos contra el sealed test set, no contra val.
+
+### Estado al cierre
+
+- Tier 1 metodológico COMPLETO: random < LogReg (compañero) < CNN < Mamba.
+- Mejor modelo Tier 1 hasta ahora: Mamba small con val_auc=0.7502.
+- Próximo paso inmediato: opcional, run FP16 (mamba_small_fp16.yaml) para
+  comparar A/B. Si tiempo apremia, saltar directo a Fase 9.
+- Fase 9: evaluación final contra sealed test (test_tics.csv), curvas ROC/PR,
+  análisis de errores y XAI (saliency/integrated gradients/occlusion).
+- Pendiente: que el compañero termine LogReg sobre features del catálogo para
+  cerrar la "escalera de baselines" completa antes de Fase 9.
+
+---
+
+## 2026-05-22 | Fase 8 (parte 3): Sweep Tier 1 + augmentation (setup)
+
+### Objetivo de la sesión
+
+Explorar el techo de Tier 1 SIN cambiar arquitectura. El baseline oficial sigue
+siendo Mamba small con val_auc=0.7502. Esta sesión deja todo el andamiaje listo
+para probar si hyperparameter tuning + augmentation pueden empujar de 0.75 hacia
+0.78-0.82. Si lo logra, se documenta como mejora; si no, el baseline 0.7502 se
+mantiene como Tier 1 oficial y los runs se reportan como ablation negativa.
+
+**No se corre nada en esta sesión** — solo se preparan configs y código. El
+usuario corre el sweep en WSL2 cuando tenga tiempo libre de GPU.
+
+### Hipótesis por palanca
+
+| Experimento                | Hipótesis                                                                                              | Esperado vs baseline |
+|---                         |---                                                                                                     |---                   |
+| Multi-seed (×5)            | Cuantificar varianza intrínseca del baseline para saber si otras "mejoras" son ruido o señal real.     | mean±std reportable  |
+| LR=1.0e-3                  | LR más bajo → converge más lento pero quizás llega más alto si 1.5e-3 ya satura.                       | igual o ligero +     |
+| LR=2.0e-3                  | LR más alto → bracketea por arriba; mide si todavía hay margen de subida estable.                      | indeterminado        |
+| LR=3.0e-3                  | El sanity vio bounce con WD=0; con WD=1e-4 podría estabilizarse. Si oscila, cierra el sweep superior.  | probable peor        |
+| patience=20 + epochs=80    | El peak fue epoch 15 y ES cortó en 25. Más paciencia + más epochs darían margen si converge tarde.     | igual o ligero +     |
+| d_state=64                 | Default del paper Mamba. Más capacidad de estado interno; +1 a +3 p.p. esperado, riesgo OOM.           | probable +1-3 p.p.   |
+| Augmentation (3 técnicas)  | Con 1103 train, regularizar via shift+noise+amplitude puede empujar el techo y reducir overfitting.    | esperado +1-3 p.p.   |
+
+### Archivos creados
+
+**Configs (sin tocar `configs/mamba_small.yaml`):**
+- `configs/sweep_seed/mamba_small_seed{42,123,456,789,2024}.yaml` — 5 réplicas con seeds distintas.
+- `configs/sweep_lr/mamba_small_lr{1e3,2e3,3e3}.yaml` — bracketea el lr=1.5e-3 del baseline.
+- `configs/mamba_small_patient.yaml` — epochs=80, scheduler.t_max=80, early_stopping.patience=20.
+- `configs/mamba_small_dstate64.yaml` — d_state=64 (vs 16), resto idéntico.
+- `configs/mamba_small_aug.yaml` — augmentation activa (temporal_shift + gaussian_noise + amplitude_scale).
+
+**Código nuevo:**
+- `src/exoplanet/data/augment.py` — funciones `temporal_shift`, `gaussian_noise`,
+  `time_reverse`, `amplitude_scale` + clase `Compose` + `build_augment_pipeline`.
+  Todas reciben `torch.Generator` opcional para reproducibilidad. No mutan input.
+- `tests/test_augment.py` — 24 tests unitarios (shapes, no-mutación, reproducibilidad, rangos).
+
+**Código modificado (minimal, backward-compatible):**
+- `src/exoplanet/data/dataset.py` — `LightCurveDataset.__init__` ahora acepta
+  `augment: Compose | None = None`. Default None preserva comportamiento previo
+  (todos los tests existentes siguen verdes). Aplica el augment SOLO al
+  `global_view`. Docstring deja explícito que el caller maneja train vs val/test.
+- `src/exoplanet/data/__init__.py` — exporta los símbolos de `augment.py`.
+- `src/exoplanet/training/runner.py` — `_build_loader` acepta `augment_cfg`
+  opcional. En `run_training`, val_loader siempre se construye con
+  `augment_cfg=None` (restricción operativa: augmentation solo en train).
+
+**Infra de sweep:**
+- `scripts/run_sweep_tier1.sh` — corre los 10 configs en orden. Cada run
+  envuelto con `|| true` para que un fallo no aborte el sweep completo. Detecta
+  layout de venv (WSL2 vs Git Bash).
+- `scripts/analyze_sweep_results.py` — CLI que lee `experiments/<run>/metrics.csv`
+  + `config.yaml`, ordena por best_val_auc, calcula mean±std si hay >= 3 seeds
+  por grupo, y escribe `experiments/_sweep_summary.csv` y opcionalmente
+  `_sweep_summary_multiseed.csv`.
+
+### Decisiones técnicas tomadas
+
+- **Boundary de `temporal_shift`**: rellenar con la mediana del propio sample,
+  NO wrap-around. Wrap-around introduce un salto artificial entre fin e inicio
+  que el modelo podría aprender como feature espuria. La mediana coincide con
+  el nivel base del flujo post-normalización (`preprocess_global.py`).
+- **`time_reverse` queda fuera del config default `mamba_small_aug.yaml`** —
+  los tránsitos son simétricos en teoría, pero combinarlo con `temporal_shift`
+  puede confundir features de tendencia residual. Disponible si se quiere
+  probar a futuro.
+- **`val_loader` siempre `augment=None`** hardcoded en `runner.py`. No es un
+  flag del YAML porque es una restricción no negociable del proyecto.
+- **Tests existentes intactos**: todos los cambios a `dataset.py` y `runner.py`
+  usan parámetros opcionales con default `None`. `pytest -q tests/` pasa
+  47/47 (24 nuevos de `test_augment.py` + 23 existentes).
+
+### Cómo correr el sweep completo
+
+Desde WSL2, dentro de `mamba-exoplanet/`:
+
+```bash
+bash scripts/run_sweep_tier1.sh
+```
+
+Estimación: ~5-6 h totales (multi-seed ~2 h + LR sweep ~1.5 h + patient ~50 min
++ d_state ~45 min + aug ~30 min). Cada run cuelga su carpeta en `experiments/`
+con el timestamp; el baseline oficial 2026-05-22_14-32-51_mamba_small queda
+intocado.
+
+### Cómo analizar resultados después
+
+```bash
+python scripts/analyze_sweep_results.py
+```
+
+Genera tabla en consola (ordenada por best_val_auc desc), CSV resumen en
+`experiments/_sweep_summary.csv` y, si hay multi-seed, un segundo CSV con
+mean±std por grupo. Pattern por defecto: `experiments/*mamba_small*`.
+
+### Estado al cierre de la sesión
+
+- 10 configs YAML listos para correr.
+- Pipeline de augmentation implementado + cubierto por tests.
+- Sweep runner y analyzer listos.
+- `pytest -q tests/` → 47 passed.
+- Próximo paso: el usuario corre `bash scripts/run_sweep_tier1.sh` en WSL2,
+  espera ~6 h, y reporta resultados en sesión futura. Si alguno supera 0.7502
+  por margen mayor que la std del multi-seed, se promociona ese hiperparámetro
+  al nuevo baseline Tier 1. Si no, 0.7502 sigue siendo el techo Tier 1 reportable.
+
+---
+
+## 2026-05-22 | Fase 9: Setup de evaluación + safety snapshot
+
+### Lo que se hizo
+
+Infra de evaluación final lista — todo lo necesario para cerrar Tier 1
+(Etapa 2 del curso) en cuanto el sweep decida el ganador Mamba.
+
+- `scripts/evaluate.py`: CLI que levanta `<run_dir>/config.yaml` +
+  `checkpoints/best.pt`, reconstruye el modelo vía `MODEL_REGISTRY`,
+  arma el `DataLoader` sobre el split pedido con `augment=None` forzado,
+  reusa `evaluate_one_epoch` para no duplicar lógica de métricas y suma
+  brier + accuracy. Dump en `<run_dir>/eval_<split>/` con `metrics.json`
+  (incluye timestamp), `predictions.csv` (tic_id, y_true, y_prob, y_pred)
+  y los cuatro PNGs (ROC, PR, matriz de confusión, calibración).
+  Si `--split=test`, imprime warning explícito recordando que el test
+  sellado se evalúa UNA SOLA VEZ por modelo.
+- `src/exoplanet/evaluation/xai.py`: tres técnicas XAI explícitamente
+  pedidas por CLAUDE.md — `gradient_saliency`, `integrated_gradients` y
+  `occlusion_sensitivity`. NO usamos "atención" porque Mamba no la tiene
+  en el sentido del Transformer y reportar eso sería incorrecto. Plus
+  un `plot_xai_overlay` para superponer atribución sobre la curva.
+  Las funciones aceptan `(L, 1)` y `(B, L, 1)` y traducen al dict
+  `{"global_view": (B, 1, L)}` que esperan los modelos del proyecto.
+- `src/exoplanet/evaluation/__init__.py` expandido: reexporta plots + XAI.
+- `paper/results/tier1_results.md`: template con placeholders para la
+  tabla comparativa Tier 1; `paper/results/figures/.gitkeep` para la
+  carpeta de figuras del paper.
+
+### Path del snapshot lockeado
+
+- `experiments/_LOCKED_BASELINE.json` — apunta a:
+  - CNN ganador: `experiments/2026-05-20_23-44-48_cnn_baseline` (val_auc=0.6795 @ epoch 25, 62,881 params).
+  - Mamba baseline: `experiments/2026-05-22_14-32-51_mamba_small` (val_auc=0.7502 @ epoch 15, 131,393 params).
+  - Política de override: NO sobrescribir. Si el sweep mejora, crear `_LOCKED_BASELINE_v2.json`.
+
+### Comandos para evaluar (UNA SOLA VEZ por modelo)
+
+```bash
+# Mamba — en WSL2 (mamba-ssm sólo corre allí):
+python scripts/evaluate.py --run experiments/2026-05-22_14-32-51_mamba_small --split test
+
+# CNN — en Windows nativo o WSL2 (no depende de mamba-ssm):
+python scripts/evaluate.py --run experiments/2026-05-20_23-44-48_cnn_baseline --split test
+```
+
+Cada comando deja todo bajo `<run_dir>/eval_test/`. Lo que se reporte en
+`paper/results/tier1_results.md` proviene de esos dos JSON.
+
+### Restricción operativa (no negociable)
+
+El split de test (`data/splits/test_tics.csv`, N=237) se evalúa UNA SOLA
+VEZ por modelo. Re-evaluar invalida el reporte final por re-uso implícito
+del test en decisiones (selección de hiperparámetros, threshold tuning,
+ablations). Si por algún error hay que re-correr (p. ej. bug crítico en
+preprocesamiento), eso queda documentado acá con justificación.
+

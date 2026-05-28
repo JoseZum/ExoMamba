@@ -1,10 +1,15 @@
 # Mamba — pipeline test (2 epochs sobre data real).
 #
-# Propósito: verificar end-to-end que el loop entero anda con datos reales antes
-# de gastar 1-2h en el run de mamba_small. Si esto pasa, el de 50 epochs no va a
-# caer por bugs de plumbing (loader, collate, OOM, NaN, etc.).
+# Propósito: validar end-to-end ANTES del run real de 1-2h. Tres cosas:
+#   1. El loader anda con full data (1103 train + 236 val).
+#   2. FP16 + grad_clip no produce NaN sobre secuencias reales.
+#   3. No hay OOM con batch=16 + d_model=64.
 #
-# Esperado: ~5-10 min en RTX 3050. val_auc puede ser cualquier cosa (random ~0.5).
+# Espejo de mamba_small.yaml excepto: epochs=2, fp16=true, scheduler=none,
+# early stopping off. val_auc puede ser cualquier cosa (2 epochs es ruido).
+# Lo único que mirás: que NO truene y que train_loss/val_loss sean finitos.
+#
+# Esperado: ~5-10 min en RTX 3050.
 
 experiment:
   name: "mamba_pipeline_test"
@@ -33,15 +38,15 @@ model:
 training:
   optimizer:
     type: "adamw"
-    lr: 5.0e-4
-    weight_decay: 1.0e-5
+    lr: 1.5e-3            # mismo que mamba_small
+    weight_decay: 1.0e-4  # mismo que mamba_small
   scheduler:
-    type: "none"
+    type: "none"          # 2 epochs no aprovechan cosine
   loss:
     type: "bce"
     pos_weight: "balanced"
   epochs: 2
-  fp16: true
+  fp16: true              # CRÍTICO: validar FP16 sobre data real
   gradient_checkpointing: false
   grad_clip: 1.0
 

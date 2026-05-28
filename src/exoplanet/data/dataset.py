@@ -30,6 +30,8 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
+from exoplanet.data.augment import Compose
+
 
 class LightCurveDataset(Dataset):
     """Curvas de luz TESS preprocesadas (vista global, longitud fija L=18000)."""
@@ -39,6 +41,7 @@ class LightCurveDataset(Dataset):
         split_csv: str | Path,
         processed_dir: str | Path = "data/processed/global",
         check_files: bool = True,
+        augment: Compose | None = None,
     ) -> None:
         """Carga la tabla del split y verifica que cada .pt existe.
 
@@ -48,6 +51,11 @@ class LightCurveDataset(Dataset):
             check_files: si True (default), verifica al inicializar que todos
                 los .pt existen y aborta con error si falta alguno. Esto evita
                 fallar a mitad del entrenamiento.
+            augment: Compose opcional de augmentations a aplicar SOLO al
+                `global_view` en cada __getitem__. **Es responsabilidad del
+                caller** pasar `augment=None` para val y test — el dataset no
+                sabe en qué split está. Si `local_view` o `scalar_features`
+                están poblados (Tier 2), el augmentation actual NO los toca.
         """
         self.processed_dir = Path(processed_dir)
         split_path = Path(split_csv)
@@ -61,6 +69,7 @@ class LightCurveDataset(Dataset):
             )
         self.tids: list[int] = df["tid"].astype(int).tolist()
         self.labels: list[int] = df["label"].astype(int).tolist()
+        self.augment = augment
 
         if check_files:
             missing = [t for t in self.tids if not (self.processed_dir / f"{t}.pt").exists()]
@@ -83,6 +92,9 @@ class LightCurveDataset(Dataset):
             raise TypeError(f"global_view de TIC {tid} no es tensor: {type(global_view)}")
         if global_view.dtype != torch.float32:
             global_view = global_view.float()
+
+        if self.augment is not None:
+            global_view = self.augment(global_view)
 
         return {
             "tic_id": tid,

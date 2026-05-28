@@ -12,7 +12,7 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader, Subset
 
-from exoplanet.data import LightCurveDataset
+from exoplanet.data import LightCurveDataset, build_augment_pipeline
 from exoplanet.training.checkpoint import CheckpointManager
 from exoplanet.training.collate import collate_lightcurves
 from exoplanet.training.config import dump_config
@@ -74,8 +74,22 @@ def _build_loader(
     num_workers: int,
     shuffle: bool,
     subset: int | None = None,
+    augment_cfg: dict | None = None,
 ) -> DataLoader:
-    ds = LightCurveDataset(split_csv, processed_dir=processed_dir)
+    """Construye un DataLoader sobre LightCurveDataset.
+
+    Si `augment_cfg` está presente y `augment_cfg["enabled"]` es True, se
+    construye un Compose desde `augment_cfg["pipeline"]` y se pasa al dataset.
+    El caller es responsable de invocar este builder con `augment_cfg=None`
+    para val/test (restricción operativa: augmentation solo en train).
+    """
+    augment = None
+    if augment_cfg is not None and augment_cfg.get("enabled", False):
+        pipeline_spec = augment_cfg.get("pipeline", [])
+        if pipeline_spec:
+            augment = build_augment_pipeline(pipeline_spec)
+
+    ds = LightCurveDataset(split_csv, processed_dir=processed_dir, augment=augment)
     if subset is not None and subset < len(ds):
         ds = Subset(ds, list(range(subset)))
     return DataLoader(
@@ -110,18 +124,26 @@ def run_training(cfg: dict[str, Any]) -> dict[str, Any]:
     # 4) Datos
     data_cfg = cfg["data"]
     subset = data_cfg.get("subset")  # None o int (para smoke tests)
+    augment_cfg = data_cfg.get("augment")  # solo se aplica al train loader
     train_loader = _build_loader(
         data_cfg["train_csv"], data_cfg["processed_dir"],
         batch_size=int(data_cfg.get("batch_size", 16)),
         num_workers=int(data_cfg.get("num_workers", 0)),
         shuffle=True, subset=subset,
+        augment_cfg=augment_cfg,
     )
     val_loader = _build_loader(
         data_cfg["val_csv"], data_cfg["processed_dir"],
         batch_size=int(data_cfg.get("batch_size", 16)),
         num_workers=int(data_cfg.get("num_workers", 0)),
         shuffle=False, subset=subset,
+        augment_cfg=None,  # val NUNCA con augmentation
     )
+    if augment_cfg is not None and augment_cfg.get("enabled", False):
+        aug_repr = getattr(train_loader.dataset, "augment", None)
+        if aug_repr is None and hasattr(train_loader.dataset, "dataset"):
+            aug_repr = getattr(train_loader.dataset.dataset, "augment", None)
+        logger.info(f"Augmentation (train-only): {aug_repr}")
     # Contamos sobre el dataset realmente cargado (respeta subset si aplica),
     # no sobre el CSV crudo — antes mezclábamos los dos y el log mentía con subset.
     pos_count, neg_count = _count_labels_from_dataset(train_loader.dataset)
