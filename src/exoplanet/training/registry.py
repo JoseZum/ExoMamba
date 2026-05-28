@@ -6,14 +6,18 @@ from typing import Any
 
 import torch.nn as nn
 
+from exoplanet.models.astronet_multibranch import AstroNetMultibranch
 from exoplanet.models.cnn_baseline import CNNBaseline
+from exoplanet.models.exomamba_v1 import ExoMambaV1
 from exoplanet.models.mamba_baseline import MambaBaseline
 from exoplanet.models.random_baseline import RandomBaseline
 
 MODEL_REGISTRY: dict[str, type[nn.Module]] = {
     "cnn_baseline": CNNBaseline,
     "random_baseline": RandomBaseline,
-    "mamba_baseline": MambaBaseline,   # requiere mamba-ssm (WSL2)
+    "mamba_baseline": MambaBaseline,            # requiere mamba-ssm (WSL2)
+    "exomamba_v1": ExoMambaV1,                  # Tier 2; requiere mamba-ssm (WSL2)
+    "astronet_multibranch": AstroNetMultibranch,  # Tier 2 reproducción S&V 2018 (pure torch)
 }
 
 

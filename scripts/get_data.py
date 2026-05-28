@@ -55,7 +55,22 @@ def summarize(df: pd.DataFrame) -> None:
 
 
 def save_summary(df: pd.DataFrame) -> None:
-    cols = [c for c in ["tid", "toi", "tfopwg_disp", "st_tmag", "pl_orbper", "pl_trandep"] if c in df.columns]
+    # `pl_tranmid` (epoch BJD del tránsito) y `pl_trandurh` (duración en horas) se
+    # incluyen para poder construir la vista local phase-folded (Fase 3.b / Tier 2).
+    cols = [
+        c
+        for c in [
+            "tid",
+            "toi",
+            "tfopwg_disp",
+            "st_tmag",
+            "pl_orbper",
+            "pl_trandep",
+            "pl_tranmid",
+            "pl_trandurh",
+        ]
+        if c in df.columns
+    ]
     summary = df[cols].copy()
     SPLITS_PATH.parent.mkdir(parents=True, exist_ok=True)
     summary.to_csv(SPLITS_PATH, index=False)

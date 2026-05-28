@@ -1,0 +1,62 @@
+# AstroNet multibranch — sanity overfit: verifica que la reproducción fiel de
+# Shallue & Vanderburg (2018) puede aprender en absoluto.
+# 64 ejemplos del split Tier 2, dropout=0, weight_decay=0, early stopping off,
+# val=train. Si la arquitectura está sana, debe MEMORIZAR esos 64 ejemplos →
+# val_auc → 1.0.
+#
+# Pure-torch: corre en Windows nativo (no requiere mamba-ssm).
+#
+# PRERREQUISITOS:
+#   - data/splits/tier2_train_tics.csv generado (FASE 2 — preprocess local).
+#   - data/processed/local/<tic>.pt poblado.
+#   - LightCurveDataset extendido para leer local_dir (FASE 2 también).
+
+experiment:
+  name: "astronet_multibranch_sanity_overfit"
+  seed: 42
+  output_dir: "experiments"
+
+data:
+  train_csv: "data/splits/tier2_train_tics.csv"
+  val_csv: "data/splits/tier2_train_tics.csv"   # SÍ, val = train (verificar memorización)
+  processed_dir: "data/processed/global"
+  local_dir: "data/processed/local"
+  batch_size: 8                                 # modelo pesado: bajamos batch incluso en sanity
+  num_workers: 0
+  subset: 64
+
+model:
+  type: "astronet_multibranch"
+  params:
+    global_channels: [16, 32, 64, 128, 256]
+    local_channels: [16, 32]
+    kernel: 5
+    pool_kernel_global: 5
+    pool_kernel_local: 7
+    pool_stride: 2
+    fc_hidden: [512, 512, 512]
+    dropout: 0.0                                # sanity: sin regularización
+
+training:
+  optimizer:
+    type: "adam"
+    lr: 1.0e-3
+    weight_decay: 0.0
+  scheduler:
+    type: "cosine"
+    t_max: 120
+    eta_min: 1.0e-6
+  loss:
+    type: "bce"
+    pos_weight: null      # sanity overfit lo más simple posible (sin pesos de clase)
+  epochs: 120
+  fp16: false             # SANITY: FP32 para descartar inestabilidad
+  gradient_checkpointing: false
+  grad_clip: 1.0
+
+early_stopping:
+  enabled: false
+
+logging:
+  tensorboard: true
+  log_every_n_steps: 5

@@ -1,0 +1,67 @@
+# AstroNet multibranch — reproducción fiel Shallue & Vanderburg 2018
+# sobre splits Tier 2 (Fase 11). Pure-torch: corre en Windows nativo.
+#
+# Modelo "pesado": 5 bloques globales (hasta 256 canales) + 3 FC de 512.
+# Restricciones operativas en RTX 3050 (4 GB VRAM):
+#   - batch_size=8 (no 16): los FC de 512 + activaciones de 256 canales explotan.
+#   - fp16=true (CRÍTICO): sin FP16 se queda sin VRAM.
+#   - gradient_checkpointing=true: trade-off VRAM por cómputo extra (~20% lento).
+#   - lr=1e-4 (más bajo que CNN baseline): modelo grande, gradientes más ruidosos.
+#
+# Antes de correr este config:
+#   1. python scripts/preprocess_local.py    # FASE 2: genera data/processed/local
+#   2. python scripts/make_tier2_splits.py   # FASE 2: genera splits Tier 2
+#   3. python scripts/train.py --config configs/astronet_multibranch_sanity.yaml
+#   4. Recién entonces este config.
+
+experiment:
+  name: "astronet_multibranch"
+  seed: 42
+  output_dir: "experiments"
+
+data:
+  train_csv: "data/splits/tier2_train_tics.csv"
+  val_csv: "data/splits/tier2_val_tics.csv"
+  processed_dir: "data/processed/global"
+  local_dir: "data/processed/local"
+  batch_size: 8
+  num_workers: 2
+
+model:
+  type: "astronet_multibranch"
+  params:
+    global_channels: [16, 32, 64, 128, 256]
+    local_channels: [16, 32]
+    kernel: 5
+    pool_kernel_global: 5
+    pool_kernel_local: 7
+    pool_stride: 2
+    fc_hidden: [512, 512, 512]
+    dropout: 0.3
+
+training:
+  optimizer:
+    type: "adam"
+    lr: 1.0e-4            # modelo grande: lr más bajo que CNN single-branch
+    weight_decay: 1.0e-4
+  scheduler:
+    type: "cosine"
+    t_max: 50
+    eta_min: 1.0e-7
+  loss:
+    type: "bce"
+    pos_weight: "balanced"
+  epochs: 50
+  fp16: true              # CRÍTICO: sin FP16 da OOM en RTX 3050 4GB
+  gradient_checkpointing: true
+  grad_clip: 1.0
+
+early_stopping:
+  enabled: true
+  metric: "val_auc"
+  patience: 10
+  mode: "max"
+
+logging:
+  tensorboard: true
+  log_every_n_steps: 10

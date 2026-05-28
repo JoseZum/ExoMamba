@@ -1,0 +1,72 @@
+# ExoMamba V1 — Mamba global + CNN local sobre splits Tier 2 (Fase 10).
+#
+# REQUIERE WSL2 + Ubuntu 24.04 + mamba-ssm. NO corre en Windows nativo.
+# Antes de correr este config:
+#   1. Setup WSL2: ver docs/WSL2_SETUP.md
+#   2. python scripts/preprocess_local.py    # FASE 2: genera data/processed/local
+#   3. python scripts/make_tier2_splits.py   # FASE 2: genera splits Tier 2
+#   4. python scripts/train.py --config configs/exomamba_v1_sanity.yaml  # debe llegar val_auc=1.0
+#   5. Recién entonces este config con el split Tier 2 completo.
+#
+# Hiperparámetros del Mamba encoder copiados de configs/mamba_small.yaml
+# (sweet spot ya validado en Tier 1). La rama local + cabeza usan defaults.
+
+experiment:
+  name: "exomamba_v1"
+  seed: 42
+  output_dir: "experiments"
+
+data:
+  train_csv: "data/splits/tier2_train_tics.csv"
+  val_csv: "data/splits/tier2_val_tics.csv"
+  processed_dir: "data/processed/global"
+  local_dir: "data/processed/local"
+  batch_size: 16
+  num_workers: 2
+
+model:
+  type: "exomamba_v1"
+  params:
+    # Mamba encoder (mismos hiperparámetros que mamba_small)
+    in_channels: 1
+    d_model: 64
+    d_state: 16
+    d_conv: 4
+    expand: 2
+    n_layers: 4
+    mamba_dropout: 0.1
+    standardize: true
+    # CNN local (defaults)
+    local_channels: [16, 32, 64]
+    local_kernel: 5
+    local_dropout: 0.0
+    # Cabeza de fusión
+    head_hidden: 64
+    head_dropout: 0.3
+
+training:
+  optimizer:
+    type: "adamw"
+    lr: 1.5e-3            # sweet spot heredado de mamba_small
+    weight_decay: 1.0e-4
+  scheduler:
+    type: "cosine"
+    t_max: 50
+    eta_min: 1.0e-6
+  loss:
+    type: "bce"
+    pos_weight: "balanced"
+  epochs: 50
+  fp16: false             # FP32 para baseline estable; activar FP16 si OOM o muy lento
+  gradient_checkpointing: false
+  grad_clip: 1.0          # defensa estándar para Mamba
+
+early_stopping:
+  enabled: true
+  metric: "val_auc"
+  patience: 10
+  mode: "max"
+
+logging:
+  tensorboard: true
+  log_every_n_steps: 10
