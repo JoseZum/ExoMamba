@@ -62,12 +62,21 @@ from exoplanet.models.base import BaseModel
 
 
 def _conv_pair(in_ch: int, out_ch: int, kernel: int) -> nn.Sequential:
-    """Par de Conv1d + ReLU (sin BN, fiel al paper) con padding 'same'."""
+    """Par de Conv1d + BatchNorm + ReLU con padding 'same'.
+
+    BatchNorm es necesaria: las curvas TESS están normalizadas a mediana=1 con
+    variaciones de ~0.001-0.01. Sin BN, las activaciones después de 5 bloques
+    colapsan a ~0 (dead ReLU) y el modelo nunca aprende (sanity overfit estanca
+    en train_loss ≈ ln(2)). Shallue & Vanderburg 2018 (Tabla 2) usan BN en cada
+    capa convolucional; lo replicamos aquí.
+    """
     pad = kernel // 2
     return nn.Sequential(
         nn.Conv1d(in_ch, out_ch, kernel_size=kernel, padding=pad),
+        nn.BatchNorm1d(out_ch),
         nn.ReLU(inplace=True),
         nn.Conv1d(out_ch, out_ch, kernel_size=kernel, padding=pad),
+        nn.BatchNorm1d(out_ch),
         nn.ReLU(inplace=True),
     )
 
