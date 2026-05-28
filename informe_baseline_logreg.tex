@@ -1,0 +1,578 @@
+
+\documentclass[12pt,letterpaper]{article}
+
+% ---------------------------------------------------------
+% Paquetes básicos
+% ---------------------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage{times}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{caption}
+
+% ---------------------------------------------------------
+% Configuración de página
+% ---------------------------------------------------------
+\geometry{
+    left=2.5cm,
+    right=2.5cm,
+    top=2.5cm,
+    bottom=2.5cm
+}
+
+\onehalfspacing
+\setlength{\parindent}{1.25cm}
+\setlength{\parskip}{0.2cm}
+
+% ---------------------------------------------------------
+% Configuración de enlaces
+% ---------------------------------------------------------
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    citecolor=black,
+    urlcolor=blue
+}
+
+% ---------------------------------------------------------
+% Configuración para código fuente
+% ---------------------------------------------------------
+\definecolor{codegray}{RGB}{245,245,245}
+\definecolor{codeblue}{RGB}{0,70,140}
+\definecolor{codegreen}{RGB}{0,110,60}
+\definecolor{codered}{RGB}{160,30,30}
+
+\lstdefinestyle{pythonstyle}{
+    backgroundcolor=\color{codegray},
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{codeblue}\bfseries,
+    commentstyle=\color{codegreen},
+    stringstyle=\color{codered},
+    numbers=left,
+    numberstyle=\tiny,
+    stepnumber=1,
+    numbersep=8pt,
+    frame=single,
+    breaklines=true,
+    tabsize=4,
+    showstringspaces=false,
+    language=Python
+}
+
+% ---------------------------------------------------------
+% Datos del documento
+% ---------------------------------------------------------
+\title{
+    \textbf{Análisis del Baseline de Regresión Logística para la Clasificación de Candidatos Exoplanetarios}\\
+    \large Proyecto ExoMamba
+}
+
+\author{
+    Nombre del estudiante: \underline{\hspace{7cm}}\\
+    Curso: Inteligencia Artificial\\
+    Profesor(a): \underline{\hspace{7cm}}
+}
+
+\date{\today}
+
+\begin{document}
+
+\newpage
+
+\tableofcontents
+
+\newpage
+
+% ---------------------------------------------------------
+\section{Objetivo del script}
+% ---------------------------------------------------------
+
+El objetivo principal del script \texttt{train\_logreg.py} es entrenar un baseline de regresión logística para clasificar registros del catálogo TOI en dos clases:
+
+\begin{itemize}
+    \item \textbf{Clase 0:} falso positivo, identificado como \texttt{FP}.
+    \item \textbf{Clase 1:} candidato planetario o planeta confirmado, identificado como \texttt{PC} o \texttt{CP}.
+\end{itemize}
+
+El modelo utiliza tres variables de entrada:
+
+\begin{itemize}
+    \item \texttt{pl\_orbper}: período orbital estimado del objeto.
+    \item \texttt{pl\_trandep}: profundidad del tránsito.
+    \item \texttt{st\_tmag}: magnitud aparente de la estrella en la banda TESS.
+\end{itemize}
+
+Estas variables se seleccionan porque representan información física básica del sistema observado. Sin embargo, no contienen toda la información disponible en las curvas de luz. Por esta razón, el modelo debe entenderse como un punto de partida, no como la solución final del problema.
+
+% ---------------------------------------------------------
+\section{Descripción general del flujo del código}
+% ---------------------------------------------------------
+
+El script sigue una estructura modular. Cada función se encarga de una parte específica del proceso. Esta separación facilita la lectura, depuración y mantenimiento del código. El flujo general se resume de la siguiente forma:
+
+\begin{enumerate}
+    \item Definir las variables de entrada y rutas de archivos.
+    \item Cargar los archivos CSV desde la carpeta \texttt{data/splits}.
+    \item Normalizar la columna \texttt{tid} para evitar errores en los \textit{merge}.
+    \item Unir los archivos de entrenamiento y validación con el resumen TOI.
+    \item Corregir columnas duplicadas generadas por \texttt{pandas}.
+    \item Crear o recuperar la columna objetivo \texttt{label}.
+    \item Eliminar filas con valores faltantes.
+    \item Separar las variables independientes \texttt{X} y la variable dependiente \texttt{y}.
+    \item Escalar las variables numéricas con \texttt{StandardScaler}.
+    \item Entrenar una regresión logística.
+    \item Evaluar el modelo en el conjunto de validación.
+    \item Guardar los resultados en un archivo de texto.
+\end{enumerate}
+
+% ---------------------------------------------------------
+\section{Archivos utilizados}
+% ---------------------------------------------------------
+
+El código trabaja con archivos ubicados en la carpeta:
+
+\begin{center}
+\texttt{data/splits/}
+\end{center}
+
+Los archivos principales son los siguientes:
+
+\begin{table}[H]
+\centering
+\caption{Archivos utilizados por el script}
+\begin{tabular}{p{4cm} p{10cm}}
+\toprule
+\textbf{Archivo} & \textbf{Función dentro del código} \\
+\midrule
+\texttt{toi\_summary.csv} & Contiene información tabular de los objetos TOI, como el período orbital, profundidad del tránsito, magnitud TESS y disposición del objeto. \\
+\texttt{train\_tics.csv} & Define cuáles registros pertenecen al conjunto de entrenamiento. \\
+\texttt{val\_tics.csv} & Define cuáles registros pertenecen al conjunto de validación. \\
+\texttt{tics\_labeled.csv} & Puede contener etiquetas ya procesadas para los objetos. Si existe, se utiliza dentro del proceso de unión. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+La separación entre entrenamiento y validación es fundamental. El modelo aprende a partir del conjunto de entrenamiento y se evalúa con datos que no fueron utilizados durante el ajuste de parámetros. Esto permite estimar de forma más realista su capacidad de generalización.
+
+% ---------------------------------------------------------
+\section{Carga y preparación de datos}
+% ---------------------------------------------------------
+
+La carga de datos se realiza mediante la función \texttt{load\_data()}. Esta función lee los archivos CSV y ejecuta las uniones necesarias utilizando la columna \texttt{tid}. Esta columna representa el identificador del objeto y funciona como llave para relacionar las tablas.
+
+Antes de realizar las uniones, el código normaliza la columna \texttt{tid} mediante la función \texttt{normalize\_tid()}. Esta operación convierte los identificadores a tipo texto. Esto es importante porque, si en un archivo \texttt{tid} se interpreta como número entero y en otro como texto, el \textit{merge} puede fallar o producir menos coincidencias de las esperadas.
+
+\begin{lstlisting}[style=pythonstyle, caption={Normalización de la columna tid}]
+def normalize_tid(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+
+    if "tid" not in df.columns:
+        raise KeyError(
+            f"No se encontró la columna 'tid'. Columnas disponibles: {df.columns.tolist()}"
+        )
+
+    df["tid"] = df["tid"].astype(str)
+
+    return df
+\end{lstlisting}
+
+Esta parte del código ayuda a evitar errores silenciosos. Un error silencioso ocurre cuando el programa no falla directamente, pero genera resultados incorrectos, por ejemplo, una tabla con menos filas debido a uniones mal realizadas.
+
+% ---------------------------------------------------------
+\section{Manejo de etiquetas}
+% ---------------------------------------------------------
+
+El modelo necesita una variable objetivo numérica. En este caso, la columna objetivo se llama \texttt{label}. La codificación utilizada es:
+
+\begin{table}[H]
+\centering
+\caption{Codificación de clases}
+\begin{tabular}{c c p{7cm}}
+\toprule
+\textbf{Valor original} & \textbf{Etiqueta numérica} & \textbf{Interpretación} \\
+\midrule
+\texttt{FP} & 0 & Falso positivo. \\
+\texttt{PC} & 1 & Candidato planetario. \\
+\texttt{CP} & 1 & Planeta confirmado. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+La función \texttt{create\_label\_from\_tfopwg()} se encarga de crear la etiqueta numérica a partir de la columna \texttt{tfopwg\_disp}. Esta conversión es necesaria porque los modelos de clasificación de \texttt{scikit-learn} requieren que la variable objetivo esté representada de forma numérica o categórica claramente definida.
+
+\begin{lstlisting}[style=pythonstyle, caption={Creación de la columna label}]
+label_map = {
+    "FP": 0,
+    "PC": 1,
+    "CP": 1,
+}
+
+df[LABEL_COLUMN] = (
+    df["tfopwg_disp"]
+    .astype(str)
+    .str.strip()
+    .str.upper()
+    .map(label_map)
+)
+\end{lstlisting}
+
+Además, el código incluye la función \texttt{fix\_label\_column()}, la cual corrige problemas producidos por columnas duplicadas. Cuando \texttt{pandas} detecta columnas repetidas durante un \textit{merge}, agrega sufijos como \texttt{\_x} y \texttt{\_y}. Por eso pueden aparecer columnas como \texttt{label\_x} y \texttt{label\_y}. La función revisa estas posibilidades y crea una columna final llamada \texttt{label}.
+
+% ---------------------------------------------------------
+\section{Manejo de columnas duplicadas}
+% ---------------------------------------------------------
+
+Durante el desarrollo del script se detectó que algunas columnas aparecían duplicadas después de las operaciones de unión. Por ejemplo:
+
+\begin{center}
+\texttt{pl\_orbper\_x}, \texttt{pl\_orbper\_y}, \texttt{st\_tmag\_x}, \texttt{st\_tmag\_y}
+\end{center}
+
+Esto ocurre porque más de un archivo contiene columnas con el mismo nombre. Para resolverlo, se creó la función \texttt{fix\_feature\_columns()}, cuyo objetivo es generar columnas limpias con los nombres requeridos por el modelo:
+
+\begin{center}
+\texttt{pl\_orbper}, \texttt{pl\_trandep}, \texttt{st\_tmag}
+\end{center}
+
+\begin{lstlisting}[style=pythonstyle, caption={Corrección de columnas duplicadas}]
+for feature in FEATURES:
+    if feature in df.columns:
+        continue
+
+    feature_x = f"{feature}_x"
+    feature_y = f"{feature}_y"
+
+    if feature_x in df.columns:
+        df[feature] = df[feature_x]
+    elif feature_y in df.columns:
+        df[feature] = df[feature_y]
+\end{lstlisting}
+
+Esta corrección es importante porque el modelo espera encontrar columnas con nombres exactos. Si las columnas quedan con sufijos \texttt{\_x} o \texttt{\_y}, el código no puede seleccionar las variables de entrada y genera errores.
+
+% ---------------------------------------------------------
+\section{Selección de variables de entrada}
+% ---------------------------------------------------------
+
+Las variables utilizadas por el modelo son:
+
+\begin{lstlisting}[style=pythonstyle, caption={Variables de entrada del modelo}]
+FEATURES = ["pl_orbper", "pl_trandep", "st_tmag"]
+\end{lstlisting}
+
+Cada una aporta información distinta:
+
+\begin{itemize}
+    \item \textbf{\texttt{pl\_orbper}:} representa el período orbital. Puede asociarse con la regularidad temporal de los tránsitos detectados.
+    \item \textbf{\texttt{pl\_trandep}:} representa la profundidad del tránsito. Una mayor profundidad indica una caída más pronunciada en la luz observada.
+    \item \textbf{\texttt{st\_tmag}:} representa la magnitud aparente de la estrella observada por TESS. Esta variable se relaciona con el brillo aparente de la estrella.
+\end{itemize}
+
+Estas variables son simples y tabulares. Por tanto, el modelo no analiza directamente la forma completa de la curva de luz. Esto limita su capacidad predictiva, pero permite construir una referencia inicial rápida y fácil de interpretar.
+
+% ---------------------------------------------------------
+\section{Eliminación de valores faltantes}
+% ---------------------------------------------------------
+
+Antes de entrenar el modelo, el código elimina filas con valores faltantes en las variables necesarias:
+
+\begin{lstlisting}[style=pythonstyle, caption={Eliminación de valores faltantes}]
+required_columns = FEATURES + [LABEL_COLUMN]
+
+train_df = train_df.dropna(subset=required_columns).copy()
+val_df = val_df.dropna(subset=required_columns).copy()
+\end{lstlisting}
+
+Esta etapa es necesaria porque la regresión logística no puede operar directamente con valores nulos. Eliminar estos registros garantiza que todas las filas utilizadas tengan información completa en las variables de entrada y en la etiqueta.
+
+% ---------------------------------------------------------
+\section{Escalamiento de variables}
+% ---------------------------------------------------------
+
+El script utiliza \texttt{StandardScaler} para escalar las variables numéricas. El escalamiento transforma las variables para que tengan media cercana a cero y desviación estándar cercana a uno.
+
+\begin{lstlisting}[style=pythonstyle, caption={Escalamiento de datos}]
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+\end{lstlisting}
+
+Este paso es especialmente importante en regresión logística porque las variables pueden estar en escalas distintas. Por ejemplo, la profundidad del tránsito puede tener valores de magnitud diferente al período orbital o a la magnitud TESS. Sin escalamiento, una variable podría tener mayor influencia numérica solo por su escala, no necesariamente por su importancia real.
+
+Un detalle metodológico relevante es que el escalador se ajusta únicamente con los datos de entrenamiento. En validación se utiliza:
+
+\begin{lstlisting}[style=pythonstyle, caption={Transformación del conjunto de validación}]
+X_val_scaled = scaler.transform(X_val)
+\end{lstlisting}
+
+Esto evita el \textit{data leakage}, que ocurre cuando información del conjunto de validación o prueba se filtra durante el entrenamiento. Si se usara \texttt{fit\_transform()} también sobre validación, el modelo estaría utilizando información estadística de datos que deberían permanecer externos al proceso de entrenamiento.
+
+% ---------------------------------------------------------
+\section{Modelo de regresión logística}
+% ---------------------------------------------------------
+
+El modelo entrenado es una regresión logística implementada con \texttt{scikit-learn}:
+
+\begin{lstlisting}[style=pythonstyle, caption={Entrenamiento del modelo}]
+model = LogisticRegression(
+    class_weight="balanced",
+    max_iter=1000,
+    random_state=42,
+)
+
+model.fit(X_train_scaled, y_train)
+\end{lstlisting}
+
+La regresión logística estima la probabilidad de que una observación pertenezca a la clase positiva. En este caso, la clase positiva corresponde a \texttt{PC/CP}. Matemáticamente, el modelo puede expresarse como:
+
+\begin{equation}
+P(y=1|X)=\frac{1}{1+e^{-(\beta_0+\beta_1x_1+\beta_2x_2+\beta_3x_3)}}
+\end{equation}
+
+donde $x_1$, $x_2$ y $x_3$ representan las variables de entrada, y los coeficientes $\beta$ determinan el peso de cada variable en la clasificación.
+
+El parámetro \texttt{class\_weight="balanced"} se utiliza para compensar posibles diferencias en la cantidad de ejemplos de cada clase. Aunque en este caso las clases están relativamente balanceadas, mantener esta opción ayuda a que el modelo no favorezca excesivamente una clase sobre otra.
+
+El parámetro \texttt{max\_iter=1000} permite que el algoritmo tenga suficientes iteraciones para converger, mientras que \texttt{random\_state=42} contribuye a que los resultados sean reproducibles.
+
+% ---------------------------------------------------------
+\section{Evaluación del modelo}
+% ---------------------------------------------------------
+
+La evaluación se realiza sobre el conjunto de validación. El código calcula predicciones de clase y probabilidades:
+
+\begin{lstlisting}[style=pythonstyle, caption={Predicción en validación}]
+y_pred = model.predict(X_val_scaled)
+y_prob = model.predict_proba(X_val_scaled)[:, 1]
+\end{lstlisting}
+
+Las predicciones \texttt{y\_pred} contienen la clase estimada por el modelo, mientras que \texttt{y\_prob} contiene la probabilidad asignada a la clase positiva. A partir de estos valores se calculan varias métricas:
+
+\begin{itemize}
+    \item \textbf{AUC-ROC:} mide la capacidad del modelo para separar ambas clases considerando distintos umbrales.
+    \item \textbf{Precision:} indica cuántas predicciones positivas fueron realmente positivas.
+    \item \textbf{Recall:} indica cuántos positivos reales fueron detectados correctamente.
+    \item \textbf{F1-score:} combina precision y recall en una sola métrica.
+    \item \textbf{Accuracy:} indica el porcentaje total de predicciones correctas.
+\end{itemize}
+
+% ---------------------------------------------------------
+\section{Resultados obtenidos}
+% ---------------------------------------------------------
+
+Después de ejecutar el script, se obtuvieron los resultados mostrados en la Tabla \ref{tab:filas}.
+
+\begin{table}[H]
+\centering
+\caption{Cantidad de registros antes y después de eliminar valores faltantes}
+\label{tab:filas}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Conjunto} & \textbf{Antes de eliminar nulos} & \textbf{Después de eliminar nulos} \\
+\midrule
+Entrenamiento & 1407 & 1390 \\
+Validación & 315 & 310 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+La pérdida de registros fue baja. En entrenamiento se eliminaron 17 filas y en validación se eliminaron 5 filas. Esto indica que la mayoría de los registros contenían la información necesaria para el modelo.
+
+La distribución de clases se presenta en la Tabla \ref{tab:clases}.
+
+\begin{table}[H]
+\centering
+\caption{Distribución de clases después de la limpieza}
+\label{tab:clases}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Conjunto} & \textbf{FP, clase 0} & \textbf{PC/CP, clase 1} \\
+\midrule
+Entrenamiento & 686 & 704 \\
+Validación & 146 & 164 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+La distribución es relativamente balanceada. En entrenamiento hay 686 falsos positivos y 704 candidatos o planetas. En validación hay 146 falsos positivos y 164 candidatos o planetas. Esto permite evaluar el modelo sin que una clase domine excesivamente sobre la otra.
+
+Las métricas generales obtenidas en validación se presentan en la Tabla \ref{tab:metricas}.
+
+\begin{table}[H]
+\centering
+\caption{Métricas generales en el conjunto de validación}
+\label{tab:metricas}
+\begin{tabular}{lc}
+\toprule
+\textbf{Métrica} & \textbf{Valor} \\
+\midrule
+AUC-ROC & 0.5260 \\
+F1-score & 0.4702 \\
+Recall & 0.4329 \\
+Precision & 0.5145 \\
+Accuracy & 0.48 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+También se obtuvo el reporte de clasificación mostrado en la Tabla \ref{tab:classification}.
+
+\begin{table}[H]
+\centering
+\caption{Reporte de clasificación por clase}
+\label{tab:classification}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Clase} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-score} & \textbf{Support} \\
+\midrule
+FP (0) & 0.46 & 0.54 & 0.50 & 146 \\
+PC/CP (1) & 0.51 & 0.43 & 0.47 & 164 \\
+\midrule
+Macro avg & 0.49 & 0.49 & 0.48 & 310 \\
+Weighted avg & 0.49 & 0.48 & 0.48 & 310 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Finalmente, los coeficientes del modelo se muestran en la Tabla \ref{tab:coeficientes}.
+
+\begin{table}[H]
+\centering
+\caption{Coeficientes de la regresión logística}
+\label{tab:coeficientes}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Variable} & \textbf{Coeficiente} & \textbf{Importancia absoluta} \\
+\midrule
+\texttt{st\_tmag} & -0.514488 & 0.514488 \\
+\texttt{pl\_orbper} & 0.072179 & 0.072179 \\
+\texttt{pl\_trandep} & 0.057635 & 0.057635 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ---------------------------------------------------------
+\section{Interpretación de resultados}
+% ---------------------------------------------------------
+
+Los resultados muestran que el modelo fue capaz de ejecutarse correctamente, cargar los datos, entrenarse y producir métricas de validación. Sin embargo, su desempeño predictivo es bajo.
+
+El valor de AUC-ROC fue de 0.5260. Un valor de 0.5 corresponde aproximadamente a un clasificador aleatorio, mientras que un valor de 1.0 representa una separación perfecta entre clases. Por lo tanto, el resultado obtenido indica que el modelo apenas supera el comportamiento aleatorio. Esto sugiere que las tres variables tabulares utilizadas no contienen suficiente información discriminativa para separar adecuadamente los falsos positivos de los candidatos planetarios.
+
+El accuracy fue de 0.48, lo cual significa que el modelo acertó aproximadamente el 48\% de los casos de validación. Debido a que el conjunto de validación está relativamente balanceado, este valor también indica un rendimiento débil.
+
+En cuanto a la clase positiva, \texttt{PC/CP}, el modelo obtuvo una precision de 0.51 y un recall de 0.43. Esto significa que, cuando el modelo predice que un objeto es candidato o planeta, acierta aproximadamente el 51\% de las veces. Sin embargo, solo detecta correctamente cerca del 43\% de los candidatos o planetas reales. En otras palabras, el modelo deja sin detectar una cantidad considerable de objetos de la clase positiva.
+
+Para la clase \texttt{FP}, el recall fue de 0.54, lo que indica que el modelo identifica correctamente cerca del 54\% de los falsos positivos. Aun así, este valor tampoco es suficientemente alto para considerar que el modelo tenga una capacidad de clasificación confiable.
+
+% ---------------------------------------------------------
+\section{Interpretación de los coeficientes}
+% ---------------------------------------------------------
+
+Los coeficientes de la regresión logística permiten identificar cuáles variables influyen más en la clasificación. En este caso, la variable con mayor importancia absoluta fue \texttt{st\_tmag}, con un coeficiente de -0.514488. Esto indica que, dentro de este modelo, la magnitud TESS tuvo el mayor peso relativo en la decisión.
+
+El signo negativo del coeficiente implica que, cuando \texttt{st\_tmag} aumenta, la probabilidad de clasificar el objeto como \texttt{PC/CP} disminuye. En términos generales, una mayor magnitud corresponde a una fuente menos brillante. Por tanto, el modelo está captando una relación entre el brillo aparente y la clasificación final.
+
+Las otras variables tuvieron coeficientes mucho menores. \texttt{pl\_orbper} obtuvo una importancia absoluta de 0.072179 y \texttt{pl\_trandep} una importancia absoluta de 0.057635. Esto significa que, bajo este modelo lineal y con estas variables escaladas, el período orbital y la profundidad del tránsito tuvieron poca influencia relativa en la clasificación.
+
+No obstante, estos coeficientes deben interpretarse con cautela. Un coeficiente bajo no significa necesariamente que la variable sea irrelevante en términos físicos. Puede indicar que, dentro de una regresión logística lineal y usando únicamente estas tres variables, la relación entre la variable y la clase no es suficientemente fuerte o no es lineal.
+
+% ---------------------------------------------------------
+\section{Importancia del baseline}
+% ---------------------------------------------------------
+
+Aunque el rendimiento obtenido no es alto, el baseline es importante por varias razones.
+
+Primero, permite verificar que el flujo de datos funciona correctamente. El script confirma que los archivos pueden cargarse, que las tablas pueden unirse mediante \texttt{tid}, que las etiquetas pueden procesarse y que las variables de entrada pueden ser utilizadas para entrenar un modelo.
+
+Segundo, establece una referencia inicial. Cualquier modelo más avanzado desarrollado posteriormente debería superar este rendimiento. Por ejemplo, si una red neuronal convolucional, un modelo recurrente o una arquitectura tipo Mamba obtiene resultados similares o peores que este baseline, sería necesario revisar el preprocesamiento, la arquitectura, los hiperparámetros o la calidad de los datos utilizados.
+
+Tercero, el baseline ayuda a comprender las limitaciones de las variables tabulares simples. Los resultados sugieren que \texttt{pl\_orbper}, \texttt{pl\_trandep} y \texttt{st\_tmag}, por sí solas, no capturan suficiente información para resolver adecuadamente el problema. Esto justifica el uso posterior de información más rica, como curvas de luz completas o características derivadas más complejas.
+
+% ---------------------------------------------------------
+\section{Limitaciones del enfoque}
+% ---------------------------------------------------------
+
+El enfoque implementado presenta varias limitaciones:
+
+\begin{itemize}
+    \item Solo utiliza tres variables tabulares, por lo que ignora la forma completa de la curva de luz.
+    \item La regresión logística es un modelo lineal, por lo que puede no capturar relaciones no lineales complejas.
+    \item Se agrupan los objetos \texttt{PC} y \texttt{CP} en una sola clase positiva, lo cual simplifica el problema.
+    \item El rendimiento obtenido está cerca del azar, por lo que no debería utilizarse como modelo final.
+    \item No se realizó búsqueda de hiperparámetros ni comparación con otras combinaciones de variables.
+\end{itemize}
+
+Estas limitaciones no invalidan el experimento. Más bien, permiten entender el alcance real del baseline y justifican la necesidad de modelos más avanzados.
+
+% ---------------------------------------------------------
+\section{Conclusiones}
+% ---------------------------------------------------------
+
+El script \texttt{train\_logreg.py} implementa correctamente un flujo completo de entrenamiento y evaluación para un baseline de regresión logística. El código carga los datos del proyecto, corrige problemas derivados de columnas duplicadas, crea una etiqueta binaria, elimina valores faltantes, escala las variables, entrena el modelo y genera métricas de validación.
+
+Los resultados muestran que el modelo obtuvo un AUC-ROC de 0.5260 y un accuracy de 0.48. Estos valores indican un desempeño cercano al azar. La clase positiva \texttt{PC/CP} presentó un recall de 0.43 y una precision de 0.51, lo que evidencia que el modelo tiene dificultades para detectar correctamente candidatos planetarios.
+
+La variable más influyente fue \texttt{st\_tmag}, mientras que \texttt{pl\_orbper} y \texttt{pl\_trandep} tuvieron menor peso relativo. Esto sugiere que, dentro de este modelo, la magnitud TESS aporta más información que las otras dos variables. Sin embargo, el bajo rendimiento global indica que estas variables no son suficientes para resolver el problema de clasificación de forma robusta.
+
+En conclusión, el modelo cumple su función como baseline. Su importancia radica en proporcionar una referencia inicial para comparar futuros modelos más complejos. El bajo desempeño obtenido refuerza la necesidad de utilizar enfoques que incorporen más información, como curvas de luz, características temporales o arquitecturas avanzadas de aprendizaje profundo.
+
+% ---------------------------------------------------------
+\section{Recomendaciones}
+% ---------------------------------------------------------
+
+Con base en los resultados obtenidos, se recomienda:
+
+\begin{enumerate}
+    \item Probar nuevas combinaciones de variables tabulares disponibles en el catálogo TOI.
+    \item Evaluar otros modelos clásicos, como árboles de decisión, Random Forest o Gradient Boosting.
+    \item Incorporar características derivadas de las curvas de luz.
+    \item Comparar el baseline con modelos más complejos usando las mismas particiones de entrenamiento, validación y prueba.
+    \item Reservar el conjunto de prueba para una evaluación final, evitando utilizarlo durante el ajuste del modelo.
+\end{enumerate}
+
+% ---------------------------------------------------------
+\appendix
+\section{Fragmento principal del flujo del script}
+% ---------------------------------------------------------
+
+\begin{lstlisting}[style=pythonstyle, caption={Flujo principal del script}]
+def main() -> None:
+    train_df, val_df = load_data()
+
+    X_train, y_train, X_val, y_val, train_rows, val_rows = prepare_xy(
+        train_df,
+        val_df,
+    )
+
+    scaler, model = train_model(X_train, y_train)
+
+    metrics = evaluate_model(
+        scaler,
+        model,
+        X_val,
+        y_val,
+    )
+
+    feature_importance = get_feature_importance(model)
+
+    save_report(
+        metrics,
+        feature_importance,
+        train_rows,
+        val_rows,
+    )
+\end{lstlisting}
+
+Este fragmento resume el flujo general: carga de datos, preparación de variables, entrenamiento, evaluación y almacenamiento de resultados.
+
+\end{document}
