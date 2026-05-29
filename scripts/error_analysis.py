@@ -55,10 +55,14 @@ QUADRANTS = ("TP", "TN", "FN", "FP")
 # ---------------------------------------------------------------------------
 def _load_predictions(path: Path, threshold: float) -> pd.DataFrame:
     df = pd.read_csv(path)
+    # Aceptar tanto `y_prob` (single-model) como `y_prob_mean` (ensemble_eval.py).
+    if "y_prob" not in df.columns and "y_prob_mean" in df.columns:
+        df = df.rename(columns={"y_prob_mean": "y_prob"})
     required = {"tic_id", "y_true", "y_prob"}
     if not required.issubset(df.columns):
         raise ValueError(
-            f"predictions.csv debe tener {required}; trae {set(df.columns)}"
+            f"predictions.csv debe tener {required} (o `y_prob_mean` en ensemble); "
+            f"trae {set(df.columns)}"
         )
     if "y_pred" not in df.columns:
         df["y_pred"] = (df["y_prob"] >= threshold).astype(int)
