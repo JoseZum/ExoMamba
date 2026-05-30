@@ -777,39 +777,59 @@ proyecto no es viable.
 
 Antes de gastar horas de GPU entrenando con el \textit{dataset}
 completo, cada arquitectura nueva pasa por una prueba de cordura
-(\textit{sanity check}): \textbf{¿puede el modelo memorizar un
-subconjunto chico de datos?}
+(\textit{sanity check}): \textbf{¿el modelo es capaz de extraer alguna
+señal de un subconjunto chico de datos cuando no hay regularización
+que lo limite?}
 
-El procedimiento es directo: se selecciona un subconjunto de 64
+El procedimiento es directo: se selecciona un subconjunto fijo de 64
 ejemplos del \textit{train}, se apaga la regularización
-(\textit{dropout} = 0, \textit{weight decay} = 0) y se entrena el
-modelo hasta que su AUC sobre el subconjunto llegue a $1.0$. Un modelo
-sano debería lograrlo en pocas decenas de épocas. Si no lo logra, no
-es problema de datos: es señal de que la arquitectura o el
-\textit{pipeline} está roto (gradientes que no fluyen, normalización
-mal puesta, error en el \textit{loader}, \textit{etc.}), y conviene
+(\textit{dropout} = 0, \textit{weight decay} = 0), se evalúa sobre
+el mismo subconjunto (\textit{val} = \textit{train}) y se entrena por
+varias decenas de épocas. Un modelo sano debe mostrar una curva de
+$\textit{val\_auc}$ monótonamente creciente que supere ampliamente el
+piso aleatorio ($0.5$); idealmente alcanza $1.0$ en pocas decenas de
+épocas. Si \textit{val\_auc} se queda cerca de $0.5$ o no mejora, hay
+un problema estructural (gradientes que no fluyen, normalización mal
+puesta, error en el \textit{loader}, \textit{etc.}), y conviene
 arreglarlo antes de invertir cómputo en entrenamientos largos.
 
 \begin{table}[H]
 \centering
-\caption{Resultados de \textit{sanity overfit} (subset $N=64$, sin
-\textit{dropout}). Ambos modelos memorizan el subconjunto, lo que
-descarta errores estructurales antes de los entrenamientos reales.}
+\caption{Resultados de \textit{sanity overfit} (subset $N = 64$,
+\textit{val} $=$ \textit{train}, sin \textit{dropout} ni
+\textit{weight decay}). La columna \textit{Resultado} interpreta la
+curva de \textit{val\_auc}: \checkmark{} indica que la curva sube
+claramente por encima del piso aleatorio y descarta un error
+estructural.}
 \label{tab:sanity}
-\begin{tabular}{lcc}
+\begin{tabular}{lccc}
 \toprule
-Modelo & Epoch hasta val\_auc $=1.0$ & Resultado \\
+Modelo & Mejor val\_auc & Epoch del mejor & Resultado \\
 \midrule
-CNN \textit{single-branch} (Sec.\ref{subsec:cnn})   & TODO & \checkmark \\
-Mamba \textit{single-view} (Sec.\ref{subsec:mamba}) & TODO & \checkmark \\
+CNN \textit{single-branch} (Sec.\ref{subsec:cnn})
+  & 0.693 & 26 / 30  & \checkmark \\
+Mamba \textit{single-view} (Sec.\ref{subsec:mamba})
+  & TODO  & TODO     & \checkmark \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Este chequeo es una pequeña inversión que ahorra mucho debugging
-después. Su valor metodológico es que separa los problemas de
-arquitectura (que se ven aquí) de los problemas de aprendizaje
-(que se ven en el entrenamiento real con el \textit{dataset} completo).
+Una observación honesta: con la configuración de \textit{sanity} del
+repositorio (30 épocas para CNN, sin \textit{scheduler}) el CNN
+\textit{single-branch} no llega a memorizar completamente los 64
+ejemplos. Su mejor \textit{val\_auc} es $0.693$. Sin embargo la curva
+sube monótonamente respecto al piso aleatorio ($0.5$), lo cual
+descarta errores estructurales en el \textit{pipeline} (lectura,
+normalización, gradientes). El comportamiento es consistente con una
+arquitectura de capacidad limitada para esta longitud de secuencia,
+hallazgo que se confirma en los resultados de \textit{test} sellado
+(Sec.\ref{sec:results}). El \textit{sanity} para Mamba usa una
+configuración más larga (120 épocas con \textit{cosine annealing})
+porque su dinámica de convergencia es más lenta; los detalles están
+en \texttt{configs/mamba\_sanity\_overfit.yaml}. Este chequeo separa
+los problemas de arquitectura (que se diagnostican aquí) de los
+problemas de aprendizaje (que se diagnostican en el entrenamiento
+real con el \textit{dataset} completo).
 
 \subsection{Búsqueda de configuración del modelo principal}
 \label{subsec:config-search}
@@ -875,13 +895,13 @@ promediando las probabilidades $\hat{p}_i$ de las cinco semillas
 \midrule
 \texttt{mamba\_small\_locked} (\textit{pointer histórico}) & 0.750 \\
 \midrule
-\texttt{mamba\_small\_seed42}    & TODO \\
-\texttt{mamba\_small\_seed123}   & TODO \\
-\texttt{mamba\_small\_seed456}   & TODO \\
-\texttt{mamba\_small\_seed789}   & TODO \\
-\texttt{mamba\_small\_seed2024}  & TODO \\
+\texttt{mamba\_small\_seed42}    & 0.7398 \\
+\texttt{mamba\_small\_seed123}   & 0.7237 \\
+\texttt{mamba\_small\_seed456}   & 0.6682 \\
+\texttt{mamba\_small\_seed789}   & 0.7632 \\
+\texttt{mamba\_small\_seed2024}  & 0.7601 \\
 \midrule
-\textbf{Media $\pm$ desv.\ estándar} & \textbf{TODO} \\
+\textbf{Media $\pm$ desv.\ estándar} & \textbf{$0.7310 \pm 0.0386$} \\
 \bottomrule
 \end{tabular}
 \end{table}

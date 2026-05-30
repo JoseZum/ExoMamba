@@ -1,8 +1,8 @@
-"""Funciones de entrenamiento y evaluación por epoch.
+"""
+Funciones de entrenamiento y evaluación por epoch.
 
-Diseño: separamos `train_one_epoch` y `evaluate_one_epoch` del orquestador
-(`runner.py`) para que cada pieza sea testeable por separado y reusable
-(p. ej. evaluate sirve para val y para test final en Fase 9).
+Separamos train_one_epoch y evaluate_one_epoch del orquestador
+(runner.py) para que cada pieza la podamos testear y reusar por separado.
 """
 
 from __future__ import annotations
@@ -40,10 +40,11 @@ def train_one_epoch(
     tb_writer=None,
     global_step_start: int = 0,
 ) -> tuple[float, int]:
-    """Una epoch de entrenamiento. Devuelve (loss promedio, global_step final).
+    """
+    Una epoch de entrenamiento. Devuelve (loss promedio, global_step final).
 
     grad_clip: norma máxima de gradientes (clip_grad_norm_). Crítico para Mamba
-    sobre secuencias largas con FP16 — sin esto, los activations del SSM
+    sobre secuencias largas con FP16 pOrque sin esto, los activations del SSM
     pueden explotar y producir NaN en el backward. None desactiva el clipping.
     """
     model.train()
