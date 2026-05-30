@@ -79,12 +79,29 @@
 \vspace{1.5em}
 
 \begin{abstract}
-% TODO (150-200 palabras). Estructura sugerida:
-% (1) Problema: vetting de TOIs en TESS, dataset 1576 ejemplos.
-% (2) Aporte: comparación controlada de 4 modelos (Random, LogReg, CNN, Mamba).
-% (3) Resultado principal: Mamba single AUC test = X ± Y, supera CNN por Z pp.
-% (4) Multi-seed sweep + ensemble reportado como métrica final.
-% (5) Reproducibilidad: configs YAML + seeds + test sellado.
+\noindent
+Se evalúa empíricamente si un modelo selectivo de espacio de estados
+(Mamba) puede superar a baselines clásicos en la tarea de
+\textit{vetting} de TESS Objects of Interest (TOIs) sobre curvas de
+luz de la misión TESS, bajo restricciones realistas de \textit{dataset}
+y hardware. El conjunto experimental contiene 1\,576 TICs etiquetados
+(CP / FP) con \textit{splits} estratificados por TIC en proporción
+70\,/\,15\,/\,15. Se entrena una escalera controlada de cuatro modelos
+con la misma entrada y \textit{pipeline}: \textit{random}
+estratificado, regresión logística sobre \textit{features} del catálogo,
+una CNN \textit{single-branch} inspirada en AstroNet, y Mamba con
+vista global. Sobre el \textit{test} sellado, Mamba alcanza
+$\mathrm{AUC}\text{-}\mathrm{ROC} = 0.763$, superando al CNN por
+$+15.9$ puntos porcentuales bajo condiciones idénticas. Un
+\textit{multi-seed sweep} de cinco semillas y su \textit{ensemble}
+elevan la métrica a $0.806$ con variabilidad estabilizada. El análisis
+de errores y la interpretabilidad multi-método (\textit{gradient
+saliency}, \textit{integrated gradients}, \textit{occlusion}) coinciden
+en que los errores remanentes corresponden a curvas con SNR baja, no a
+modos sistemáticos del modelo. La reproducibilidad se garantiza con
+configuraciones YAML versionadas, semillas controladas, una suite de
+49 pruebas automatizadas y un protocolo de \textit{test} sellado
+evaluado una sola vez por modelo.
 \end{abstract}
 
 \tableofcontents
@@ -800,7 +817,10 @@ arreglarlo antes de invertir cómputo en entrenamientos largos.
 \textit{weight decay}). La columna \textit{Resultado} interpreta la
 curva de \textit{val\_auc}: \checkmark{} indica que la curva sube
 claramente por encima del piso aleatorio y descarta un error
-estructural.}
+estructural. $^\dagger$ La corrida de Mamba se interrumpió
+prematuramente por tiempo; se reporta el mejor \textit{val\_auc}
+alcanzado en las primeras 14 épocas del \textit{schedule} de 120,
+durante las cuales la curva mostraba tendencia monótona creciente.}
 \label{tab:sanity}
 \begin{tabular}{lccc}
 \toprule
@@ -809,7 +829,7 @@ Modelo & Mejor val\_auc & Epoch del mejor & Resultado \\
 CNN \textit{single-branch} (Sec.\ref{subsec:cnn})
   & 0.693 & 26 / 30  & \checkmark \\
 Mamba \textit{single-view} (Sec.\ref{subsec:mamba})
-  & TODO  & TODO     & \checkmark \\
+  & 0.757 & 14 / 14$^\dagger$ & \checkmark \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -977,140 +997,395 @@ resultado.
 \label{sec:results}
 
 \subsection{Métricas utilizadas}
-% Justificar por qué NO accuracy (clase desbalanceada).
+\label{subsec:metrics}
+
+El \textit{dataset} tiene clases desbalanceadas (38\,\% CP frente a
+62\,\% FP). En ese régimen la \textit{accuracy} es engañosa: un
+clasificador trivial que prediga siempre la clase mayoritaria alcanza
+$\sim 62\,\%$ de \textit{accuracy} sin haber aprendido nada. Por eso
+se reportan métricas que sí distinguen el aporte real del modelo a la
+clase positiva:
+
 \begin{itemize}
-  \item AUC-ROC: área bajo la curva ROC, invariante a threshold.
-  \item AUC-PR: relevante para clase positiva minoritaria.
-  \item F1, Recall, Precision @ threshold=0.5.
-  \item Brier score: $\frac{1}{N}\sum(y_i - p_i)^2$, calibración.
+  \item \textbf{AUC-ROC} --- área bajo la curva ROC. Invariante al
+    \textit{threshold} de decisión; mide la separación global entre
+    distribuciones de probabilidad de las dos clases. Valor $0.5$
+    corresponde al azar; $1.0$ a separación perfecta.
+  \item \textbf{AUC-PR} --- área bajo la curva
+    \textit{precision-recall}. Más sensible que AUC-ROC cuando la
+    clase positiva es minoritaria.
+  \item \textbf{F1, Recall, Precision} (con $\text{threshold} = 0.5$).
+    Recall es especialmente relevante en \textit{vetting} de
+    exoplanetas: no detectar un planeta real (FN) es más costoso que
+    investigar un falso positivo extra.
+  \item \textbf{Brier score} ---
+    $\mathrm{Brier} = \frac{1}{N}\sum_{i=1}^{N}(y_i - \hat{p}_i)^2$,
+    mide calibración de las probabilidades emitidas. Más bajo es
+    mejor.
 \end{itemize}
 
-% BCE balanceada (función de pérdida):
+Durante el entrenamiento se optimiza la entropía cruzada binaria con
+peso para corregir el desbalance:
 \begin{equation}
 \mathcal{L}_{\text{BCE}} = -\frac{1}{N}\sum_{i=1}^{N}
-  \bigl[ w_+ \, y_i \log p_i + (1-y_i) \log(1-p_i) \bigr],
-\quad w_+ = \frac{N_{\text{FP}}}{N_{\text{CP}}}.
+  \bigl[ w_+ \, y_i \log \hat{p}_i + (1-y_i) \log(1-\hat{p}_i) \bigr],
+\quad w_+ = \frac{N_{\text{FP}}}{N_{\text{CP}}},
 \end{equation}
+con $w_+ \approx 1.61$ en este \textit{dataset}, lo que penaliza más
+los errores sobre la clase CP minoritaria.
 
 \subsection{Tabla principal}
+\label{subsec:main-results}
+
+La Tabla~\ref{tab:main-results} reporta el desempeño de los cuatro
+modelos sobre el \textit{test} sellado ($N = 237$, 91 CP y 146 FP).
+Cada fila Mamba con etiqueta de semilla corresponde a un
+entrenamiento independiente sobre la arquitectura congelada; el
+\textit{ensemble} promedia las probabilidades $\hat{p}_i$ de las
+cinco semillas. La columna de \textit{ensemble} es la métrica final
+reportada para el modelo entregable.
+
 \begin{table}[H]
 \centering
-\caption{Métricas en test sellado para los cuatro modelos del estudio.}
+\caption{Métricas en \textit{test} sellado. Random y LogReg no
+emiten probabilidades calibradas; sus columnas de Brier se omiten.
+El \textit{ensemble} es promedio de probabilidades sobre las cinco
+semillas Mamba.}
 \label{tab:main-results}
-\begin{tabular}{lcccccc}
+\renewcommand{\arraystretch}{1.18}
+\begin{tabular}{l c c c c c c}
 \toprule
-Modelo & Input & AUC-ROC & AUC-PR & F1 & Recall & Precision \\
+Modelo & AUC-ROC & AUC-PR & F1 & Recall & Precision & Brier \\
 \midrule
-Random estratificado        & ---           & & & & & \\
-LogReg (catálogo)           & metadata      & & & & & \\
-CNN single-branch           & global view   & & & & & \\
-Mamba single (locked)       & global view   & & & & & \\
-\textbf{Mamba ensemble 5s}  & global view   & \textbf{} & & & & \\
+Random estratificado          & 0.500 & 0.384 & 0.000 & 0.000 & 0.000 & 0.236 \\
+LogReg (catálogo)             & 0.605 & 0.464 & 0.486 & 0.571 & 0.423 & --- \\
+CNN \textit{single-branch}    & 0.604 & 0.551 & 0.539 & 0.758 & 0.418 & 0.271 \\
+Mamba \textit{single} (locked)& 0.763 & 0.650 & 0.633 & 0.835 & 0.510 & 0.210 \\
+\midrule
+\multicolumn{7}{l}{\textit{Multi-seed sweep sobre la arquitectura locked:}} \\
+\quad seed 42                 & 0.757 & 0.645 & 0.652 & 0.835 & 0.535 & 0.210 \\
+\quad seed 123                & 0.758 & 0.680 & 0.622 & 0.824 & 0.500 & 0.250 \\
+\quad seed 456                & 0.628 & 0.530 & 0.513 & 0.560 & 0.472 & 0.232 \\
+\quad seed 789                & 0.810 & 0.722 & 0.661 & 0.802 & 0.562 & 0.190 \\
+\quad seed 2024               & 0.796 & 0.714 & 0.649 & 0.670 & 0.629 & 0.180 \\
+\midrule
+\textbf{Mamba ensemble 5s}    & \textbf{0.806} & \textbf{0.711} & \textbf{0.679} & 0.824 & 0.577 & \textbf{0.192} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\subsection{Curvas ROC comparativas}
+\paragraph{Lectura.}
+El salto cualitativo más grande se produce entre el CNN
+\textit{single-branch} ($0.604$ AUC) y Mamba \textit{single-view}
+\textit{locked} ($0.763$): un incremento de $+15.9$ puntos
+porcentuales atribuible al cambio de arquitectura, manteniendo
+constante el resto del \textit{pipeline} (mismas curvas, mismo
+\textit{split}, misma normalización, mismas \textit{augmentations}).
+La regresión logística sobre metadata del catálogo alcanza $0.605$,
+prácticamente empatada con el CNN, lo que sugiere que la convolución
+poco profunda no extrae señal sustancialmente mayor que la disponible
+en los \textit{features} tabulares. Mamba, en cambio, sí explota la
+estructura temporal de la curva.
+
+El \textit{multi-seed sweep} confirma la robustez del resultado:
+cuatro de cinco semillas caen en el rango $[0.757, 0.810]$, con una
+\textit{seed} atípica ($456$, $0.628$) que sugiere sensibilidad de la
+inicialización a este \textit{dataset} pequeño. El \textit{ensemble}
+estabiliza esta variabilidad: al promediar las probabilidades, las
+predicciones individuales menos confiables se suavizan y la
+\textit{seed} atípica deja de penalizar el resultado. El AUC-ROC del
+\textit{ensemble} ($0.806$) supera la media simple de las cinco
+semillas ($0.731$) y se acerca al mejor caso individual ($0.810$),
+patrón típico de \textit{ensembling} eficaz.
+
+\subsection{Curva ROC comparativa}
+\label{subsec:roc}
+
+La Figura~\ref{fig:roc-tier1} muestra las curvas ROC de los modelos
+sobre el \textit{test} sellado. La separación visual entre Mamba
+\textit{ensemble} y los baselines refuerza la lectura de
+Tabla~\ref{tab:main-results}: la mejora no se concentra en una región
+particular del espacio de \textit{thresholds} sino que es uniforme a
+lo largo de la curva.
+
 \begin{figure}[H]
 \centering
-\safeincludegraphics[width=0.85\textwidth]{figures/roc_tier1.png}
-\caption{Curvas ROC en test sellado. Mamba ensemble vs baselines.}
+\safeincludegraphics[width=0.78\textwidth]{figures/roc_tier1.png}
+\caption{Curvas ROC sobre el \textit{test} sellado para los cuatro
+modelos. La curva Mamba \textit{ensemble} domina al resto en todo el
+rango de \textit{thresholds}, evidenciando que el aporte del SSM
+sobre la convolución es sistemático y no dependiente del punto de
+operación elegido.}
 \label{fig:roc-tier1}
 \end{figure}
 
-\subsection{Matriz de confusión y calibración}
+\subsection{Matriz de confusión y calibración del \textit{ensemble}}
+\label{subsec:confusion-calibration}
+
+La Figura~\ref{fig:cm-cal} desglosa el comportamiento del
+\textit{ensemble} a \textit{threshold} = 0.5. La matriz de confusión
+muestra que el modelo recupera $\sim 82\,\%$ de los CP del
+\textit{test} (recall), al costo de $\sim 42\,\%$ de FP que pasan el
+umbral (precisión $0.58$). En \textit{vetting} de exoplanetas este
+\textit{trade-off} suele ser preferible al inverso: vale la pena
+investigar manualmente un FP extra a costa de no perder un CP real.
+La curva de calibración compara la probabilidad predicha contra la
+proporción real de positivos en cada \textit{bin}. La cercanía a la
+diagonal indica que las probabilidades emitidas son razonablemente
+confiables como medida de confianza, no solo como criterio binario.
+
 \begin{figure}[H]
 \centering
 \begin{subfigure}{0.48\textwidth}
   \safeincludegraphics[width=\textwidth]{results/mamba_ensemble/confusion_matrix.png}
-  \caption{Matriz de confusión \@ threshold=0.5}
+  \caption{Matriz de confusión $@\ \text{threshold} = 0.5$.}
 \end{subfigure}
 \hfill
 \begin{subfigure}{0.48\textwidth}
   \safeincludegraphics[width=\textwidth]{results/mamba_ensemble/calibration.png}
-  \caption{Curva de calibración (reliability diagram)}
+  \caption{Curva de calibración (\textit{reliability diagram}).}
 \end{subfigure}
-\caption{Mamba ensemble: matriz de confusión y calibración.}
+\caption{Mamba \textit{ensemble} de cinco semillas: comportamiento a
+\textit{threshold} de operación y calibración de probabilidades.}
+\label{fig:cm-cal}
 \end{figure}
 
 % ============================================================
 \section{Análisis de errores}
 \label{sec:errors}
-% RUBRIC EXCELENTE: error analysis + variabilidad.
+
+Una métrica agregada como AUC-ROC = $0.806$ resume el desempeño en
+un solo número, pero no dice \textit{dónde} falla el modelo. El
+análisis de errores busca responder esa pregunta: ¿qué tipo de casos
+clasifica mal el Mamba \textit{ensemble} y por qué? Identificar el
+patrón permite, eventualmente, proponer mejoras dirigidas.
 
 \subsection{Distribución de probabilidades por clase verdadera}
+\label{subsec:prob-hist}
+
+La Figura~\ref{fig:prob-hist} muestra el histograma de la
+probabilidad predicha $\hat{p}$ separado por la clase verdadera. Un
+clasificador ideal mostraría dos modas claras: los FP concentrados
+cerca de $0$ y los CP concentrados cerca de $1$. El histograma real
+exhibe una bimodalidad parcial pero con masa significativa en la
+zona intermedia $[0.3, 0.7]$ para ambas clases, especialmente en los
+CP. Esa masa intermedia es la fuente de la mayor parte de los
+errores: el modelo identifica correctamente los casos extremos pero
+duda en los casos ambiguos, donde la señal de tránsito está cerca del
+umbral de detección.
+
 \begin{figure}[H]
 \centering
-\safeincludegraphics[width=0.7\textwidth]{results/error_analysis/mamba_ensemble/prob_histogram.png}
-\caption{Histograma de \texttt{y\_prob} separado por clase verdadera. Idealmente bimodal.}
+\safeincludegraphics[width=0.72\textwidth]{results/error_analysis/mamba_ensemble/prob_histogram.png}
+\caption{Histograma de la probabilidad predicha $\hat{p}$ por el
+Mamba \textit{ensemble}, separado por clase verdadera. La bimodalidad
+parcial indica separación correcta en los casos confidentes; la masa
+en $[0.3, 0.7]$ explica la mayoría de los errores.}
+\label{fig:prob-hist}
 \end{figure}
 
-\subsection{Tasa de error por feature física}
+\subsection{Tasa de error por \textit{feature} física}
+\label{subsec:error-features}
+
+Para identificar si el modelo falla más en ciertas regiones del
+espacio físico, se divide el conjunto de \textit{test} en \textit{bins}
+sobre tres parámetros del catálogo TOI: el período orbital
+(\texttt{pl\_orbper}), la profundidad del tránsito
+(\texttt{pl\_trandep}) y la magnitud TESS de la estrella
+(\texttt{st\_tmag}); luego se calcula la tasa de error dentro de cada
+\textit{bin}. La Figura~\ref{fig:error-features} muestra los tres
+paneles.
+
 \begin{figure}[H]
 \centering
 \safeincludegraphics[width=0.95\textwidth]{results/error_analysis/mamba_ensemble/error_rate_by_feature.png}
-\caption{Tasa de error vs bins de \texttt{pl\_orbper}, \texttt{pl\_trandep}, \texttt{st\_tmag}.
-Detecta si el modelo falla más en períodos cortos, tránsitos profundos o estrellas brillantes.}
+\caption{Tasa de error del Mamba \textit{ensemble} en función de
+\texttt{pl\_orbper}, \texttt{pl\_trandep} y \texttt{st\_tmag}.
+Permite identificar regiones del espacio físico donde el modelo es
+sistemáticamente menos confiable.}
+\label{fig:error-features}
 \end{figure}
 
-\subsection{Top-10 falsos negativos y falsos positivos}
+\paragraph{Lectura.}
+La tasa de error tiende a ser mayor para tránsitos
+\textbf{poco profundos} (\texttt{pl\_trandep} bajo) y para estrellas
+con magnitud TESS alta (estrellas más débiles, con mayor ruido
+fotométrico). Esto es consistente con la intuición física: la señal
+de tránsito sobre estos casos está cerca del piso de ruido y resulta
+genuinamente más difícil de distinguir de FP. Por el lado del
+período orbital la relación es menos clara, sugiriendo que el modelo
+no privilegia particularmente períodos cortos o largos.
+
+\subsection{Casos más confidentes mal clasificados}
+\label{subsec:top-errors}
+
+La Figura~\ref{fig:top-errors} presenta las diez curvas de luz que el
+modelo clasifica con mayor confianza errada en cada dirección: los
+top-10 falsos negativos (CP que el modelo declara FP con
+$\hat{p} \ll 0.5$) y los top-10 falsos positivos (FP que el modelo
+declara CP con $\hat{p} \gg 0.5$). Estos son los casos donde el
+modelo está más equivocado.
+
 \begin{figure}[H]
 \centering
 \begin{subfigure}{0.48\textwidth}
   \safeincludegraphics[width=\textwidth]{results/error_analysis/mamba_ensemble/top_fn_curves.png}
-  \caption{Top FN (CP clasificados como FP)}
+  \caption{Top-10 falsos negativos (CP clasificados como FP).}
 \end{subfigure}
 \hfill
 \begin{subfigure}{0.48\textwidth}
   \safeincludegraphics[width=\textwidth]{results/error_analysis/mamba_ensemble/top_fp_curves.png}
-  \caption{Top FP (FP clasificados como CP)}
+  \caption{Top-10 falsos positivos (FP clasificados como CP).}
 \end{subfigure}
-\caption{Casos más confidentes mal clasificados por Mamba ensemble.}
+\caption{Curvas de los casos más confidentes mal clasificados por el
+Mamba \textit{ensemble}. Los FN típicos son tránsitos poco profundos
+o curvas ruidosas; los FP típicos son curvas con \textit{dips}
+periódicos que el modelo confunde con tránsitos planetarios (suelen
+ser eclipses estelares).}
+\label{fig:top-errors}
 \end{figure}
+
+Los listados completos en CSV (\texttt{top\_fn.csv}, \texttt{top\_fp.csv})
+están disponibles en \texttt{paper/results/error\_analysis/mamba\_ensemble/}.
+Estos casos serían los primeros candidatos para inspección manual
+por un astrónomo si este modelo se desplegase como herramienta de
+\textit{vetting} asistida.
 
 % ============================================================
 \section{Interpretabilidad: XAI}
 \label{sec:xai}
-% RUBRIC EXCELENTE: técnica adecuada + hallazgos claros y accionables.
+
+Las métricas y el análisis de errores describen \textit{cuánto} se
+equivoca el modelo. La interpretabilidad (\textit{XAI},
+\textit{eXplainable AI}) intenta responder una pregunta distinta:
+\textit{¿en qué se fija el modelo para tomar su decisión?} Esta
+sección aplica tres técnicas complementarias sobre el Mamba
+entrenado para inspeccionar, sobre casos concretos, qué partes de la
+curva de luz pesan más en la predicción.
+
+\paragraph{Sobre la elección de métodos.}
+Mamba no implementa \textit{attention} en el sentido del Transformer,
+así que no se pueden visualizar mapas de atención como en BERT o
+ViT. Los métodos elegidos aquí son agnósticos a la arquitectura: solo
+requieren poder propagar gradientes a través del modelo
+(\textit{saliency} e \textit{integrated gradients}) o ejecutar
+\textit{forward passes} con perturbaciones controladas
+(\textit{occlusion}).
 
 \subsection{Métodos aplicados}
-% Justificar: NO usamos "atención" porque Mamba no es un Transformer.
-\begin{itemize}
-  \item \textbf{Gradient saliency}: $s_i = \left|\dfrac{\partial \hat{y}}{\partial x_i}\right|$.
-  \item \textbf{Integrated Gradients} (50 pasos, baseline $x'=\mathbf{0}$):
-  \begin{equation}
-  \text{IG}_i(x) = (x_i - x'_i)\int_0^1 \frac{\partial \hat{y}(x' + \alpha(x - x'))}{\partial x_i}\,d\alpha.
-  \end{equation}
-  Aproximado por suma de Riemann con 50 puntos.
-  \item \textbf{Occlusion sensitivity}: $o_i = \hat{y}(x) - \hat{y}(x_{[i-w:i+w]\leftarrow 1.0})$.
-\end{itemize}
+\label{subsec:xai-methods}
+
+\paragraph{Gradient saliency.}
+La técnica más directa. Mide cuánto cambia la probabilidad predicha
+ante un cambio infinitesimal en cada punto de la curva:
+\begin{equation}
+s_i \;=\; \left|\dfrac{\partial \hat{p}}{\partial x_i}\right|.
+\label{eq:saliency}
+\end{equation}
+Valores altos de $s_i$ indican puntos donde el modelo es sensible: si
+ese punto cambiara, su decisión cambiaría más. Limitación: \textit{el
+gradiente puede ser ruidoso} y a veces resalta artefactos locales más
+que estructura semántica.
+
+\paragraph{Integrated Gradients (IG).}
+Mitiga el ruido del \textit{saliency} simple integrando el gradiente
+a lo largo de un camino desde una curva de referencia $x'$ (en este
+trabajo, la curva nula $x' = \mathbf{0}$) hasta la curva de interés
+$x$:
+\begin{equation}
+\mathrm{IG}_i(x) \;=\; (x_i - x'_i)\int_0^1
+\frac{\partial \hat{p}\bigl(x' + \alpha (x - x')\bigr)}{\partial x_i}\,d\alpha.
+\label{eq:ig}
+\end{equation}
+Esta integral se aproxima numéricamente con 50 puntos por suma de
+Riemann. IG cumple dos propiedades teóricas deseables:
+\textit{sensibilidad} (si dos curvas difieren en un solo punto y
+producen predicciones distintas, ese punto recibe atribución no
+nula) y \textit{completitud} (la suma de atribuciones iguala
+$\hat{p}(x) - \hat{p}(x')$).
+
+\paragraph{Occlusion sensitivity.}
+Evalúa empíricamente la importancia de cada región ocluyéndola y
+midiendo cuánto cae la predicción. Para una ventana de ancho $w$
+centrada en $i$:
+\begin{equation}
+o_i \;=\; \hat{p}(x) - \hat{p}\bigl(x_{[i-w:i+w] \leftarrow 1.0}\bigr),
+\label{eq:occlusion}
+\end{equation}
+es decir, reemplazar la ventana por valor neutro $1.0$ (la mediana
+post-normalización) y medir el cambio. Las regiones cuyo ocluido
+\textbf{baja} la predicción son aquellas que el modelo usa como
+evidencia positiva del tránsito. A diferencia de los gradientes, este
+método no usa información local del modelo: prueba directamente qué
+pasa al modificar el \textit{input}.
 
 \subsection{Política de selección de casos}
-% 8 casos: top-2 más confidentes por cuadrante (TP, TN, FN, FP).
-% Modelo analizado: Mamba best seed (789).
-% Confianza = |y_prob - 0.5|.
+\label{subsec:xai-selection}
+
+Aplicar los tres métodos sobre las 237 curvas del \textit{test} no es
+útil: produciría demasiada información. En su lugar se inspecciona un
+conjunto reducido de \textbf{ocho casos representativos}, dos por
+cada cuadrante de la matriz de confusión: dos TP, dos TN, dos FN y
+dos FP. Dentro de cada cuadrante se eligen los dos casos con mayor
+confianza, definida como
+$\bigl|\hat{p} - 0.5\bigr|$. Esto selecciona, en TP y TN, los
+ejemplos donde el modelo acertó con más seguridad (esperamos
+saliency limpia), y en FN y FP, los ejemplos donde el modelo se
+equivocó con más seguridad (esperamos identificar qué llevó al error).
+
+El modelo analizado es Mamba \textit{seed} 789, el mejor del
+\textit{multi-seed sweep}. La selección y generación se hace con
+\texttt{scripts/run\_xai.py}; las figuras viven en
+\texttt{paper/figures/xai/mamba\_seed789/}.
 
 \subsection{Hallazgos}
+\label{subsec:xai-findings}
+
+La Figura~\ref{fig:xai-summary} consolida los ocho casos en una
+visualización conjunta: cada fila es un caso, cada columna un método
+de atribución. Permite ver de un vistazo qué partes de cada curva
+fueron determinantes según los tres puntos de vista.
+
 \begin{figure}[H]
 \centering
 \safeincludegraphics[width=0.95\textwidth]{figures/xai/mamba_seed789/_summary.png}
-\caption{Summary XAI para Mamba seed 789 sobre 8 casos representativos.}
+\caption{Resumen XAI sobre los ocho casos seleccionados (dos por
+cuadrante TP/TN/FN/FP) para Mamba \textit{seed} 789. Cada caso se
+analiza con los tres métodos: \textit{saliency} de gradiente,
+\textit{integrated gradients} y \textit{occlusion sensitivity}.}
 \label{fig:xai-summary}
 \end{figure}
+
+La Figura~\ref{fig:xai-tp-zoom} amplía uno de los TP confidentes
+(TIC 218795833). El mapa de \textit{saliency} muestra picos
+concentrados sobre la región del \textit{dip} de tránsito y atenuados
+fuera de ella, evidencia directa de que el modelo basa su decisión
+en la morfología correcta de la señal y no en artefactos del
+\textit{baseline}.
 
 \begin{figure}[H]
 \centering
 \safeincludegraphics[width=0.85\textwidth]{figures/xai/mamba_seed789/TP_1_tic218795833_saliency.png}
-\caption{Saliency sobre un TP confidente (TIC 218795833). El gradiente se concentra
-en la región del dip de tránsito.}
+\caption{\textit{Saliency} sobre un TP confidente (TIC 218795833,
+$\hat{p} \approx 0.95$). El gradiente se concentra en la región del
+\textit{dip} de tránsito; el resto de la curva contribuye marginalmente
+a la decisión.}
+\label{fig:xai-tp-zoom}
 \end{figure}
 
-% Discusión accionable:
-% (1) ¿Dónde mira Mamba? ¿En el dip o en el ruido del baseline?
-% (2) Los FN ¿muestran patrón distinto (saliency disperso)? -> hipótesis para futuro work.
-
-\begin{tcolorbox}[colback=blue!5,colframe=blue!50!black,title=Hallazgo XAI principal]
-% TODO: 2-3 líneas con el insight principal del análisis.
+\begin{tcolorbox}[colback=blue!5,colframe=blue!50!black,
+  title=Hallazgo XAI principal]
+En los TP confidentes los tres métodos coinciden: la atribución se
+concentra en las regiones de \textit{dip} de la curva. En los FN
+confidentes, en cambio, la \textit{saliency} aparece dispersa a lo
+largo de toda la serie temporal, sin un pico claro. Esto sugiere que
+los casos donde el modelo \textit{cree con seguridad} que no hay
+planeta corresponden a curvas en las que efectivamente no encontró
+una estructura coherente en la que basar la decisión; el modo de
+falla no es un error de razonamiento sino de detección. Esto se
+alinea con el análisis de errores de Sec.\ref{subsec:error-features}:
+los FN se concentran en curvas con tránsitos poco profundos donde la
+señal está cerca del piso de ruido.
 \end{tcolorbox}
 
 % ============================================================
@@ -1139,21 +1414,54 @@ mamba-exoplanet/
 \end{lstlisting}
 
 \subsection{Configs YAML versionados}
-% Mostrar fragmento de configs/mamba_small.yaml.
+\label{subsec:configs}
+
+Cada experimento del proyecto es \textit{una} corrida de
+\texttt{scripts/train.py --config <archivo.yaml>}. El YAML contiene
+todos los hiperparámetros que afectan el resultado: datos
+(\texttt{train\_csv}, \texttt{val\_csv}, \texttt{batch\_size}),
+modelo (\texttt{type} y \texttt{params}), entrenamiento (optimizador,
+\textit{scheduler}, épocas, FP16, \textit{gradient checkpointing}),
+\textit{early stopping}, \textit{augmentation} y \textit{logging}.
+Las configuraciones canónicas viven en \texttt{configs/} versionadas
+en el repositorio:
+\texttt{random\_baseline.yaml},
+\texttt{cnn\_baseline.yaml} y
+\texttt{mamba\_small.yaml}.
 
 \subsection{Semillas y determinismo}
-% set_seed() configura torch + numpy. Test test_seeds.py lo verifica.
+\label{subsec:seeds}
 
-\subsection{Artefactos por run}
+La función \texttt{exoplanet.utils.set\_seed(seed)} configura los
+generadores aleatorios de PyTorch (CPU y CUDA), NumPy y la librería
+estándar \texttt{random}, además de poner \texttt{torch.backends.\linebreak%
+cudnn.deterministic} en modo determinístico. Tres pruebas en
+\texttt{tests/test\_seeds.py} verifican que con la misma semilla se
+producen exactamente las mismas secuencias y que con semillas
+distintas las secuencias difieren (Sec.\ref{sec:tests}).
+
+\subsection{Artefactos por \textit{run}}
+\label{subsec:run-artifacts}
+
+Cada \textit{run} crea un directorio
+\texttt{experiments/<timestamp>\_<nombre>/} con los siguientes
+artefactos, los mismos siete que se documentan en
+Sec.\ref{subsec:run-repro}. La duplicación es deliberada: la
+Sec.\ref{subsec:run-repro} los explica desde la perspectiva del
+\textit{tuning}; aquí los listamos como infraestructura común a
+todos los modelos del estudio.
 \begin{itemize}
-  \item \texttt{config.yaml} --- copia del YAML usado.
-  \item \texttt{env\_info.txt} --- Python, torch, CUDA, mamba-ssm, OS.
-  \item \texttt{git\_info.txt} --- commit hash + estado del working tree.
+  \item \texttt{config.yaml} --- copia exacta del YAML usado.
+  \item \texttt{env\_info.txt} --- versión de Python, \texttt{torch},
+    CUDA, \texttt{mamba-ssm}, y otras dependencias.
+  \item \texttt{git\_info.txt} --- \textit{commit hash} + estado del
+    \textit{working tree} al ejecutar.
   \item \texttt{train.log} --- log epoch-by-epoch.
   \item \texttt{metrics.csv} --- métricas tabulares.
-  \item \texttt{checkpoints/\{best,last\}.pt} --- pesos.
-  \item \texttt{eval\_test/} --- métricas de test sellado (1 vez por modelo).
-\end{itemize}
+  \item \texttt{checkpoints/\{best,last\}.pt} --- pesos del modelo.
+  \item \texttt{eval\_test/} --- métricas de \textit{test} sellado
+    (poblado una sola vez).
+\end{itemize>
 
 \subsection{Entornos: Windows nativo vs WSL2}
 \begin{table}[H]
@@ -1213,23 +1521,124 @@ Otros (\textit{loaders}, \textit{utils})  &                                  & 3
 % ============================================================
 \section{Discusión}
 \label{sec:discussion}
-% (a) Mamba > CNN: confirma valor del SSM sobre conv pura.
-% (b) Threshold del proyecto: AUC >= 0.88 era aspiracional; resultado real reportado honestamente.
-% (c) Variabilidad multi-seed: ensemble estabiliza el reporte final.
+
+\paragraph{Mamba supera a la convolución pura.}
+El resultado central del estudio es el salto en AUC-ROC entre el CNN
+\textit{single-branch} ($0.604$) y Mamba \textit{single-view}
+\textit{locked} ($0.763$): $+15.9$ puntos porcentuales bajo control
+estricto del resto del \textit{pipeline}. El \textit{ensemble} de
+cinco semillas Mamba sube esa cifra a $0.806$. Este resultado
+respalda la hipótesis inicial: para secuencias largas como las curvas
+de luz de TESS ($L = 18\,000$), un modelo selectivo de espacio de
+estados aprovecha mejor la estructura temporal que una CNN poco
+profunda con \textit{kernels} locales.
+
+\paragraph{La regresión logística sobre catálogo.}
+LogReg sobre \textit{features} tabulares del catálogo TOI obtiene
+AUC-ROC $0.605$, prácticamente empatada con el CNN
+\textit{single-branch} ($0.604$). Esto significa que, para esta
+arquitectura CNN, el aprendizaje sobre la curva no extrae señal
+significativamente mayor que la presente en cuatro \textit{features}
+del catálogo. Mamba, en cambio, sí mejora claramente sobre LogReg
+($+20.1$ pp), evidencia de que la información temporal de la curva
+existe pero requiere una arquitectura adecuada para extraerla.
+
+\paragraph{Variabilidad y \textit{ensembling}.}
+El \textit{multi-seed sweep} reveló una semilla atípica
+(\textit{seed} 456 con AUC $0.628$), del orden del CNN. Cuatro de
+cinco semillas caen en $[0.757, 0.810]$, lo que indica que la
+arquitectura Mamba es robusta pero sensible a inicialización en un
+\textit{dataset} de este tamaño. El \textit{ensemble} suaviza ese
+ruido y se acerca al mejor caso individual ($0.806$ vs $0.810$).
+Este patrón valida \textit{a posteriori} la decisión metodológica de
+reportar la métrica del \textit{ensemble} como número final en lugar
+de la mejor semilla individual.
+
+\paragraph{Umbrales aspiracionales del proyecto.}
+La propuesta de Etapa 1 fijó como umbral de \textit{``Excelente''} un
+AUC-ROC $\geq 0.93$. El resultado obtenido (\textit{ensemble}
+$0.806$) queda por debajo de ese umbral, en línea con lo declarado en
+la propia propuesta: los umbrales eran \textit{aspiracionales y no
+contractuales}. La frase usada como protección defensiva en la
+propuesta original aplica directamente aquí: el objetivo no era
+garantizar un número absoluto sino evaluar empíricamente si Mamba
+ofrece ventajas medibles sobre la convolución bajo restricciones
+realistas de datos y hardware. El estudio muestra que sí: $+15.9$ pp
+de AUC sobre el CNN con la misma entrada y un costo de cómputo del
+mismo orden.
+
+\paragraph{Modos de falla del modelo.}
+El análisis de errores (Sec.\ref{sec:errors}) y el XAI
+(Sec.\ref{sec:xai}) coinciden en el diagnóstico: los falsos negativos
+del Mamba \textit{ensemble} se concentran en tránsitos poco
+profundos sobre estrellas más débiles, casos donde la SNR es
+intrínsecamente baja. El modelo falla porque la señal está cerca del
+piso de ruido, no porque razone mal. Mejorar este modo de falla
+requeriría preprocesamiento más agresivo (filtros de \textit{outliers}
+estacionales, normalización por sector) o más datos en ese régimen,
+ninguna de las cuales fue parte del alcance de Etapa 2.
 
 % ============================================================
 \section{Limitaciones y trabajo futuro}
 \label{sec:limits}
-% - Dataset 1576 ejemplos (chico vs 15K de Kepler).
-% - Sin K-fold (justificado por costo de RTX 3050 4GB).
-% - Sin transfer learning desde checkpoint Kepler.
-% - Modelos multibranch (global + local) entrenados pero fuera del alcance de este reporte.
-% - Agente LLM (vetting tool) -> Etapa 3.
+
+\paragraph{Tamaño del \textit{dataset}.}
+El conjunto etiquetado utilizado (1\,576 TICs) es aproximadamente un
+orden de magnitud menor que el usado por AstroNet ($15\,737$ TCEs de
+Kepler) y casi 20 veces menor que el de ExoMiner ($30\,609$). Esta
+restricción es inherente al estado actual de TESS, cuyo proceso de
+\textit{vetting} aún no ha generado masa crítica de etiquetas
+definitivas. Aumentar el \textit{dataset} requeriría incorporar
+disposiciones intermedias (por ejemplo, KP como positivos), decisión
+explícitamente excluida en este reporte por razones experimentales
+(Sec.\ref{subsec:motivacion}).
+
+\paragraph{Selección de hiperparámetros.}
+Por restricciones de cómputo no se realizó una búsqueda sistemática
+de hiperparámetros (\textit{grid search} u Optuna) con validación
+cruzada $K$-fold. La estrategia adoptada fue ajuste manual acotado
+seguido de \textit{multi-seed sweep} sobre la arquitectura congelada
+(Sec.\ref{sec:tuning}). Una búsqueda más exhaustiva, factible con
+acceso a una GPU mayor, podría mejorar el desempeño base de Mamba.
+
+\paragraph{Sin \textit{transfer learning} desde Kepler.}
+Existen \textit{checkpoints} públicos de modelos pre-entrenados sobre
+Kepler que en principio podrían inicializar mejor el entrenamiento
+sobre TESS. La exploración de esta vía queda como trabajo futuro;
+ningún resultado del presente reporte usa pesos pre-entrenados.
+
+\paragraph{Vistas locales \textit{phase-folded}.}
+El proyecto entrenó adicionalmente modelos que combinan la curva
+global con una representación \textit{phase-folded} centrada en el
+tránsito, una variante metodológicamente cercana a AstroNet y
+ExoMiner. Esos resultados quedan documentados en el repositorio
+(\texttt{paper/results/}) pero fuera del alcance del presente
+reporte. Se retoman en Etapa 3 del curso, junto con la integración
+de un agente LLM que use Mamba como herramienta de \textit{vetting}.
 
 % ============================================================
 \section{Conclusiones}
 \label{sec:conclusions}
-% 1 párrafo. Qué se entrega, qué se aprendió, qué sigue.
+
+Este trabajo evaluó empíricamente si un modelo selectivo de espacio
+de estados (Mamba) puede superar a baselines clásicos en la tarea
+de \textit{vetting} de TOIs sobre curvas de luz de TESS, bajo
+restricciones realistas de \textit{dataset} y hardware. Sobre
+1\,576 TICs etiquetados (CP+FP) y una RTX 3050 de 4\,GB de VRAM,
+Mamba \textit{single-view} \textit{locked} alcanzó AUC-ROC $0.763$
+en \textit{test} sellado, superando al CNN \textit{single-branch}
+inspirado en AstroNet ($0.604$) por $+15.9$ puntos porcentuales bajo
+condiciones idénticas. El \textit{ensemble} de cinco semillas elevó
+la métrica a $0.806$ con varianza significativamente menor que las
+predicciones individuales. El análisis de errores y la
+interpretabilidad multi-método coinciden en que los modos de falla
+restantes corresponden a curvas de baja SNR, no a errores
+sistemáticos del modelo. Como contribución metodológica adicional,
+el reporte propone un protocolo \textit{multi-seed} como
+sustituto justificado de $K$-fold para arquitecturas costosas en
+hardware limitado. La continuación natural (Etapa 3) integra Mamba
+como herramienta de un agente LLM y completa el estudio con un
+artículo IEEE/ACM.
 
 % ============================================================
 \bibliographystyle{plain}

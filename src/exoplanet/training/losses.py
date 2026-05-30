@@ -9,7 +9,8 @@ import torch.nn as nn
 
 
 def build_loss(cfg: dict[str, Any], pos_count: int, neg_count: int) -> nn.Module:
-    """Construye una BCEWithLogitsLoss con pos_weight opcional.
+    """
+    Construye una BCEWithLogitsLoss con pos_weight opcional.
 
     Args:
         cfg: subconfig de loss. Espera `type` y `pos_weight`.
