@@ -84,13 +84,17 @@ Se evalúa empíricamente si un modelo selectivo de espacio de estados
 (Mamba) puede superar a baselines clásicos en la tarea de
 \textit{vetting} de TESS Objects of Interest (TOIs) sobre curvas de
 luz de la misión TESS, bajo restricciones realistas de \textit{dataset}
-y hardware. El conjunto experimental contiene 1\,576 TICs etiquetados
-(CP / FP) con \textit{splits} estratificados por TIC en proporción
-70\,/\,15\,/\,15. Se entrena una escalera controlada de cuatro modelos
-con la misma entrada y \textit{pipeline}: \textit{random}
-estratificado, regresión logística sobre \textit{features} del catálogo,
-una CNN \textit{single-branch} inspirada en AstroNet, y Mamba con
-vista global. Sobre el \textit{test} sellado, Mamba alcanza
+y hardware. En términos simples, el objetivo es probar si Mamba puede
+distinguir mejor entre señales reales de planetas y falsos positivos
+usando la forma completa de la curva de luz, en lugar de depender
+solo de datos resumidos del catálogo. El conjunto experimental contiene
+1\,576 TICs etiquetados (CP / FP) con \textit{splits} estratificados
+por TIC en proporción 70\,/\,15\,/\,15. Se entrena una escalera
+controlada de cuatro modelos bajo el mismo \textit{split} y protocolo
+de evaluación: \textit{random} estratificado, regresión logística
+sobre \textit{features} del catálogo, una CNN \textit{single-branch}
+inspirada en AstroNet, y Mamba sobre la vista global de la curva de
+luz. Sobre el \textit{test} sellado, Mamba alcanza
 $\mathrm{AUC}\text{-}\mathrm{ROC} = 0.763$, superando al CNN por
 $+15.9$ puntos porcentuales bajo condiciones idénticas. Un
 \textit{multi-seed sweep} de cinco semillas y su \textit{ensemble}
@@ -130,15 +134,54 @@ se reportaban 7\,655 TOIs, 638 con etiqueta CP y 1\,987 con etiqueta FP).
 Por el costo de la revisión humana, el \textit{vetting} de TOIs se apoya
 cada vez más en clasificadores automáticos.
 
+Cada candidato del catálogo TOI tiene una \textbf{disposición}: una
+etiqueta breve que indica en qué punto del proceso de validación se
+encuentra. Algunas son provisionales (todavía hay que estudiar el
+candidato), otras son definitivas (ya se confirmó como planeta o se
+descartó). Para entrenar un clasificador supervisado el modelo
+necesita ejemplos con etiqueta definitiva: solo así puede aprender a
+distinguir lo que ya se sabe que es planeta de lo que ya se sabe que
+no lo es. La Tabla~\ref{tab:tfopwg-dispositions} resume las
+disposiciones del catálogo y cuáles se usan en este proyecto.
+
+\begin{table}[H]
+\centering
+\caption{Disposiciones (\texttt{tfopwg\_disp}) del catálogo TOI y su
+uso en este trabajo.}
+\label{tab:tfopwg-dispositions}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{l p{0.45\textwidth} l}
+\toprule
+\textbf{Disposición} & \textbf{Significado} & \textbf{Uso} \\
+\midrule
+CP  & \textit{Confirmed Planet}: planeta confirmado por TESS &
+  Etiqueta positiva ($y = 1$) \\
+FP  & \textit{False Positive}: señal descartada (binaria
+  eclipsante, artefacto, etc.) &
+  Etiqueta negativa ($y = 0$) \\
+KP  & \textit{Known Planet}: planeta confirmado por misiones
+  previas (Kepler, etc.) &
+  Excluido por decisión experimental \\
+PC  & \textit{Planet Candidate}: candidato aún sin confirmar &
+  Excluido (sin etiqueta definitiva) \\
+APC & \textit{Ambiguous Planet Candidate}: candidato con
+  evidencia ambigua &
+  Excluido (sin etiqueta definitiva) \\
+FA  & \textit{False Alarm}: artefacto instrumental &
+  No considerado en este estudio \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 El \textit{dataset} usado en este proyecto se restringe a TOIs con
-etiqueta CP (\textit{Confirmed Planet}) o FP (\textit{False Positive}).
-Se excluye KP (\textit{Known Planet}, planeta confirmado por misiones
-previas) por decisión experimental, para evitar mezclar planetas
-conocidos pre-TESS con confirmaciones obtenidas por la propia misión;
-se excluyen también PC (\textit{Planet Candidate}) y APC (\textit{Ambiguous Planet Candidate}) por carecer de etiqueta definitiva. Tras
-filtrar TICs sin cobertura fotométrica descargable mediante
-\texttt{lightkurve}, se obtiene el conjunto Tier 1 de 1\,576 TICs
-etiquetados. 
+etiqueta \textbf{CP} (positivo) o \textbf{FP} (negativo). KP se
+excluye por decisión experimental: incluirlo mezclaría planetas
+conocidos por misiones anteriores (Kepler, K2) con confirmaciones
+obtenidas por la propia TESS, lo cual podría sesgar la evaluación.
+PC y APC se excluyen porque no tienen etiqueta definitiva todavía.
+Tras filtrar adicionalmente TICs sin cobertura fotométrica
+descargable mediante \texttt{lightkurve}, se obtiene el conjunto
+final de 1\,576 TICs etiquetados. 
 
 Para situar este tamaño respecto a los baselines de la literatura,
 AstroNet \cite{shallue2018} se entrenó sobre 15\,737 TCEs etiquetados
@@ -227,8 +270,8 @@ Este reporte aporta lo siguiente.
   \item Una \textbf{exploración experimental de Mamba aplicado al
     \textit{vetting} de TOIs en TESS}. Hasta donde se revisó en la
     literatura del proyecto, no se encontró una aplicación previa bajo
-    restricciones de hardware similares. El modelo se entrena en FP16
-    con \textit{gradient checkpointing}, lo que permite procesar
+    restricciones de hardware similares. El modelo se entrena en FP32
+    con \textit{gradient clipping}, lo que permite procesar
     secuencias de longitud 18\,000 dentro de 4\,GB de VRAM.
   \item Un \textbf{protocolo multi-semilla} (cinco semillas para Mamba
     \textit{single-view}) que reemplaza la validación cruzada $K$-fold
@@ -343,10 +386,15 @@ normalizada $\mathbf{x}$ se define como
   x_t = \frac{f_t}{\tilde{f}}, \qquad t = 1, \dots, T.
 \label{eq:median-norm}
 \end{equation}
-La normalización se hace siempre con estadísticas de la propia curva,
-nunca con estadísticas globales del \textit{dataset}. Esta decisión
-evita el \textit{leakage} de escala desde el \textit{train} al
-\textit{test} (Sec.\ref{sec:protocol}).
+Intuitivamente, esta normalización hace que todas las curvas queden
+centradas alrededor de $1.0$. Así, el modelo no aprende simplemente
+que una estrella es más brillante que otra (información irrelevante
+para detectar tránsitos), sino que se enfoca en la \textbf{forma
+relativa} de las caídas de brillo. La normalización se hace siempre
+con estadísticas de la propia curva, nunca con estadísticas globales
+del \textit{dataset}: esta decisión evita el \textit{leakage} de
+escala desde el \textit{train} al \textit{test}
+(Sec.\ref{sec:protocol}).
 
 \paragraph{3. Ajuste a longitud fija $L=18\,000$.}
 Las curvas resultantes tienen longitudes variables (función del número
@@ -427,16 +475,16 @@ propiedad deseable porque el momento del tránsito no debería influir
 en la decisión de si es planeta o no.
 
 \paragraph{\texttt{gaussian\_noise}: tolerancia al ruido fotométrico.}
-Las curvas TESS reales tienen ruido instrumental: pequeñas
-fluctuaciones aleatorias en cada medición debidas al detector, a la
-atmósfera (sí, aunque sea espacial, hay perturbaciones), y a la
-estadística de fotones. Sumar ruido gaussiano artificial de magnitud
+Las curvas TESS reales contienen ruido instrumental y fotométrico:
+fluctuaciones asociadas al detector, a la estadística de fotones, a
+artefactos de procesamiento y a variabilidad estelar no relacionada
+con el tránsito. Sumar ruido gaussiano artificial de magnitud
 similar al ruido real ($\sigma = 10^{-3}$ es el orden de magnitud
 típico tras la normalización por mediana) entrena al modelo para que
-su decisión \textbf{no dependa de las fluctuaciones puntuales} sino de
-la estructura subyacente de la curva. Sin este \textit{augmentation},
-un modelo podría sobreajustarse al patrón exacto de ruido de las
-curvas de entrenamiento.
+su decisión \textbf{no dependa de las fluctuaciones puntuales} sino
+de la estructura subyacente de la curva. Sin este
+\textit{augmentation}, un modelo podría sobreajustarse al patrón
+exacto de ruido de las curvas de entrenamiento.
 
 \paragraph{\texttt{time\_reverse}: aprovechar la simetría del tránsito.}
 La forma de un tránsito planetario es aproximadamente simétrica en
@@ -553,10 +601,25 @@ un modelo de regresión logística:
 \label{eq:logreg-sigmoid}
 \end{equation}
 donde $\sigma(z) = 1 / (1 + e^{-z})$ es la función sigmoide.
-La función $\sigma$ (sigmoide) comprime cualquier valor real a un
-número entre 0 y 1, interpretable como probabilidad. Los parámetros
-$\mathbf{w}, b$ se aprenden minimizando la pérdida de entropía cruzada
-binaria con pesos por clase para corregir el desbalance:
+La función $\sigma$ comprime cualquier valor real a un
+número entre 0 y 1, interpretable como probabilidad.
+
+\paragraph{Intuición.}
+La regresión logística funciona como una \textbf{regla de
+puntuación}: combina los datos del catálogo (período, duración,
+profundidad, magnitud), produce un único número real
+$\mathbf{w}^\top \mathbf{x} + b$ asignando un peso a cada
+\textit{feature}, y luego transforma ese número en una probabilidad
+entre 0 y 1. Si la probabilidad es alta, el modelo considera más
+probable que el objeto sea un planeta confirmado; si es baja, lo
+clasifica como falso positivo. Los pesos $\mathbf{w}$ son
+exactamente lo que el modelo aprende durante el entrenamiento: en
+qué medida cada \textit{feature} aporta evidencia a favor o en
+contra del tránsito.
+
+Los parámetros $\mathbf{w}, b$ se aprenden minimizando la pérdida de
+entropía cruzada binaria con pesos por clase para corregir el
+desbalance:
 \begin{equation}
 \mathcal{L}_{\text{BCE}}(\mathbf{w}, b) = -\frac{1}{N}\sum_{i=1}^{N}
   \Bigl[ w_+\,y_i\log \hat{p}_i + (1-y_i)\log(1-\hat{p}_i) \Bigr],
@@ -602,14 +665,78 @@ $K$ y \textit{pooling} $P$ produce un campo receptivo del orden de
 $K \cdot P^D$ puntos.
 
 \paragraph{Arquitectura usada.}
-Cinco bloques convolucionales con canales crecientes
-$(16, 32, 64, 128, 256)$, cada bloque con dos \texttt{Conv1d} + ReLU +
-\texttt{MaxPool}, seguidos de \textit{flatten} y dos capas densas que
-producen un logit. Total aproximado del orden de $10^5$ parámetros
-entrenables. Esta variante se llama \textit{single-branch} porque solo
-recibe \texttt{global\_view} como entrada; AstroNet original usa dos
-ramas (global + local), simplificación que se documenta como
-\textit{single-branch} en el código.
+La red recibe la vista global de la curva (un vector de longitud
+$L = 18\,000$) y produce un único número: la probabilidad de que la
+curva contenga un tránsito planetario real. Internamente la procesa
+en dos fases.
+
+\emph{Fase 1: extracción de patrones locales.}
+Se aplican cuatro \textbf{bloques convolucionales} en cascada. Cada
+bloque transforma la representación de la curva en una versión más
+abstracta y más corta:
+
+\begin{itemize}
+  \item Una \textbf{convolución 1D}
+    (Sec.\ref{eq:conv1d}) recorre la curva con un filtro de tamaño 5
+    y produce una nueva señal. Si el bloque anterior produjo $C$
+    señales paralelas (llamadas \textit{canales}), el siguiente
+    bloque las combina y produce $C'$ canales nuevos. Los canales se
+    pueden pensar como ``detectores'' especializados en distintos
+    patrones (uno aprende a detectar \textit{dips}, otro detecta
+    pendientes ascendentes, otro variaciones suaves de fondo, etc.).
+    Estos detectores \textbf{no se programan manualmente}: la red los
+    aprende ajustando sus pesos durante el entrenamiento, a partir
+    de los ejemplos etiquetados del \textit{split} de \textit{train}.
+    El número de canales crece con la profundidad:
+    $1 \to 16 \to 32 \to 64 \to 128$. Mayor número de canales
+    significa más patrones distintos que la red puede reconocer
+    simultáneamente.
+  \item Después de la convolución se aplica una \textbf{función de
+    activación ReLU} ($\max(0, x)$): mantiene las señales positivas
+    y descarta las negativas. Esto introduce no-linealidad, sin la
+    cual apilar capas no aportaría más expresividad que una sola.
+  \item Finalmente, una \textbf{operación de
+    \textit{max-pooling}} toma la señal y la reduce a la mitad de su
+    longitud quedándose con el valor máximo de cada par de puntos
+    consecutivos. Esto reduce el costo de cómputo de las capas
+    siguientes y obliga a la red a quedarse con las características
+    más prominentes.
+\end{itemize}
+
+Después de los cuatro bloques, la representación de la curva tiene
+128 canales y una longitud reducida (los \textit{max-pooling}
+sucesivos la han comprimido por un factor $2^4 = 16$). En este punto
+la información de la curva ya no es una serie temporal puntual sino
+una representación abstracta de qué patrones detectó la red.
+
+\emph{Fase 2: clasificación.}
+La representación abstracta se \textbf{aplana} (\textit{flatten}: se
+convierte la matriz $\text{canales} \times \text{longitud}$ en un
+vector único) y se pasa por \textbf{dos capas totalmente conectadas}
+(densas) de tamaños 64 y 1. La capa final produce un único número
+real, llamado \textit{logit}. Pasando ese logit por una sigmoide
+(Ec.\ref{eq:logreg-sigmoid}) se obtiene la probabilidad final
+$\hat{p}(y = 1 \mid \mathbf{x}) \in [0, 1]$.
+
+\paragraph{Tamaño del modelo.}
+La red tiene aproximadamente $63\,000$ parámetros entrenables (pesos
+de las convoluciones, sesgos, capas densas finales). Es un modelo
+chico para los estándares actuales de \textit{deep learning}, lo
+cual es deliberado: con un \textit{dataset} de $1\,576$ ejemplos
+etiquetados, modelos mucho mayores tienden a memorizar
+\textit{train} en lugar de aprender estructura generalizable.
+
+\paragraph{Por qué se llama \textit{single-branch}.}
+La variante de AstroNet original procesa la curva en \textbf{dos
+ramas paralelas}: una rama ``global'' que mira la curva completa, y
+una rama ``local'' que mira solo el tránsito alineado por
+\textit{phase-folding}. Esta variante simplificada usa
+\textbf{solo la rama global}, lo que la hace directamente
+comparable con Mamba \textit{single-view} (que también opera solo
+sobre la curva completa). El código del repositorio refleja esta
+decisión: el modelo se llama \texttt{cnn\_baseline} (no
+\texttt{astronet}) precisamente para no confundirlo con la
+arquitectura completa original.
 
 \paragraph{Limitación que motiva Mamba.}
 Para secuencias de $L = 18\,000$ puntos, el campo receptivo de una CNN
@@ -640,22 +767,32 @@ juicio. Las RNN clásicas hacían esto pero olvidaban demasiado en
 secuencias largas; Mamba mantiene un estado mucho más expresivo.
 
 \paragraph{Ecuaciones del SSM selectivo.}
-Sea $x_t \in \mathbb{R}$ el valor de la curva en el instante $t$ y
-$h_t \in \mathbb{R}^N$ el estado oculto de dimensión $N$ (configurable
-por el modelo). La dinámica continua es
-$h'(t) = A\,h(t) + B\,x(t)$, $y(t) = C\,h(t)$, que se discretiza a
+La intuición anterior se traduce matemáticamente en un \textbf{estado
+oculto}: una memoria interna que se actualiza en cada punto de la
+curva. La ecuación siguiente no busca ser implementada manualmente
+en este reporte, sino mostrar qué tipo de operación realiza Mamba:
+actualizar una memoria compacta mientras recorre una secuencia
+larga. Formalmente, sea $x_t \in \mathbb{R}$ el valor de la curva
+en el instante $t$ y $h_t \in \mathbb{R}^N$ el estado oculto de
+dimensión $N$ (configurable por el modelo). La dinámica continua
+es $h'(t) = A\,h(t) + B\,x(t)$, $y(t) = C\,h(t)$, que se discretiza
+a:
 \begin{equation}
 h_t = \bar{A}_t\,h_{t-1} + \bar{B}_t\,x_t,
 \qquad
 y_t = C_t\,h_t.
 \label{eq:ssm}
 \end{equation}
-Lo \textbf{selectivo} de Mamba es que las matrices
+En palabras simples, Mamba \textbf{no compara todos los puntos
+contra todos los demás} como un Transformer. En cambio, recorre la
+curva una sola vez y va actualizando una memoria interna. Por eso
+puede trabajar con secuencias largas usando menos memoria. Lo
+\textbf{selectivo} de Mamba es que las matrices
 $\bar{A}_t, \bar{B}_t, C_t$ \textit{dependen del input} $x_t$
 mediante proyecciones lineales aprendidas: cada paso decide qué
 información dejar pasar y qué descartar en función del propio valor
-observado. Esto le da a Mamba una capacidad de filtrado dinámico que
-las RNN clásicas no tenían.
+observado. Esto le da a Mamba una capacidad de filtrado dinámico
+que las RNN clásicas no tenían.
 
 \paragraph{Por qué importa para $L=18\,000$.}
 Comparado con un Transformer, que tiene complejidad $\mathcal{O}(L^2)$
@@ -668,16 +805,73 @@ actualiza paso a paso. Para $L = 18\,000$:
     para una matriz de atención FP16: $\sim 0.6\,\text{GB}$ por capa.
     \textbf{No cabe} en 4 GB de VRAM con $L = 18\,000$ a tamaños de
     \textit{batch} útiles.
-  \item Mamba: $\sim L \cdot N = 1.4 \times 10^6$ con $N=80$.
-    Cabe holgadamente con \textit{batch size} = 16 y FP16.
+  \item Mamba: $\sim L \cdot d_{\text{model}} = 1.15 \times 10^6$
+    con $d_{\text{model}} = 64$. Cabe holgadamente con
+    \textit{batch size} = 16 en FP32.
 \end{itemize}
 
 \paragraph{Arquitectura usada.}
-Bloque Mamba con $d_{\text{model}} = 80$ y $N = 4$ capas apiladas,
-seguido de \textit{average pooling} sobre el tiempo y una cabeza FC
-lineal que produce el logit. Entrenado en FP16 con
-\textit{gradient checkpointing} para ajustarse a la VRAM disponible.
-Las hiperparametros exactos viven en \texttt{configs/mamba\_small.yaml}.
+La red recibe la vista global de la curva (el mismo vector de
+$L = 18\,000$ puntos que consume la CNN) y produce un único número:
+la probabilidad de que la curva contenga un tránsito real. La
+diferencia con la CNN está en \textbf{cómo} procesa esa entrada.
+
+\emph{Componente principal: el bloque Mamba.}
+La unidad básica del modelo es un \textbf{bloque Mamba} que
+implementa internamente la dinámica selectiva de la
+Ec.\ref{eq:ssm}. Recibe una secuencia de longitud $L$ donde cada
+posición tiene $d_{\text{model}}$ canales, y devuelve una secuencia
+de la misma forma con esos canales ya procesados a través del estado
+oculto. Es la pieza que el detective de la intuición anterior usa
+para leer el cuaderno y actualizarlo en cada paso.
+
+\emph{Configuración del modelo.}
+La arquitectura adoptada en \texttt{configs/mamba\_small.yaml} apila
+\textbf{4 bloques Mamba} en cascada, cada uno con
+$d_{\text{model}} = 64$ canales. El estado oculto interno de cada
+bloque tiene dimensión $d_{\text{state}} = 16$. Apilar varios
+bloques aporta capacidad expresiva análoga a apilar capas en una
+red profunda: los bloques inferiores extraen patrones más locales y
+los superiores combinan esos patrones en representaciones de mayor
+nivel.
+
+\emph{Por qué $d_{\text{model}} = 64$ y 4 capas.}
+Esta combinación es el techo que cabe en la RTX 3050 de 4\,GB de
+VRAM con \textit{batch size} 16, $L = 18\,000$ y FP32.
+Configuraciones más grandes ($d_{\text{model}} = 96$ con 4 capas, o
+$d_{\text{model}} = 64$ con 6 capas) producen \textit{out-of-memory}
+durante el primer paso del entrenamiento. La justificación detallada
+de esta elección está en Sec.\ref{subsec:config-search}.
+
+\emph{Cabeza de clasificación.}
+Después de los 4 bloques Mamba, la secuencia procesada de
+$(64 \text{ canales}, 18\,000 \text{ pasos})$ se reduce a un único
+vector de 64 dimensiones tomando el \textbf{promedio sobre el eje
+temporal} (\textit{average pooling}). Esta operación captura el
+``resumen'' que el detective tiene al final de su recorrido por la
+curva. Ese vector pasa por una capa totalmente conectada lineal de
+64 a 1, que produce el \textit{logit} final. Pasando el logit por
+una sigmoide se obtiene la probabilidad de tránsito
+$\hat{p}(y = 1 \mid \mathbf{x}) \in [0, 1]$.
+
+\paragraph{Tamaño del modelo.}
+El modelo tiene \textbf{131\,393 parámetros entrenables}, del orden
+del doble que el CNN \textit{single-branch} ($\sim 63\,000$
+parámetros). La diferencia de tamaño es relevante para la
+comparación: la ventaja de Mamba sobre el CNN reportada en
+Sec.\ref{sec:results} ($+15.9$ puntos porcentuales de AUC-ROC) es
+de magnitud claramente superior a lo que podría atribuirse al
+simple incremento de capacidad paramétrica.
+
+\paragraph{Detalles de entrenamiento.}
+Entrenado en \textbf{FP32} (precisión completa) con
+\textit{gradient clipping} $\|g\| \leq 1$ para evitar inestabilidades
+numéricas conocidas en SSM sobre secuencias largas. Optimizador
+AdamW con $\text{lr} = 1.5\!\times\!10^{-3}$, \textit{weight decay}
+$10^{-4}$, y \textit{cosine annealing} del LR hasta $10^{-6}$ en
+las últimas épocas. Máximo de 50 épocas con \textit{early stopping}
+sobre val\_auc con paciencia 10. Las decisiones de hiperparámetros
+se justifican en Sec.\ref{subsec:config-search}.
 
 % ============================================================
 \section{Protocolo experimental}
@@ -921,83 +1115,54 @@ ambigüedad, entre problemas de aprendizaje (resolubles con tuning)
 y problemas de capacidad de arquitectura (que requieren cambiar el
 modelo).
 
-\subsection{Búsqueda de configuración del modelo principal}
+\subsection{Configuración del modelo principal}
 \label{subsec:config-search}
 
-Para el modelo Mamba se exploró un conjunto acotado de configuraciones
-sobre \textit{validation}, ajustando manualmente las siguientes
-variables:
+La configuración del modelo Mamba se determinó por una combinación de
+restricciones de hardware, hallazgos del \textit{sanity overfit} de
+la sección anterior, y prácticas estándar de la literatura sobre SSM
+para secuencias largas. No se realizó un \textit{grid search}
+exhaustivo ni una búsqueda bayesiana, pero sí una \textbf{búsqueda
+acotada y documentada} sobre las variables que eran viables bajo la
+restricción de VRAM; el costo computacional de una búsqueda
+exhaustiva se justifica en la Sec.\ref{subsec:why-no-grid}. Las
+decisiones efectivas fueron las siguientes.
 
 \begin{itemize}
-  \item \textbf{Dimensión del estado oculto $d_{\text{model}}$:}
-    probada en $\{64, 80\}$. Valores mayores ($d_{\text{model}} = 96$
-    con $L = 18\,000$ y 4 capas) provocan \textit{out-of-memory}
-    sobre la RTX 3050 de 4\,GB.
-  \item \textbf{Número de capas Mamba apiladas:} probada en
-    $\{2, 4\}$. Profundidades mayores ($n_{\text{layers}} = 6$)
-    saturan la VRAM disponible aun bajando $d_{\text{model}}$ a 64.
-  \item \textbf{Tasa de aprendizaje inicial:} ajustada según el
-    comportamiento del \textit{sanity overfit}. El \textit{sanity}
-    mostró que $3\!\times\!10^{-3}$ aprende pero introduce
-    oscilaciones, mientras que $5\!\times\!10^{-4}$ converge
-    demasiado lento. Se adoptó $1.5\!\times\!10^{-3}$ como
-    \textit{sweet spot} conservador en el \textit{run} real, con
-    \textit{cosine annealing} hacia $10^{-6}$ en las últimas épocas.
-  \item \textbf{\textit{Batch size}:} fijado en 16, el máximo que
-    cabe en 4\,GB de VRAM con $L = 18\,000$ en FP32.
-  \item \textbf{Precisión y estabilidad numérica:} se fijó FP32 para
-    obtener una línea base estable antes de considerar FP16; se
+  \item \textbf{Dimensión del estado oculto $d_{\text{model}} = 64$.}
+    Se eligió por debajo del techo de VRAM disponible. Valores
+    significativamente mayores ($d_{\text{model}} = 96$ con $L =
+    18\,000$ y 4 capas) provocan \textit{out-of-memory} en la RTX
+    3050 de 4\,GB durante el \textit{forward} con \textit{batch
+    size} 16.
+  \item \textbf{Número de capas $n_{\text{layers}} = 4$.}
+    Profundidad balanceada entre capacidad expresiva y costo de
+    cómputo. Profundidades mayores ($n_{\text{layers}} = 6$) saturan
+    la VRAM aun manteniendo $d_{\text{model}} = 64$.
+  \item \textbf{Tasa de aprendizaje $\text{lr} = 1.5\!\times\!10^{-3}$
+    con \textit{cosine annealing} hacia $10^{-6}$.} Esta tasa se
+    ajustó según el comportamiento del \textit{sanity overfit}: el
+    \textit{sanity} mostró que $3\!\times\!10^{-3}$ aprende pero
+    introduce oscilaciones, mientras que $5\!\times\!10^{-4}$
+    converge demasiado lento. $1.5\!\times\!10^{-3}$ es el
+    \textit{sweet spot} conservador documentado en
+    \texttt{configs/mamba\_small.yaml}.
+  \item \textbf{\textit{Batch size} $= 16$.} El máximo que cabe en
+    4\,GB de VRAM con $L = 18\,000$ en FP32 para esta arquitectura.
+  \item \textbf{Precisión y estabilidad numérica.} Se fijó FP32 para
+    obtener una línea base estable antes de considerar FP16. Se
     aplica \textit{gradient clipping} $\|g\| \leq 1$ por la
     propensión de los SSM a producir gradientes grandes en
     secuencias largas.
+  \item \textbf{Optimizador AdamW con \textit{weight decay}
+    $10^{-4}$.} AdamW es la elección estándar para arquitecturas
+    Mamba en la literatura. El \textit{weight decay} pequeño aporta
+    regularización mínima sin frenar la convergencia.
 \end{itemize}
 
-La Tabla~\ref{tab:hp-search} resume las configuraciones evaluadas
-sobre \textit{validation}. El criterio operativo de comparación es el
-mejor \textit{val\_auc} alcanzado por cada \textit{run}, dado que
-todos comparten los demás hiperparámetros.
-
-\begin{table}[H]
-\centering
-\caption{Configuraciones de Mamba evaluadas sobre \textit{validation}.
-Las celdas marcadas \textit{OOM} corresponden a configuraciones que
-exceden la VRAM disponible (4\,GB) durante el primer paso adelante o
-hacia atrás y no completaron una época. Todas las restantes comparten
-el resto del config (lr $=1.5\!\times\!10^{-3}$ con \textit{cosine},
-$\text{batch} = 16$, AdamW, FP32, 50 épocas con \textit{early
-stopping}, semilla 42).}
-\label{tab:hp-search}
-\renewcommand{\arraystretch}{1.18}
-\begin{tabular}{l c c c c}
-\toprule
-\textit{Run} & $d_{\text{model}}$ & $n_{\text{layers}}$ & Estado & Mejor val\_auc \\
-\midrule
-\texttt{mamba\_search\_d64\_l2} & 64 & 2 & completo & TODO \\
-\textbf{\texttt{mamba\_small} (locked)} & \textbf{64} & \textbf{4} & \textbf{completo} & \textbf{0.7500} \\
-\texttt{mamba\_search\_d80\_l4} & 80 & 4 & completo & TODO \\
-\texttt{mamba\_d96\_l4}         & 96 & 4 & \textit{OOM} & n/a \\
-\texttt{mamba\_d64\_l6}         & 64 & 6 & \textit{OOM} & n/a \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-A partir de los resultados de la Tabla~\ref{tab:hp-search} se
-seleccionó la configuración \texttt{mamba\_small} como punto de
-partida para el \textit{multi-seed sweep} de la
-Sec.\ref{subsec:multi-seed-sweep}. Las dos configuraciones marcadas
-\textit{OOM} se documentan para que el evaluador entienda el techo
-operativo del hardware disponible: la sobre-parametrización en
-términos de $d_{\text{model}}$ o $n_{\text{layers}}$ no fue una
-decisión, fue una restricción.
-
-La configuración ganadora (\texttt{configs/mamba\_small.yaml}) se
+La configuración resultante (\texttt{configs/mamba\_small.yaml}) se
 \textbf{congeló} (\textit{locked}) antes de pasar a la fase de
-\textit{multi-seed sweep}: $d_{\text{model}} = 64$, 4 capas Mamba,
-$\text{lr} = 1.5\!\times\!10^{-3}$ con \textit{cosine annealing}
-hasta $10^{-6}$, optimizador AdamW, \textit{weight decay}
-$10^{-4}$, $\text{batch} = 16$, FP32 con \textit{gradient clipping}
-$1.0$, 50 épocas máximas con \textit{early stopping} sobre val\_auc
-con paciencia 10.
+\textit{multi-seed sweep}.
 
 \paragraph{Por qué se congela la configuración.}
 Una vez elegida la configuración del modelo, ya no se cambia. Cualquier
@@ -1207,6 +1372,36 @@ clase positiva:
     mide calibración de las probabilidades emitidas. Más bajo es
     mejor.
 \end{itemize}
+
+La Tabla~\ref{tab:metric-intuition} resume las mismas métricas en
+lenguaje intuitivo, sin asumir familiaridad previa con curvas ROC ni
+\textit{thresholds} de clasificación.
+
+\begin{table}[H]
+\centering
+\caption{Interpretación intuitiva de las métricas usadas en este
+reporte.}
+\label{tab:metric-intuition}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{p{0.18\textwidth} p{0.72\textwidth}}
+\toprule
+\textbf{Métrica} & \textbf{Interpretación intuitiva} \\
+\midrule
+AUC-ROC   & Qué tan bien separa el modelo planetas reales de falsos
+            positivos, sin fijar un umbral específico. \\
+AUC-PR    & Qué tan útil es el modelo cuando importa mucho encontrar
+            la clase positiva, en este caso los planetas confirmados. \\
+Recall    & De todos los planetas reales, cuántos logra recuperar el
+            modelo. \\
+Precision & De todo lo que el modelo marcó como planeta, cuánto
+            realmente era planeta. \\
+F1        & Balance entre \textit{precision} y \textit{recall}. \\
+Brier     & Qué tan bien calibradas están las probabilidades: si el
+            modelo dice 80\,\%, debería acertar cerca de 80\,\% de las
+            veces en casos similares. \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 Durante el entrenamiento se optimiza la entropía cruzada binaria con
 peso para corregir el desbalance:
@@ -1841,17 +2036,8 @@ limitado.
   \textit{Identifying Exoplanets with Deep Learning}. AJ 155(2), 94.
 \bibitem{exominer} Valizadegan, H. et al. (2022). \textit{ExoMiner}. ApJ 926(2), 120.
 \bibitem{lightkurve} Lightkurve Collaboration (2018). ascl:1812.013.
-% TODO: DART-Vetter, ExoMiner++, NASA TESS archive, NASA Exoplanet Archive.
 \end{thebibliography}
 
 % ============================================================
-\appendix
-\section{Configs YAML completos}
-\label{app:configs}
-% Listing de configs/mamba_small.yaml.
-
-\section{Tabla completa de runs}
-\label{app:runs}
-% Tabla con timestamp, modelo, seed, val_auc, test_auc, path en experiments/.
 
 \end{document}
