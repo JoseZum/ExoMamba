@@ -128,6 +128,27 @@ fotometría, una pequeña fracción muestra señales candidatas a tránsito
 planetario; la NASA cataloga estos candidatos como TOIs
 (\textit{TESS Objects of Interest}).
 
+La Fig.~\ref{fig:concept-lightcurve-transit} ilustra la idea central
+del problema: una \textbf{curva de luz} registra el brillo de una
+estrella a lo largo del tiempo, y un posible tránsito aparece como
+una caída localizada en esa señal. La tarea de \textit{vetting}
+consiste en distinguir esas caídas reales de las causadas por ruido
+instrumental, sistemas binarios u otros fenómenos astrofísicos que
+producen señales parecidas pero no corresponden a planetas.
+
+\begin{figure}[H]
+\centering
+\safeincludegraphics[width=0.72\textwidth]{figures/concept_lightcurve_transit.png}
+\caption{Representación conceptual de un tránsito planetario en una
+curva de luz. Cuando un planeta pasa frente a su estrella, bloquea
+una pequeña fracción de la luz observada y produce una caída
+temporal en el brillo medido. La tarea de \textit{vetting} consiste
+en distinguir este tipo de señales reales de falsos positivos
+causados por ruido, estrellas binarias u otros fenómenos
+astrofísicos.}
+\label{fig:concept-lightcurve-transit}
+\end{figure}
+
 El catálogo TOI consultado para este trabajo registra más de 7\,000
 candidatos según el \textit{snapshot} utilizado (al 1 de julio de 2025
 se reportaban 7\,655 TOIs, 638 con etiqueta CP y 1\,987 con etiqueta FP).
@@ -232,14 +253,17 @@ cubrir cada uno de forma explícita.
   \item \textbf{Validación y protocolo.} Adoptar un protocolo sólido con
     \textit{test} ciego, \textit{split} por TIC y prevención explícita
     de \textit{leakage} (Sec.\ref{sec:protocol}).
-  \item \textbf{Optimización de hiperparámetros.} Realizar una búsqueda
-    sistemática con justificación de costo (Sec.\ref{sec:tuning}). Por
-    restricciones de VRAM se sustituye la validación cruzada por una
-    estrategia multi-semilla equivalente en términos de variabilidad
-    estadística. Cada fold adicional replica íntegramente el entrenamiento, lo que con K=5 y un
-   sweep de ~20 configuraciones escalaría a más de 100 horas de GPU en una RTX
-  3050 de 4 GB VRAM, haciendo la validación cruzada computacionalmente inviable 
-  en el contexto de este proyecto.
+  \item \textbf{Optimización de hiperparámetros.} Realizar una
+    búsqueda acotada y documentada de hiperparámetros, justificando
+    explícitamente por qué no se ejecutó una búsqueda exhaustiva
+    bajo las restricciones de VRAM y tiempo de entrenamiento
+    (Sec.\ref{sec:tuning}). Por las mismas restricciones se
+    sustituye la validación cruzada por una estrategia multi-semilla
+    equivalente en términos de variabilidad estadística: con $K=5$ y
+    un \textit{sweep} de $\sim 20$ configuraciones, la validación
+    cruzada escalaría a más de 100 horas de GPU en la RTX 3050 de
+    4\,GB de VRAM, lo cual es computacionalmente inviable en el
+    contexto de este proyecto.
   \item \textbf{Métricas y análisis de resultados.} Reportar métricas
     apropiadas a la clase desbalanceada, curvas ROC y PR, análisis de
     errores y variabilidad seed-by-seed (Secs.~\ref{sec:results}
@@ -569,21 +593,27 @@ expresividad contra la cual se mide su aporte real.
 \subsection{Random estratificado}
 \label{subsec:random}
 
-El baseline más simple. No mira la curva: solo conoce la proporción
-de clases en el \textit{split} de entrenamiento. Para cada muestra de
-test predice la clase positiva con probabilidad
+El baseline más simple no mira la curva: solo conoce la proporción
+de clases en el \textit{split} de entrenamiento. Para cada muestra
+emite como probabilidad constante el \textit{prior} positivo de
+\textit{train}:
 \begin{equation}
-\hat{p}(y=1) = \frac{N_{\text{CP}}^{\text{train}}}{N_{\text{CP}}^{\text{train}} + N_{\text{FP}}^{\text{train}}} = \frac{422}{1\,103} \approx 0.383,
+\hat{p}(y=1) = \frac{N_{\text{CP}}^{\text{train}}}{N_{\text{CP}}^{\text{train}} + N_{\text{FP}}^{\text{train}}} = \frac{422}{1\,103} \approx 0.383.
 \label{eq:random-prior}
 \end{equation}
-y emite una predicción de Bernoulli con ese parámetro.
+Como esta probabilidad queda por debajo del umbral de decisión $0.5$,
+el baseline clasifica todas las muestras del \textit{test} como
+negativas al calcular F1, \textit{recall} y \textit{precision}. Por
+eso su \textit{recall} para CP es $0$ (no recupera ningún planeta),
+aunque su AUC-ROC esperado permanece en $0.5$ (la métrica no depende
+del umbral, sino del ordenamiento de las probabilidades, que es
+arbitrario cuando todas son iguales).
 
 \paragraph{Para qué sirve.}
-Establece el \textit{piso} contra el cual todos los modelos posteriores
-deben superar. Por construcción su AUC-ROC esperado es exactamente
-$0.5$, ya que clasifica sin información alguna sobre la curva. Si un
-modelo no supera este piso, es evidencia de un error de implementación
-o de pipeline, no de un problema de aprendizaje.
+Establece el \textit{piso} contra el cual todos los modelos
+posteriores deben superar. Si un modelo basado en la curva no supera
+este AUC de $0.5$, es evidencia de un error de implementación o de
+\textit{pipeline}, no de un problema de aprendizaje.
 
 \subsection{Regresión logística sobre catálogo}
 \label{subsec:logreg}
@@ -637,7 +667,7 @@ con la calidad oficial de la NASA.
 Establece cuánto desempeño se puede extraer de la metadata sin tocar
 la curva. Si un modelo basado en la curva no supera a la regresión
 logística, significa que la curva no aporta señal adicional sobre lo
-que ya está en el catálogo, lo cual sería un hallazgo gigantesco en
+que ya está en el catálogo, lo cual sería un hallazgo relevante en
 sí mismo.
 
 \subsection{CNN single-branch (AstroNet-inspired)}
@@ -888,19 +918,40 @@ reporte.
 \subsection{Splits por TIC ID}
 \label{subsec:splits}
 
-Cuando una estrella es observada por TESS en varios sectores, la NASA
-publica una curva de luz por cada sector. Todas esas curvas comparten
-el mismo identificador, el \texttt{TIC ID}. Si al armar los conjuntos
-de \textit{train}, \textit{validation} y \textit{test} las particiones
-se hicieran al nivel de \textbf{curva} (cada \texttt{.fits} a un
-\textit{split} al azar), un sector de una estrella podría caer en
-\textit{train} y otro sector de la misma estrella en \textit{test}. El
-modelo, durante el entrenamiento, aprendería características propias
-de esa estrella (su ruido instrumental específico, sus pulsaciones
-intrínsecas, su variabilidad estelar) y al evaluarse en \textit{test}
-las reconocería trivialmente. El resultado serían métricas infladas
-que no reflejan capacidad de generalización a estrellas nuevas. Este
-es el \textit{leakage} más frecuente en este dominio.
+TESS no observa el cielo completo de una sola vez. En su lugar lo
+divide en regiones llamadas \textbf{sectores}, cada una observada
+durante aproximadamente 27 días. La Fig.~\ref{fig:tess-sectors}
+muestra cómo estos sectores se distribuyen sobre la esfera celeste.
+Como consecuencia del diseño de la misión, una misma estrella puede
+ser observada en varios sectores consecutivos, especialmente las
+estrellas cercanas a los polos eclípticos donde los sectores se
+solapan.
+
+\begin{figure}[H]
+\centering
+\safeincludegraphics[width=0.62\textwidth]{figures/tess_sectors.jpg}
+\caption{Cobertura observacional de TESS. La misión divide el cielo
+en sectores observados durante $\sim$27 días cada uno. Una misma
+estrella puede aparecer en varios sectores, lo cual implica que cada
+\texttt{TIC ID} puede tener múltiples curvas de luz asociadas. Fuente:
+NASA/MIT.}
+\label{fig:tess-sectors}
+\end{figure}
+
+Cuando una estrella es observada por TESS en varios sectores, la
+NASA publica una curva de luz por cada sector. Todas esas curvas
+comparten el mismo identificador, el \texttt{TIC ID}. Si al armar
+los conjuntos de \textit{train}, \textit{validation} y \textit{test}
+las particiones se hicieran al nivel de \textbf{curva} (cada
+\texttt{.fits} a un \textit{split} al azar), un sector de una
+estrella podría caer en \textit{train} y otro sector de la misma
+estrella en \textit{test}. El modelo, durante el entrenamiento,
+aprendería características propias de esa estrella (su ruido
+instrumental específico, sus pulsaciones intrínsecas, su
+variabilidad estelar) y al evaluarse en \textit{test} las
+reconocería trivialmente. El resultado serían métricas infladas que
+no reflejan capacidad de generalización a estrellas nuevas. Este es
+el \textit{leakage} más frecuente en este dominio.
 
 La regla adoptada es estricta: \textbf{el \textit{split} se hace por
 \texttt{TIC ID}}, no por curva ni por sector. Todas las curvas
@@ -1426,9 +1477,12 @@ reportada para el modelo entregable.
 
 \begin{table}[H]
 \centering
-\caption{Métricas en \textit{test} sellado. Random y LogReg no
-emiten probabilidades calibradas; sus columnas de Brier se omiten.
-El \textit{ensemble} es promedio de probabilidades sobre las cinco
+\caption{Métricas en \textit{test} sellado. Para LogReg no se reporta
+\textit{Brier} porque sus probabilidades completas no se conservaron
+en el artefacto de evaluación original; Random emite una constante,
+por lo que el \textit{Brier} reportado en su fila corresponde al
+error cuadrático del prior $\hat{p} \approx 0.383$. El
+\textit{ensemble} es promedio de probabilidades sobre las cinco
 semillas Mamba.}
 \label{tab:main-results}
 \renewcommand{\arraystretch}{1.18}
