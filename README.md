@@ -2,7 +2,7 @@
 
 > Selective State Space Models para *vetting* de exoplanetas en curvas de luz de TESS, comparados contra una escalera de baselines (Random, LogReg, CNN single-branch y AstroNet multibranch).
 
-**Proyecto académico** — Inteligencia Artificial, Instituto Tecnológico de Costa Rica, Semestre I 2026.
+**Proyecto académico**  Inteligencia Artificial, Instituto Tecnológico de Costa Rica, Semestre I 2026.
 **Autores:** José Fabián Zumbado Ruiz, Jeremmy Aguilar Villanueva.
 **Profesor:** Kenneth Obando Rodríguez.
 
@@ -20,7 +20,6 @@ Evaluar si una arquitectura basada en **Mamba** (Gu & Dao, 2023) puede igualar o
 | Mamba locked | 0.763 | `experiments/2026-05-22_14-32-51_mamba_small` |
 | **Mamba ensemble (5 seeds)** | **0.806** | `paper/results/mamba_ensemble/` |
 | Mamba best seed (789) | 0.810 | `experiments/2026-05-28_01-44-54_mamba_small_seed789` |
-| ExoMamba V1 ensemble (3 seeds) | 0.460 | `paper/results/exomamba_v1_ensemble/` (ablation negativa) |
 | AstroNet multibranch ensemble (3) | 0.716 | `paper/results/astronet_ensemble/` |
 
 El reporte técnico completo está en `paper/reporte_etapa2.md` y `paper/reporte_etapa2.tex`.
@@ -113,13 +112,13 @@ mamba-exoplanet/
 │   └── splits/             # TIC IDs de train/val/test        (versionado)
 ├── src/exoplanet/          # código fuente como paquete instalable
 │   ├── data/               # descarga, preprocesamiento, Dataset, augment
-│   ├── models/             # cnn_baseline, mamba, exomamba_v1, astronet_multibranch
+│   ├── models/             # cnn_baseline, mamba, astronet_multibranch
 │   ├── training/           # loop, losses, schedulers, runner
 │   ├── evaluation/         # métricas, plots, XAI
 │   └── utils/              # seeds, logging, paths
 ├── scripts/                # CLIs reproducibles (un script por etapa del pipeline)
 │   └── wsl2/               # helpers shell para entorno WSL2
-├── notebooks/              # exploración numerada (01_..., 02_..., 03_...)
+├── notebooks/              # exploración (01_toi_eda.ipynb)
 ├── experiments/            # outputs de cada run               (gitignored)
 ├── tests/                  # pytest (49 tests)
 ├── docs/                   # documentación interna
@@ -254,7 +253,7 @@ python scripts/train.py --config configs/random_baseline.yaml
 # CNN single-branch (~30 min, CPU o GPU)
 python scripts/train.py --config configs/cnn_baseline.yaml
 
-# Mamba single — locked baseline  [WSL2, ~1 h]
+# Mamba single  locked baseline  [WSL2, ~1 h]
 python scripts/train.py --config configs/mamba_small.yaml
 
 # Mamba multi-seed sweep  [WSL2, ~1 h × 5 = ~5 h]
@@ -267,16 +266,9 @@ done
 python scripts/train_logreg.py
 ```
 
-### 3. Entrenar Tier 2 (opcional — ablations con vista local)
+### 3. Entrenar Tier 2 (opcional  ablation con vista local)
 
 ```bash
-# ExoMamba V1: sanity overfit + 3 seeds  [WSL2, ~30 min × 3]
-python scripts/train.py --config configs/exomamba_v1_sanity.yaml   # debe llegar a val_auc=1.0
-for seed in 42 123 789; do
-    python scripts/train.py --config configs/exomamba_v1.yaml \
-        --seed $seed --name-suffix "_seed${seed}"
-done
-
 # AstroNet multibranch: sanity + 3 seeds  [WSL2 o Windows, ~15 min × 3]
 python scripts/train.py --config configs/astronet_multibranch_sanity.yaml
 for seed in 42 123 789; do
@@ -302,9 +294,6 @@ done
 python scripts/train_logreg.py --split test
 
 # Tier 2 (eval contra tier2_test_tics.csv, N=210, declarado en el config)
-for run in experiments/2026-05-28_*_exomamba_v1_seed*; do
-    python scripts/evaluate.py --run "$run" --split test   # [WSL2]
-done
 for run in experiments/2026-05-28_*_astronet_multibranch_seed*; do
     python scripts/evaluate.py --run "$run" --split test
 done
@@ -325,11 +314,6 @@ python scripts/ensemble_eval.py \
 python scripts/ensemble_eval.py \
   --runs experiments/2026-05-28_17-37-31_astronet_multibranch_seed42,experiments/2026-05-28_17-47-33_astronet_multibranch_seed123,experiments/2026-05-28_18-01-15_astronet_multibranch_seed789 \
   --split test --output-dir paper/results/astronet_ensemble
-
-# ExoMamba V1 (3 seeds → AUC 0.460, ablation negativa)
-python scripts/ensemble_eval.py \
-  --runs experiments/2026-05-28_16-25-39_exomamba_v1_seed42,experiments/2026-05-28_16-53-09_exomamba_v1_seed123,experiments/2026-05-28_17-20-26_exomamba_v1_seed789 \
-  --split test --output-dir paper/results/exomamba_v1_ensemble
 ```
 
 ### 6. Curva ROC comparativa
@@ -407,7 +391,7 @@ Tabla del entorno exacto usado para producir los resultados reportados. Necesari
 
 | Componente | Especificación |
 |---|---|
-| GPU | NVIDIA RTX 3050 (4 GB VRAM — cuello de botella) |
+| GPU | NVIDIA RTX 3050 (4 GB VRAM  cuello de botella) |
 | CPU | Intel Core i5-12450H (8 cores, 12 threads) |
 | RAM | 40 GB |
 
@@ -417,24 +401,22 @@ Las restricciones de VRAM motivan el uso de mixed precision (FP16), `batch_size 
 
 ## Estado de entregas
 
-### Etapa 2 — Modelado, entrenamiento, XAI y evaluación (45 %) — entregada
+### Etapa 2  Modelado, entrenamiento, XAI y evaluación (45 %)  entregada
 
 - [x] **Baselines:** Random estratificado, Catalog LogReg, CNN single-branch (AstroNet-inspired), AstroNet multibranch (reproducción de Shallue & Vanderburg 2018).
 - [x] **Modelo principal:** Mamba single-view, locked + 5-seed sweep + ensemble.
-- [x] **Ablation Tier 2:** ExoMamba V1 (Mamba global + CNN local), 3 seeds + ensemble. Reportada como negativa.
 - [x] **Protocolo:** splits por TIC ID (70/15/15), test sellado, multi-seed como sustituto de K-fold.
 - [x] **Métricas:** AUC-ROC, AUC-PR, F1, Recall, Precision, Brier; curvas ROC y PR; matriz de confusión; calibración.
 - [x] **Análisis de errores:** top FN/FP, histograma `y_prob` por clase, tasa de error vs features físicas.
-- [x] **XAI:** Gradient Saliency, Integrated Gradients, Occlusion Sensitivity sobre 8 casos (top-2 por cuadrante TP/TN/FN/FP) en Mamba best seed y ExoMamba V1.
+- [x] **XAI:** Gradient Saliency, Integrated Gradients, Occlusion Sensitivity sobre 8 casos (top-2 por cuadrante TP/TN/FN/FP) en Mamba best seed.
 - [x] **Reproducibilidad:** configs YAML versionados, seeds fijos, `env_info.txt` + `git_info.txt` por run, 49 tests automatizados.
 - [x] **Reporte técnico:** `paper/reporte_etapa2.{md,tex}` con figuras y tablas.
 
-### Etapa 3 — Agente, validación, ética y paper IEEE (25 %) — pendiente
+### Etapa 3  Agente, validación, ética y paper IEEE (25 %)  pendiente
 
 - [ ] Agente LLM con *tool calling* sobre el modelo Mamba como herramienta de *vetting*.
 - [ ] Validación del agente (escenarios, casos límite) + análisis ético.
 - [ ] Artículo IEEE/ACM final.
-- [ ] **ExoMamba V2** (opcional): fusión no-naive + scalar features físicos.
 
 ---
 
