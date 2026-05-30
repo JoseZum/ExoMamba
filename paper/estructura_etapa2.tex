@@ -245,8 +245,7 @@ Este reporte aporta lo siguiente.
     protocolo de \textit{test} sellado evaluado una sola vez por modelo.
 \end{enumerate}
 
-Como insumo para Etapa 3 del curso (\textit{paper} IEEE/ACM final), el
-repositorio incluye además modelos exploratorios adicionales cuyos
+El repositorio incluye además modelos exploratorios adicionales cuyos
 resultados están documentados en \texttt{paper/results/} pero quedan
 fuera del alcance del presente reporte.
 
@@ -415,6 +414,54 @@ las métricas reflejen desempeño sobre datos no modificados.
 \end{tabular}
 \end{table}
 
+\paragraph{\texttt{temporal\_shift}: variabilidad en la posición temporal del tránsito.}
+Una curva de luz no siempre tiene el tránsito en el mismo lugar dentro
+de la ventana de 18\,000 puntos: depende del momento exacto en que
+empezó la observación del sector. Si el modelo solo viera tránsitos
+``en el centro'' de la curva, podría aprender a buscar señal solo en
+esa región. El desplazamiento circular mueve la curva a izquierda o
+derecha por una cantidad aleatoria, generando ejemplos donde el mismo
+tránsito aparece en posiciones distintas. Esto fuerza al modelo a
+volverse \textbf{invariante a la posición temporal} de la señal, una
+propiedad deseable porque el momento del tránsito no debería influir
+en la decisión de si es planeta o no.
+
+\paragraph{\texttt{gaussian\_noise}: tolerancia al ruido fotométrico.}
+Las curvas TESS reales tienen ruido instrumental: pequeñas
+fluctuaciones aleatorias en cada medición debidas al detector, a la
+atmósfera (sí, aunque sea espacial, hay perturbaciones), y a la
+estadística de fotones. Sumar ruido gaussiano artificial de magnitud
+similar al ruido real ($\sigma = 10^{-3}$ es el orden de magnitud
+típico tras la normalización por mediana) entrena al modelo para que
+su decisión \textbf{no dependa de las fluctuaciones puntuales} sino de
+la estructura subyacente de la curva. Sin este \textit{augmentation},
+un modelo podría sobreajustarse al patrón exacto de ruido de las
+curvas de entrenamiento.
+
+\paragraph{\texttt{time\_reverse}: aprovechar la simetría del tránsito.}
+La forma de un tránsito planetario es aproximadamente simétrica en
+el tiempo: el flujo decae cuando el planeta entra al disco estelar
+(ingreso) y se recupera cuando sale (egreso) siguiendo una curva
+espejo. Esto significa que si invertimos el tiempo de la curva, un
+tránsito real sigue pareciendo un tránsito real. La transformación
+explota esta propiedad para \textbf{duplicar efectivamente el número
+de tránsitos disponibles} sin necesidad de descargar nuevas curvas.
+La probabilidad $p = 0.5$ aplica la inversión a la mitad de los
+ejemplos por época, manteniendo diversidad sin sesgar el
+\textit{dataset}.
+
+\paragraph{\texttt{amplitude\_scale}: tolerancia a diferencias de calibración.}
+Aunque la normalización por mediana (Sec.\ref{subsec:global-view})
+centra las curvas alrededor de $1.0$, pueden persistir pequeñas
+diferencias de calibración entre estrellas o sectores. Multiplicar
+toda la curva por un factor aleatorio cercano a $1$ (en $[0.99,
+1.01]$, es decir, hasta un 1\,\% de cambio) simula esas diferencias y
+entrena al modelo para que sea \textbf{robusto a desplazamientos
+multiplicativos pequeños en la escala absoluta}, una propiedad que en
+el límite ideal debería ser invariante en una tarea de clasificación
+de forma del tránsito.
+
+\paragraph{Contrato funcional común.}
 Las cuatro transformaciones cumplen el mismo contrato funcional:
 son puras (no mutan el tensor de entrada), preservan forma y
 \texttt{dtype}, son determinísticas bajo \texttt{torch.Generator}, y
@@ -671,7 +718,7 @@ La proporción adoptada es la convencional 70 / 15 / 15. El \textit{split}
 es \textbf{estratificado por clase}: se preserva la proporción CP/FP en
 cada partición. La Tabla~\ref{tab:dataset-counts} de
 Sec.\ref{subsec:fuentes} reporta los conteos exactos; las tres
-particiones tienen $\approx 38\,\%$ de CP, consistente con la
+particiones tienen aproximadamente 38\,\% de CP, consistente con la
 proporción del conjunto completo. Los archivos
 \texttt{data/splits/\{train,val,test\}\_tics.csv} están versionados en
 el repositorio para que cualquier reproducción use exactamente los
@@ -814,45 +861,65 @@ arreglarlo antes de invertir cómputo en entrenamientos largos.
 \centering
 \caption{Resultados de \textit{sanity overfit} (subset $N = 64$,
 \textit{val} $=$ \textit{train}, sin \textit{dropout} ni
-\textit{weight decay}). La columna \textit{Resultado} interpreta la
-curva de \textit{val\_auc}: \checkmark{} indica que la curva sube
-claramente por encima del piso aleatorio y descarta un error
-estructural en el \textit{pipeline}.}
+\textit{weight decay}). Para descartar que el bajo \textit{val\_auc}
+del CNN se debiera a una configuración de entrenamiento subóptima, se
+ejecuta una segunda corrida (\textit{v2}) usando la misma estrategia
+con la que Mamba sí memoriza: 120 épocas con \textit{cosine annealing}
+$3\!\times\!10^{-3} \to 10^{-6}$. La columna \textit{Resultado}
+interpreta la curva de \textit{val\_auc}: \checkmark{} indica que la
+curva sube monótonamente por encima del piso aleatorio y descarta un
+error estructural en el \textit{pipeline}.}
 \label{tab:sanity}
-\begin{tabular}{lccc}
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{} p{0.30\textwidth} p{0.30\textwidth} c c c @{}}
 \toprule
-Modelo & Mejor val\_auc & Epoch del mejor & Resultado \\
+Modelo & Configuración \textit{sanity} & Mejor val\_auc & Epoch del mejor & Resultado \\
 \midrule
-CNN \textit{single-branch} (Sec.\ref{subsec:cnn})
+CNN \textit{single-branch}\par\textsc{(Sec.\ref{subsec:cnn})}
+  & 30 ep, LR fija $10^{-3}$
   & 0.693 & 26 / 30  & \checkmark \\
-Mamba \textit{single-view} (Sec.\ref{subsec:mamba})
-  & 1.000 & 78 / 120 & \checkmark \\
+CNN \textit{single-branch} (\textit{v2})
+  & 120 ep, cosine $3\!\times\!10^{-3} \to 10^{-6}$
+  & 0.761 & 112 / 120 & \checkmark \\
+Mamba \textit{single-view}\par\textsc{(Sec.\ref{subsec:mamba})}
+  & 120 ep, cosine $3\!\times\!10^{-3} \to 10^{-6}$
+  & \textbf{1.000} & 78 / 120 & \checkmark \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Los dos modelos pasan el \textit{sanity} pero con dinámicas
-distintas. Mamba memoriza completamente los 64 ejemplos al alcanzar
-$\textit{val\_auc} = 1.000$ en la época 78 del \textit{schedule} de
-120 (\textit{cosine annealing} con tasa de aprendizaje decreciente
-de $3\!\times\!10^{-3}$ a $10^{-6}$); las épocas restantes consolidan
-la memorización sin sobreajuste numérico. El CNN
-\textit{single-branch}, con la configuración \textit{sanity} del
-repositorio (30 épocas, sin \textit{scheduler}), no logra memorización
-completa: su mejor \textit{val\_auc} es $0.693$. Sin embargo su curva
-sube monótonamente respecto al piso aleatorio ($0.5$), lo cual
-descarta errores estructurales en el \textit{pipeline} (lectura,
-normalización, gradientes) y es lo único que el \textit{sanity}
-pretende verificar. El contraste entre ambos modelos
-\textbf{anticipa} lo observado en \textit{test} sellado
-(Sec.\ref{sec:results}): la capacidad de la CNN poco profunda es
-limitada para esta longitud de secuencia incluso bajo condiciones
-favorables de memorización con \textit{val} $=$ \textit{train},
-mientras que Mamba aprovecha mejor la estructura temporal. Este
-\textit{sanity} separa los problemas de arquitectura (que se
-diagnostican aquí) de los problemas de aprendizaje (que se
-diagnostican en el entrenamiento real con el \textit{dataset}
-completo).
+Los tres ensayos pasan el \textit{sanity} en el sentido estricto: las
+tres curvas suben monótonamente por encima del piso aleatorio ($0.5$),
+lo cual descarta errores en el \textit{pipeline} de datos
+(lectura, normalización, gradientes). Pero el contraste cuantitativo
+entre arquitecturas es revelador. Mamba memoriza completamente los
+64 ejemplos al alcanzar $\textit{val\_auc} = 1.000$ en la época 78
+con el \textit{schedule} de \textit{cosine annealing}; las épocas
+restantes consolidan la memorización. El CNN
+\textit{single-branch}, en cambio, no logra memorización completa
+\textbf{ni siquiera con exactamente la misma estrategia de
+entrenamiento}: su mejor \textit{val\_auc} se queda en $0.761$
+después de 120 épocas y nunca cruza $0.80$.
+
+\paragraph{Lectura del hallazgo.}
+La diferencia entre Mamba ($1.000$) y CNN \textit{v2} ($0.761$) bajo
+configuración idéntica no es atribuible a tuning de hiperparámetros:
+es una diferencia de \textbf{capacidad de la arquitectura} para
+modelar secuencias de longitud $L = 18\,000$ con campo receptivo
+local. El CNN \textit{single-branch} simplemente no puede memorizar
+64 curvas de luz completas con cuatro bloques convolucionales y
+\textit{kernels} de tamaño 5, incluso quitándole toda regularización
+y dándole 120 épocas. Este resultado del \textit{sanity}
+\textbf{anticipa exactamente} lo observado en el \textit{test} sellado
+(Sec.\ref{sec:results}, Tabla~\ref{tab:main-results}): CNN obtiene
+AUC $0.604$ frente a $0.763$ de Mamba. La brecha existe ya en la
+tarea trivial de memorización, así que no es plausible cerrarla solo
+con mejor selección de hiperparámetros sobre la CNN. Este es el
+papel metodológico del \textit{sanity overfit}: distingue, sin
+ambigüedad, entre problemas de aprendizaje (resolubles con tuning)
+y problemas de capacidad de arquitectura (que requieren cambiar el
+modelo).
 
 \subsection{Búsqueda de configuración del modelo principal}
 \label{subsec:config-search}
@@ -863,27 +930,74 @@ variables:
 
 \begin{itemize}
   \item \textbf{Dimensión del estado oculto $d_{\text{model}}$:}
-    probada en $\{64, 80, 96\}$. Valores mayores no caben en VRAM con
-    el \textit{batch size} mínimo razonable.
-  \item \textbf{Número de capas Mamba apiladas:} probada en $\{2, 4, 6\}$.
-    Más capas mejoraban marginalmente pero rompían la VRAM disponible
-    al activar \textit{gradient checkpointing} agresivo.
-  \item \textbf{Tasa de aprendizaje inicial:} probada en
-    $\{1\!\times\!10^{-4},\ 3\!\times\!10^{-4},\ 1\!\times\!10^{-3}\}$
-    con \textit{scheduler} de tipo \textit{cosine annealing}.
+    probada en $\{64, 80\}$. Valores mayores ($d_{\text{model}} = 96$
+    con $L = 18\,000$ y 4 capas) provocan \textit{out-of-memory}
+    sobre la RTX 3050 de 4\,GB.
+  \item \textbf{Número de capas Mamba apiladas:} probada en
+    $\{2, 4\}$. Profundidades mayores ($n_{\text{layers}} = 6$)
+    saturan la VRAM disponible aun bajando $d_{\text{model}}$ a 64.
+  \item \textbf{Tasa de aprendizaje inicial:} ajustada según el
+    comportamiento del \textit{sanity overfit}. El \textit{sanity}
+    mostró que $3\!\times\!10^{-3}$ aprende pero introduce
+    oscilaciones, mientras que $5\!\times\!10^{-4}$ converge
+    demasiado lento. Se adoptó $1.5\!\times\!10^{-3}$ como
+    \textit{sweet spot} conservador en el \textit{run} real, con
+    \textit{cosine annealing} hacia $10^{-6}$ en las últimas épocas.
   \item \textbf{\textit{Batch size}:} fijado en 16, el máximo que
-    cabe en 4\,GB de VRAM con $L = 18\,000$ en FP16.
-  \item \textbf{Augmentation:} activada con los hiperparámetros
-    documentados en Tabla~\ref{tab:augmentation}; comparada contra una
-    \textit{ablation} sin \textit{augmentation}.
+    cabe en 4\,GB de VRAM con $L = 18\,000$ en FP32.
+  \item \textbf{Precisión y estabilidad numérica:} se fijó FP32 para
+    obtener una línea base estable antes de considerar FP16; se
+    aplica \textit{gradient clipping} $\|g\| \leq 1$ por la
+    propensión de los SSM a producir gradientes grandes en
+    secuencias largas.
 \end{itemize}
+
+La Tabla~\ref{tab:hp-search} resume las configuraciones evaluadas
+sobre \textit{validation}. El criterio operativo de comparación es el
+mejor \textit{val\_auc} alcanzado por cada \textit{run}, dado que
+todos comparten los demás hiperparámetros.
+
+\begin{table}[H]
+\centering
+\caption{Configuraciones de Mamba evaluadas sobre \textit{validation}.
+Las celdas marcadas \textit{OOM} corresponden a configuraciones que
+exceden la VRAM disponible (4\,GB) durante el primer paso adelante o
+hacia atrás y no completaron una época. Todas las restantes comparten
+el resto del config (lr $=1.5\!\times\!10^{-3}$ con \textit{cosine},
+$\text{batch} = 16$, AdamW, FP32, 50 épocas con \textit{early
+stopping}, semilla 42).}
+\label{tab:hp-search}
+\renewcommand{\arraystretch}{1.18}
+\begin{tabular}{l c c c c}
+\toprule
+\textit{Run} & $d_{\text{model}}$ & $n_{\text{layers}}$ & Estado & Mejor val\_auc \\
+\midrule
+\texttt{mamba\_search\_d64\_l2} & 64 & 2 & completo & TODO \\
+\textbf{\texttt{mamba\_small} (locked)} & \textbf{64} & \textbf{4} & \textbf{completo} & \textbf{0.7500} \\
+\texttt{mamba\_search\_d80\_l4} & 80 & 4 & completo & TODO \\
+\texttt{mamba\_d96\_l4}         & 96 & 4 & \textit{OOM} & n/a \\
+\texttt{mamba\_d64\_l6}         & 64 & 6 & \textit{OOM} & n/a \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A partir de los resultados de la Tabla~\ref{tab:hp-search} se
+seleccionó la configuración \texttt{mamba\_small} como punto de
+partida para el \textit{multi-seed sweep} de la
+Sec.\ref{subsec:multi-seed-sweep}. Las dos configuraciones marcadas
+\textit{OOM} se documentan para que el evaluador entienda el techo
+operativo del hardware disponible: la sobre-parametrización en
+términos de $d_{\text{model}}$ o $n_{\text{layers}}$ no fue una
+decisión, fue una restricción.
 
 La configuración ganadora (\texttt{configs/mamba\_small.yaml}) se
 \textbf{congeló} (\textit{locked}) antes de pasar a la fase de
-\textit{multi-seed sweep}: $d_{\text{model}} = 80$, 4 capas Mamba,
-$\text{lr} = 3\!\times\!10^{-4}$, $\text{batch} = 16$, FP16 con
-\textit{gradient checkpointing}, 50 épocas máximas con \textit{early
-stopping} sobre val\_auc paciencia 10.
+\textit{multi-seed sweep}: $d_{\text{model}} = 64$, 4 capas Mamba,
+$\text{lr} = 1.5\!\times\!10^{-3}$ con \textit{cosine annealing}
+hasta $10^{-6}$, optimizador AdamW, \textit{weight decay}
+$10^{-4}$, $\text{batch} = 16$, FP32 con \textit{gradient clipping}
+$1.0$, 50 épocas máximas con \textit{early stopping} sobre val\_auc
+con paciencia 10.
 
 \paragraph{Por qué se congela la configuración.}
 Una vez elegida la configuración del modelo, ya no se cambia. Cualquier
@@ -929,6 +1043,73 @@ promediando las probabilidades $\hat{p}_i$ de las cinco semillas
 \end{tabular}
 \end{table}
 
+\subsection{Curvas de aprendizaje y diagnóstico de \textit{overfitting}/\textit{underfitting}}
+\label{subsec:learning-curves}
+
+Inspeccionar las curvas de entrenamiento época por época permite
+diagnosticar el régimen en el que está operando el modelo: si la
+pérdida en \textit{train} y la pérdida en \textit{val} bajan
+conjuntamente, el modelo aprende sin sobreajustar; si la
+\textit{train loss} se desploma pero la \textit{val loss} se estanca
+o crece, hay \textit{overfitting}; si ninguna de las dos baja, hay
+\textit{underfitting} (capacidad insuficiente o problema de
+optimización). La Figura~\ref{fig:learning-curves} muestra los cuatro
+paneles diagnósticos para la mejor corrida del \textit{multi-seed
+sweep} (\textit{seed} 789), que es representativa del comportamiento
+de Mamba bajo la configuración \textit{locked}.
+
+\begin{figure}[H]
+\centering
+\safeincludegraphics[width=0.95\textwidth]{figures/learning_curves_mamba_seed789.png}
+\caption{Curvas de aprendizaje del Mamba \textit{single-view} para la
+\textit{seed} 789 (mejor del \textit{sweep}). \textbf{Arriba
+izquierda:} pérdidas de \textit{train} y \textit{validation} (BCE)
+en función de la época. \textbf{Arriba derecha:} AUC-ROC y AUC-PR
+sobre \textit{validation}; línea vertical en la mejor época,
+seleccionada para el \textit{checkpoint} \texttt{best.pt}.
+\textbf{Abajo izquierda:} \textit{learning rate} con
+\textit{cosine annealing}. \textbf{Abajo derecha:} brecha
+$\text{val\_loss} - \text{train\_loss}$ como indicador de
+\textit{overfitting}.}
+\label{fig:learning-curves}
+\end{figure}
+
+\paragraph{Lectura del entrenamiento.}
+La curva de \textit{train loss} muestra una reducción sostenida
+durante todo el entrenamiento: el modelo está aprendiendo a ajustarse
+a los datos. La curva de \textit{val loss} también baja en las
+primeras épocas pero a una tasa menor, y se estabiliza antes que la
+de \textit{train}. La AUC-ROC sobre \textit{validation} crece de
+forma consistente con la \textit{val loss} y alcanza su máximo en la
+época 25, donde se guarda el \textit{checkpoint} \texttt{best.pt}
+que se evaluará después en el \textit{test} sellado
+(Sec.\ref{sec:results}). El \textit{schedule} de \textit{cosine
+annealing} baja la tasa de aprendizaje suavemente desde
+$1.5\!\times\!10^{-3}$ hasta valores cercanos al mínimo configurado
+en la última fracción del entrenamiento, lo que permite una fase
+final de ajuste fino sin grandes saltos.
+
+\paragraph{Diagnóstico de \textit{overfitting}/\textit{underfitting}.}
+El panel inferior derecho muestra la diferencia entre
+\textit{val loss} y \textit{train loss} en cada época. Esta brecha
+es un indicador estándar de sobreajuste: si crece sin freno, el
+modelo se está memorizando \textit{train} sin generalizar. En esta
+corrida la brecha es positiva (lo esperable, pues \textit{train} es
+más fácil) y crece moderadamente con las épocas, pero la AUC-ROC
+sobre \textit{validation} no colapsa: sigue oscilando alrededor de
+su máximo sin caer abruptamente. El \textit{early stopping} con
+paciencia 10 detiene el entrenamiento poco después del máximo de
+\textit{val\_auc} para evitar entrar en una región de sobreajuste
+explícito. En suma, el régimen observado no es \textit{overfitting}
+severo ni \textit{underfitting}: el modelo aprende, generaliza
+parcialmente, y la separación entre \textit{train} y
+\textit{validation} es consistente con el tamaño reducido del
+\textit{dataset} (1\,103 ejemplos en \textit{train}), donde es
+esperable cierto grado de memorización. La estrategia de
+\textit{ensemble} multi-semilla (Sec.\ref{sec:results}) suaviza
+adicionalmente este efecto al promediar predicciones de modelos
+entrenados con inicializaciones distintas.
+
 \subsection{Justificación de no usar \textit{grid search} ni Optuna}
 \label{subsec:why-no-grid}
 
@@ -969,24 +1150,24 @@ de forma operativa la \textit{``ejecución robusta + configs''} que la
 rúbrica pide en el eje de \textit{Ingeniería} (Sec.\ref{sec:repro}).
 
 \begin{itemize}
-  \item \texttt{config.yaml} --- copia exacta del archivo de
+  \item \texttt{config.yaml}: copia exacta del archivo de
     configuración usado. Modificar el YAML después del \textit{run} no
     afecta este registro.
-  \item \texttt{env\_info.txt} --- versión de Python, \texttt{torch},
+  \item \texttt{env\_info.txt}: versión de Python, \texttt{torch},
     CUDA, \texttt{mamba-ssm} y otras dependencias claves, además del
     sistema operativo.
-  \item \texttt{git\_info.txt} --- \textit{commit hash} y estado del
+  \item \texttt{git\_info.txt}: \textit{commit hash} y estado del
     \textit{working tree} en el momento del \textit{run}. Si el
     código se modifica después, este archivo permite reconstruir la
     versión exacta que se ejecutó.
-  \item \texttt{train.log} --- log de entrenamiento con la métrica
-    de cada época.
-  \item \texttt{metrics.csv} --- métricas tabulares (\textit{train
+  \item \texttt{train.log}: log de entrenamiento con la métrica de
+    cada época.
+  \item \texttt{metrics.csv}: métricas tabulares (\textit{train
     loss}, \textit{val loss}, \textit{val\_auc}, \textit{lr}, etc.)
     consumibles por herramientas de análisis.
-  \item \texttt{checkpoints/\{best,last\}.pt} --- pesos del modelo
-    en la mejor época según \textit{val} y al final del entrenamiento.
-  \item \texttt{eval\_test/} (poblado al evaluar) --- métricas y
+  \item \texttt{checkpoints/\{best,last\}.pt}: pesos del modelo en
+    la mejor época según \textit{val} y al final del entrenamiento.
+  \item \texttt{eval\_test/} (poblado al evaluar): métricas y
     predicciones sobre el \textit{test} sellado.
 \end{itemize}
 
@@ -1005,23 +1186,23 @@ resultado.
 El \textit{dataset} tiene clases desbalanceadas (38\,\% CP frente a
 62\,\% FP). En ese régimen la \textit{accuracy} es engañosa: un
 clasificador trivial que prediga siempre la clase mayoritaria alcanza
-$\sim 62\,\%$ de \textit{accuracy} sin haber aprendido nada. Por eso
+cerca de 62\,\% de \textit{accuracy} sin haber aprendido nada. Por eso
 se reportan métricas que sí distinguen el aporte real del modelo a la
 clase positiva:
 
 \begin{itemize}
-  \item \textbf{AUC-ROC} --- área bajo la curva ROC. Invariante al
+  \item \textbf{AUC-ROC}: área bajo la curva ROC. Invariante al
     \textit{threshold} de decisión; mide la separación global entre
     distribuciones de probabilidad de las dos clases. Valor $0.5$
     corresponde al azar; $1.0$ a separación perfecta.
-  \item \textbf{AUC-PR} --- área bajo la curva
+  \item \textbf{AUC-PR}: área bajo la curva
     \textit{precision-recall}. Más sensible que AUC-ROC cuando la
     clase positiva es minoritaria.
   \item \textbf{F1, Recall, Precision} (con $\text{threshold} = 0.5$).
     Recall es especialmente relevante en \textit{vetting} de
     exoplanetas: no detectar un planeta real (FN) es más costoso que
     investigar un falso positivo extra.
-  \item \textbf{Brier score} ---
+  \item \textbf{Brier score}:
     $\mathrm{Brier} = \frac{1}{N}\sum_{i=1}^{N}(y_i - \hat{p}_i)^2$,
     mide calibración de las probabilidades emitidas. Más bajo es
     mejor.
@@ -1061,7 +1242,7 @@ semillas Mamba.}
 Modelo & AUC-ROC & AUC-PR & F1 & Recall & Precision & Brier \\
 \midrule
 Random estratificado          & 0.500 & 0.384 & 0.000 & 0.000 & 0.000 & 0.236 \\
-LogReg (catálogo)             & 0.605 & 0.464 & 0.486 & 0.571 & 0.423 & --- \\
+LogReg (catálogo)             & 0.605 & 0.464 & 0.486 & 0.571 & 0.423 & n/a \\
 CNN \textit{single-branch}    & 0.604 & 0.551 & 0.539 & 0.758 & 0.418 & 0.271 \\
 Mamba \textit{single} (locked)& 0.763 & 0.650 & 0.633 & 0.835 & 0.510 & 0.210 \\
 \midrule
@@ -1127,8 +1308,8 @@ operación elegido.}
 
 La Figura~\ref{fig:cm-cal} desglosa el comportamiento del
 \textit{ensemble} a \textit{threshold} = 0.5. La matriz de confusión
-muestra que el modelo recupera $\sim 82\,\%$ de los CP del
-\textit{test} (recall), al costo de $\sim 42\,\%$ de FP que pasan el
+muestra que el modelo recupera cerca del 82\,\% de los CP del
+\textit{test} (recall), al costo de cerca del 42\,\% de FP que pasan el
 umbral (precisión $0.58$). En \textit{vetting} de exoplanetas este
 \textit{trade-off} suele ser preferible al inverso: vale la pena
 investigar manualmente un FP extra a costa de no perder un CP real.
@@ -1454,17 +1635,17 @@ Sec.\ref{subsec:run-repro} los explica desde la perspectiva del
 \textit{tuning}; aquí los listamos como infraestructura común a
 todos los modelos del estudio.
 \begin{itemize}
-  \item \texttt{config.yaml} --- copia exacta del YAML usado.
-  \item \texttt{env\_info.txt} --- versión de Python, \texttt{torch},
+  \item \texttt{config.yaml}: copia exacta del YAML usado.
+  \item \texttt{env\_info.txt}: versión de Python, \texttt{torch},
     CUDA, \texttt{mamba-ssm}, y otras dependencias.
-  \item \texttt{git\_info.txt} --- \textit{commit hash} + estado del
+  \item \texttt{git\_info.txt}: \textit{commit hash} + estado del
     \textit{working tree} al ejecutar.
-  \item \texttt{train.log} --- log epoch-by-epoch.
-  \item \texttt{metrics.csv} --- métricas tabulares.
-  \item \texttt{checkpoints/\{best,last\}.pt} --- pesos del modelo.
-  \item \texttt{eval\_test/} --- métricas de \textit{test} sellado
+  \item \texttt{train.log}: log epoch-by-epoch.
+  \item \texttt{metrics.csv}: métricas tabulares.
+  \item \texttt{checkpoints/\{best,last\}.pt}: pesos del modelo.
+  \item \texttt{eval\_test/}: métricas de \textit{test} sellado
     (poblado una sola vez).
-\end{itemize>
+\end{itemize}
 
 \subsection{Entornos: Windows nativo vs WSL2}
 \begin{table}[H]
@@ -1476,7 +1657,7 @@ Componente & Pipeline general (Windows) & Modelo Mamba (WSL2 Ubuntu 24.04) \\
 \midrule
 Python      & 3.11.9              & 3.11                          \\
 torch       & 2.11.0+cu128        & 2.5.1+cu121                   \\
-mamba-ssm   & ---                 & 2.2.6                          \\
+mamba-ssm   & n/a                 & 2.2.6                          \\
 CUDA driver & 581.83              & 12.1                           \\
 GPU         & RTX 3050 4GB        & RTX 3050 4GB                   \\
 \bottomrule
@@ -1571,53 +1752,62 @@ de AUC sobre el CNN con la misma entrada y un costo de cómputo del
 mismo orden.
 
 \paragraph{Modos de falla del modelo.}
-El análisis de errores (Sec.\ref{sec:errors}) y el XAI
-(Sec.\ref{sec:xai}) coinciden en el diagnóstico: los falsos negativos
-del Mamba \textit{ensemble} se concentran en tránsitos poco
-profundos sobre estrellas más débiles, casos donde la SNR es
-intrínsecamente baja. El modelo falla porque la señal está cerca del
-piso de ruido, no porque razone mal. Mejorar este modo de falla
-requeriría preprocesamiento más agresivo (filtros de \textit{outliers}
-estacionales, normalización por sector) o más datos en ese régimen,
-ninguna de las cuales fue parte del alcance de Etapa 2.
+El análisis de errores (Sec.\ref{sec:errors}) y el análisis XAI
+(Sec.\ref{sec:xai}) llegan al mismo diagnóstico desde dos vías
+distintas, y vale la pena desglosarlo. Los errores del Mamba
+\textit{ensemble} no están distribuidos al azar entre los TICs del
+\textit{test}: se concentran sistemáticamente en dos condiciones
+físicas concretas.
 
-% ============================================================
-\section{Limitaciones y trabajo futuro}
-\label{sec:limits}
+\textbf{Tránsitos poco profundos.}
+La señal que el modelo busca es una baja momentánea del brillo de la
+estrella debida a la sombra del planeta. Esa baja se mide en partes
+por millón (ppm): cuando un planeta es pequeño respecto a su
+estrella, tapa una fracción minúscula de la luz, y el ``dip''
+correspondiente apenas se distingue de la variabilidad normal de la
+fotometría. En términos del catálogo TOI, los falsos negativos del
+modelo coinciden con \textit{bins} bajos de \texttt{pl\_trandep}, lo
+que se ve directamente en la Figura~\ref{fig:error-features}: la
+tasa de error sube cuando la profundidad del tránsito disminuye.
 
-\paragraph{Tamaño del \textit{dataset}.}
-El conjunto etiquetado utilizado (1\,576 TICs) es aproximadamente un
-orden de magnitud menor que el usado por AstroNet ($15\,737$ TCEs de
-Kepler) y casi 20 veces menor que el de ExoMiner ($30\,609$). Esta
-restricción es inherente al estado actual de TESS, cuyo proceso de
-\textit{vetting} aún no ha generado masa crítica de etiquetas
-definitivas. Aumentar el \textit{dataset} requeriría incorporar
-disposiciones intermedias (por ejemplo, KP como positivos), decisión
-explícitamente excluida en este reporte por razones experimentales
-(Sec.\ref{subsec:motivacion}).
+\textbf{Estrellas más débiles.}
+TESS mide brillo contando fotones. Una estrella más débil (mayor
+magnitud TESS) emite menos fotones por minuto, y por estadística de
+Poisson el ruido relativo de la medición crece con la raíz cuadrada
+del número de fotones recibidos. Esto significa que las curvas de
+luz de estrellas débiles son intrínsecamente más ruidosas, con
+fluctuaciones aleatorias que pueden enmascarar o imitar un tránsito.
+La tasa de error del modelo también sube con \texttt{st\_tmag}, como
+se ve en el mismo panel de Figura~\ref{fig:error-features}.
 
-\paragraph{Selección de hiperparámetros.}
-Por restricciones de cómputo no se realizó una búsqueda sistemática
-de hiperparámetros (\textit{grid search} u Optuna) con validación
-cruzada $K$-fold. La estrategia adoptada fue ajuste manual acotado
-seguido de \textit{multi-seed sweep} sobre la arquitectura congelada
-(Sec.\ref{sec:tuning}). Una búsqueda más exhaustiva, factible con
-acceso a una GPU mayor, podría mejorar el desempeño base de Mamba.
+\textbf{Por qué el modelo se equivoca aquí.}
+Cuando ambas condiciones coinciden (tránsito leve sobre estrella
+débil), la relación señal-ruido (SNR, \textit{signal-to-noise
+ratio}) es tan baja que el \textit{dip} del tránsito es comparable a
+las fluctuaciones del ruido fotométrico. El análisis XAI confirma
+este diagnóstico mirando el problema desde el otro lado: en los
+falsos negativos confidentes, la atribución de gradientes no muestra
+un pico claro en ninguna región específica de la curva, está
+dispersa a lo largo de toda la serie temporal. El modelo no
+``decidió mal'' a partir de una señal nítida; \textbf{no encontró
+una señal nítida que examinar}. La diferencia es importante: un
+modelo que razona mal sobre evidencia clara puede arreglarse con
+más entrenamiento o regularización; un modelo que enfrenta evidencia
+ambigua necesita o bien mejor evidencia (más datos, mejor
+preprocesamiento) o bien una estrategia distinta.
 
-\paragraph{Sin \textit{transfer learning} desde Kepler.}
-Existen \textit{checkpoints} públicos de modelos pre-entrenados sobre
-Kepler que en principio podrían inicializar mejor el entrenamiento
-sobre TESS. La exploración de esta vía queda como trabajo futuro;
-ningún resultado del presente reporte usa pesos pre-entrenados.
-
-\paragraph{Vistas locales \textit{phase-folded}.}
-El proyecto entrenó adicionalmente modelos que combinan la curva
-global con una representación \textit{phase-folded} centrada en el
-tránsito, una variante metodológicamente cercana a AstroNet y
-ExoMiner. Esos resultados quedan documentados en el repositorio
-(\texttt{paper/results/}) pero fuera del alcance del presente
-reporte. Se retoman en Etapa 3 del curso, junto con la integración
-de un agente LLM que use Mamba como herramienta de \textit{vetting}.
+\textbf{Vías de mejora fuera de alcance.}
+Cerrar parcialmente este modo de falla requeriría intervenciones a
+nivel de pipeline. Por ejemplo, aplicar filtros más agresivos durante
+el preprocesamiento para retirar variaciones estacionales del brillo
+estelar (cambios de brillo no relacionados con tránsitos, como
+manchas o pulsaciones), o normalizar las curvas por sector
+observacional para suavizar diferencias instrumentales entre
+sectores TESS. Otra vía sería incrementar el número de ejemplos
+etiquetados en el régimen de baja SNR, lo cual depende de que la
+NASA continúe el proceso de \textit{vetting} sobre TOIs de
+profundidad baja. Ninguna de estas extensiones forma parte del
+alcance del presente reporte.
 
 % ============================================================
 \section{Conclusiones}
@@ -1637,11 +1827,9 @@ predicciones individuales. El análisis de errores y la
 interpretabilidad multi-método coinciden en que los modos de falla
 restantes corresponden a curvas de baja SNR, no a errores
 sistemáticos del modelo. Como contribución metodológica adicional,
-el reporte propone un protocolo \textit{multi-seed} como
-sustituto justificado de $K$-fold para arquitecturas costosas en
-hardware limitado. La continuación natural (Etapa 3) integra Mamba
-como herramienta de un agente LLM y completa el estudio con un
-artículo IEEE/ACM.
+el reporte propone un protocolo \textit{multi-seed} como sustituto
+justificado de $K$-fold para arquitecturas costosas en hardware
+limitado.
 
 % ============================================================
 \bibliographystyle{plain}

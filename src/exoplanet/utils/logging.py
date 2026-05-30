@@ -1,4 +1,4 @@
-"""Logger de texto + writer de TensorBoard."""
+"""Logger de texto y writer de TensorBoard."""
 
 from __future__ import annotations
 

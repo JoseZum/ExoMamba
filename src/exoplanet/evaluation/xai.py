@@ -1,8 +1,8 @@
-"""Explicabilidad (XAI) sobre curvas de luz (Fase 9).
+"""
+Explicabilidad (XAI) sobre curvas de luz (Fase 9).
 
-CLAUDE.md exige tres técnicas explícitas: **gradient saliency, integrated
-gradients y occlusion sensitivity**. NO atención: Mamba no tiene attention
-en el sentido del Transformer, y reportar "atención" sobre un Mamba sería
+Tres técnicas explícitas: **gradient saliency, integrated
+gradients y occlusion sensitivity**. 
 incorrecto.
 
 Convenciones:

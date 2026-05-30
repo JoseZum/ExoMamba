@@ -1,0 +1,55 @@
+# CNN sanity overfit v2: misma estrategia que mamba_sanity_overfit.yaml.
+# 64 ejemplos, dropout=0, weight_decay=0, val=train, early stopping off.
+# Si CNN está sano, debe MEMORIZAR esos 64 ejemplos → val_auc → 1.0.
+#
+# Cambios vs v1 (que peakeaba en val_auc=0.69 a los 30 epochs):
+#   - Epochs: 30 → 120 para dar margen.
+#   - Scheduler: none → cosine (3e-3 → 1e-6), igual que Mamba sanity.
+#   - LR inicial: 1e-3 → 3e-3, escapa rápido del punto de inicio.
+#
+# Tiempo esperado: ~5-10 min en RTX 3050.
+
+experiment:
+  name: "cnn_sanity_overfit_v2"
+  seed: 42
+  output_dir: "experiments"
+
+data:
+  train_csv: "data/splits/train_tics.csv"
+  val_csv: "data/splits/train_tics.csv"   # val = train, a propósito
+  processed_dir: "data/processed/global"
+  batch_size: 16
+  num_workers: 0
+  subset: 64
+
+model:
+  type: "cnn_baseline"
+  params:
+    in_channels: 1
+    channels: [16, 32, 64, 128]
+    kernel_size: 5
+    hidden_dim: 64
+    dropout: 0.0
+
+training:
+  optimizer:
+    type: "adamw"
+    lr: 3.0e-3
+    weight_decay: 0.0
+  scheduler:
+    type: "cosine"
+    t_max: 120
+    eta_min: 1.0e-6
+  loss:
+    type: "bce"
+    pos_weight: null
+  epochs: 120
+  fp16: false
+  gradient_checkpointing: false
+
+early_stopping:
+  enabled: false
+
+logging:
+  tensorboard: true
+  log_every_n_steps: 5
