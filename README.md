@@ -1,8 +1,8 @@
 # Mamba-Exoplanet
 
-> Selective State Space Models para *vetting* de exoplanetas en curvas de luz de TESS, comparados contra una escalera de baselines (Random, LogReg, CNN single-branch y AstroNet multibranch).
+> Selective State Space Models para *vetting* de exoplanetas en curvas de luz de TESS, comparados contra una escalera de baselines (Random, LogReg, CNN single-branch).
 
-**Proyecto académico**  Inteligencia Artificial, Instituto Tecnológico de Costa Rica, Semestre I 2026.
+**Proyecto académico**  Inteligencia Artificial, Instituto Tecnológico de Costa Rica, Semestre I 2026.\
 **Autores:** José Fabián Zumbado Ruiz, Jeremmy Aguilar Villanueva.
 **Profesor:** Kenneth Obando Rodríguez.
 
@@ -20,7 +20,6 @@ Evaluar si una arquitectura basada en **Mamba** (Gu & Dao, 2023) puede igualar o
 | Mamba locked | 0.763 | `experiments/2026-05-22_14-32-51_mamba_small` |
 | **Mamba ensemble (5 seeds)** | **0.806** | `paper/results/mamba_ensemble/` |
 | Mamba best seed (789) | 0.810 | `experiments/2026-05-28_01-44-54_mamba_small_seed789` |
-| AstroNet multibranch ensemble (3) | 0.716 | `paper/results/astronet_ensemble/` |
 
 El reporte técnico completo está en `paper/reporte_etapa2.md` y `paper/reporte_etapa2.tex`.
 
@@ -74,15 +73,15 @@ TESS no observa el cielo completo a la vez: lo divide en regiones llamadas **sec
 
 ### Variables del TOI Catalog: cuáles usamos y por qué
 
-El TOI Catalog tiene 85 columnas. **Ninguna entra al modelo como feature**: la entrada del modelo es siempre la serie temporal `PDCSAP_FLUX` de los archivos `.fits`. Las columnas del catálogo solo sirven para seleccionar qué estrellas descargar, asignar el label, y construir la *vista local* phase-folded (Tier 2).
+El TOI Catalog tiene 85 columnas. **Ninguna entra al modelo como feature**: la entrada del modelo es siempre la serie temporal `PDCSAP_FLUX` de los archivos `.fits`. Las columnas del catálogo solo sirven para seleccionar qué estrellas descargar y asignar el label.
 
 | Columna | Para qué |
 |---|---|
 | `tid` | Identificador único de la estrella. Se usa para pedir los `.fits` a MAST y para hacer el split por estrella |
 | `tfopwg_disp` | Disposición (CP, FP, PC, KP). Define el label: CP = 1, FP = 0 |
-| `pl_orbper` | Período orbital en días. Usado para phase-folding en Tier 2 |
-| `pl_tranmid` | Tiempo del centro del tránsito (T0). Centra el phase-fold |
-| `pl_trandurh` | Duración del tránsito. Define la ventana del local view (±2.5×D) |
+| `pl_orbper` | Período orbital en días. Análisis exploratorio |
+| `pl_tranmid` | Tiempo del centro del tránsito (T0). Análisis exploratorio |
+| `pl_trandurh` | Duración del tránsito. Análisis exploratorio |
 | `pl_trandep` | Profundidad del tránsito en ppm. Análisis exploratorio |
 | `st_tmag` | Magnitud TESS. Análisis exploratorio de SNR |
 
@@ -112,7 +111,7 @@ mamba-exoplanet/
 │   └── splits/             # TIC IDs de train/val/test        (versionado)
 ├── src/exoplanet/          # código fuente como paquete instalable
 │   ├── data/               # descarga, preprocesamiento, Dataset, augment
-│   ├── models/             # cnn_baseline, mamba, astronet_multibranch
+│   ├── models/             # cnn_baseline, mamba
 │   ├── training/           # loop, losses, schedulers, runner
 │   ├── evaluation/         # métricas, plots, XAI
 │   └── utils/              # seeds, logging, paths
@@ -236,12 +235,9 @@ python scripts/preprocess_global.py
 # Splits por TIC ID (70/15/15)
 python scripts/make_splits.py
 
-# Preprocesamiento Tier 2: vista local phase-folded (201 puntos)
-python scripts/preprocess_local.py
-python scripts/make_tier2_splits.py
 ```
 
-Salidas clave (versionadas): `data/splits/{train,val,test}_tics.csv`, `data/splits/tier2_{train,val,test}_tics.csv`.
+Salidas clave (versionadas): `data/splits/{train,val,test}_tics.csv`.
 Salidas grandes (gitignored): `data/raw/`, `data/processed/`.
 
 ### 2. Entrenar baselines Tier 1
@@ -266,18 +262,7 @@ done
 python scripts/train_logreg.py
 ```
 
-### 3. Entrenar Tier 2 (opcional  ablation con vista local)
-
-```bash
-# AstroNet multibranch: sanity + 3 seeds  [WSL2 o Windows, ~15 min × 3]
-python scripts/train.py --config configs/astronet_multibranch_sanity.yaml
-for seed in 42 123 789; do
-    python scripts/train.py --config configs/astronet_multibranch.yaml \
-        --seed $seed --name-suffix "_seed${seed}"
-done
-```
-
-### 4. Evaluar test sellado (una sola vez por modelo)
+### 3. Evaluar test sellado (una sola vez por modelo)
 
 ```bash
 # Tier 1
@@ -292,11 +277,6 @@ done
 
 # LogReg
 python scripts/train_logreg.py --split test
-
-# Tier 2 (eval contra tier2_test_tics.csv, N=210, declarado en el config)
-for run in experiments/2026-05-28_*_astronet_multibranch_seed*; do
-    python scripts/evaluate.py --run "$run" --split test
-done
 ```
 
 Cada eval produce `<run_dir>/eval_test/{metrics.json, predictions.csv, roc_curve.png, pr_curve.png, confusion_matrix.png, calibration.png}`.
@@ -309,11 +289,6 @@ python scripts/ensemble_eval.py \
   --runs experiments/2026-05-27_23-00-33_mamba_small_seed42,experiments/2026-05-28_00-49-39_mamba_small_seed123,experiments/2026-05-28_01-26-18_mamba_small_seed456,experiments/2026-05-28_01-44-54_mamba_small_seed789,experiments/2026-05-28_02-17-54_mamba_small_seed2024 \
   --split test \
   --output-dir paper/results/mamba_ensemble
-
-# AstroNet (3 seeds → AUC 0.716)
-python scripts/ensemble_eval.py \
-  --runs experiments/2026-05-28_17-37-31_astronet_multibranch_seed42,experiments/2026-05-28_17-47-33_astronet_multibranch_seed123,experiments/2026-05-28_18-01-15_astronet_multibranch_seed789 \
-  --split test --output-dir paper/results/astronet_ensemble
 ```
 
 ### 6. Curva ROC comparativa
@@ -403,7 +378,7 @@ Las restricciones de VRAM motivan el uso de mixed precision (FP16), `batch_size 
 
 ### Etapa 2  Modelado, entrenamiento, XAI y evaluación (45 %)  entregada
 
-- [x] **Baselines:** Random estratificado, Catalog LogReg, CNN single-branch (AstroNet-inspired), AstroNet multibranch (reproducción de Shallue & Vanderburg 2018).
+- [x] **Baselines:** Random estratificado, Catalog LogReg, CNN single-branch.
 - [x] **Modelo principal:** Mamba single-view, locked + 5-seed sweep + ensemble.
 - [x] **Protocolo:** splits por TIC ID (70/15/15), test sellado, multi-seed como sustituto de K-fold.
 - [x] **Métricas:** AUC-ROC, AUC-PR, F1, Recall, Precision, Brier; curvas ROC y PR; matriz de confusión; calibración.
