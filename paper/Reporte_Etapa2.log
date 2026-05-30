@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.28 (MiKTeX 25.12) (preloaded format=pdflatex 2026.4.29)  29 MAY 2026 21:37
+This is pdfTeX, Version 3.141592653-2.6-1.40.28 (MiKTeX 25.12) (preloaded format=pdflatex 2026.4.29)  29 MAY 2026 21:41
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1000,36 +1000,36 @@ File: figures/banner_satellite.jpg Graphic file (type jpg)
 Package pdftex.def Info: figures/banner_satellite.jpg  used on input line 85.
 (pdftex.def)             Requested size: 455.24411pt x 256.12924pt.
 LaTeX Font Info:    Trying to load font information for OT1+lmr on input line 1
-06.
+08.
 
 (C:\Users\jfzum\AppData\Local\Programs\MiKTeX\tex/latex/lm\ot1lmr.fd
 File: ot1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 LaTeX Font Info:    Trying to load font information for OML+lmm on input line 1
-06.
+08.
 
 (C:\Users\jfzum\AppData\Local\Programs\MiKTeX\tex/latex/lm\omllmm.fd
 File: omllmm.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 LaTeX Font Info:    Trying to load font information for OMS+lmsy on input line 
-106.
+108.
 
 (C:\Users\jfzum\AppData\Local\Programs\MiKTeX\tex/latex/lm\omslmsy.fd
 File: omslmsy.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 LaTeX Font Info:    Trying to load font information for OMX+lmex on input line 
-106.
+108.
 
 (C:\Users\jfzum\AppData\Local\Programs\MiKTeX\tex/latex/lm\omxlmex.fd
 File: omxlmex.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10> on input line 106.
+(Font)              <10> on input line 108.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <7> on input line 106.
+(Font)              <7> on input line 108.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <5> on input line 106.
-LaTeX Font Info:    Trying to load font information for U+msa on input line 106
+(Font)              <5> on input line 108.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 108
 .
 
 (C:\Users\jfzum\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\umsa.fd
@@ -1038,7 +1038,7 @@ File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 (C:\Users\jfzum\AppData\Local\Programs\MiKTeX\tex/latex/microtype\mt-msa.cfg
 File: mt-msa.cfg 2006/02/04 v1.1 microtype config. file: AMS symbols (a) (RS)
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 106
+LaTeX Font Info:    Trying to load font information for U+msb on input line 108
 .
 
 (C:\Users\jfzum\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\umsb.fd
@@ -1050,31 +1050,32 @@ File: mt-msb.cfg 2005/06/01 v1.0 microtype config. file: AMS symbols (b) (RS)
 (Reporte_Etapa2.toc
 LaTeX Info: Redefining \. on input line 1.
 LaTeX Info: Redefining \% on input line 1.
-LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10.95> on input line 3.
-LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <8> on input line 3.
-LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <6> on input line 3.
  [1
 
 {C:/Users/jfzum/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}{C:/Users/jfzu
 m/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm-ec.enc}{C:/Users/jfzum/Ap
 pData/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm-rm.enc}{C:/Users/jfzum/AppDat
 a/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm-mathit.enc} <./figures/banner_sat
-ellite.jpg>] [2])
+ellite.jpg>]
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <10.95> on input line 3.
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <8> on input line 3.
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <6> on input line 3.
+ [2])
 \tf@toc=\write5
 \openout5 = `Reporte_Etapa2.toc'.
 
  [3]
-<figures/concept_lightcurve_transit.png, id=271, 864.22874pt x 586.19pt>
+<figures/concept_lightcurve_transit.png, id=272, 641.597pt x 279.0425pt>
 File: figures/concept_lightcurve_transit.png Graphic file (type png)
 <use figures/concept_lightcurve_transit.png>
 Package pdftex.def Info: figures/concept_lightcurve_transit.png  used on input 
-line 150.
-(pdftex.def)             Requested size: 327.7763pt x 222.32518pt.
+line 152.
+(pdftex.def)             Requested size: 327.7763pt x 142.55247pt.
 LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 1
-80.
+82.
 
 (C:\Users\jfzum\AppData\Local\Programs\MiKTeX\tex/latex/lm\t1lmtt.fd
 File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
@@ -1084,45 +1085,45 @@ Package microtype Info: Loading generic protrusion settings for font family
 (microtype)             For optimal results, create family-specific settings.
 (microtype)             See the microtype manual for details.
 
-Overfull \hbox (16.74983pt too wide) in paragraph at lines 183--204
+Overfull \hbox (16.74983pt too wide) in paragraph at lines 185--206
  [][] 
  []
 
 [4{C:/Users/jfzum/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm-mathsy.en
 c} <./figures/concept_lightcurve_transit.png>] [5] [6] [7]
-Underfull \hbox (badness 8038) in paragraph at lines 489--490
+Underfull \hbox (badness 8038) in paragraph at lines 491--492
 []\T1/lmr/m/n/10.95 (+20) Inversión tem-po-ral $\OML/lmm/m/it/10.95 x[] \OT1/lm
 r/m/n/10.95 (+20) =
  []
 
 LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <10.95> not available
-(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 502.
+(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 504.
 [8]
-Underfull \hbox (badness 2635) in paragraph at lines 595--595
+Underfull \hbox (badness 2635) in paragraph at lines 597--597
 []\T1/lmr/m/n/10.95 (+20) Sustituye con-vo-lu-ción por
  []
 
 
-Overfull \hbox (4.1365pt too wide) in paragraph at lines 578--599
+Overfull \hbox (4.1365pt too wide) in paragraph at lines 580--601
  [][] 
  []
 
 [9] [10] [11{C:/Users/jfzum/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm
 -mathex.enc}] [12]
-Overfull \hbox (64.2277pt too wide) in paragraph at lines 888--898
+Overfull \hbox (64.2277pt too wide) in paragraph at lines 890--900
 []\T1/lmr/m/it/10.95 (-20) Cabeza de cla-si-fi-ca-ción. \T1/lmr/m/n/10.95 (-20)
  Des-pués de los 4 blo-ques Mam-ba, la se-cuen-cia pro-ce-sa-da de $\OT1/lmr/m/
 n/10.95 (-20) (64[]\OML/lmm/m/it/10.95 ; \OT1/lmr/m/n/10.95 (-20) 18 000[])$
  []
 
 [13]
-<figures/tess_sectors.jpg, id=426, 4213.7425pt x 3157.7975pt>
+<figures/tess_sectors.jpg, id=427, 4213.7425pt x 3157.7975pt>
 File: figures/tess_sectors.jpg Graphic file (type jpg)
 <use figures/tess_sectors.jpg>
-Package pdftex.def Info: figures/tess_sectors.jpg  used on input line 944.
+Package pdftex.def Info: figures/tess_sectors.jpg  used on input line 946.
 (pdftex.def)             Requested size: 282.24911pt x 211.47978pt.
  [14]
-Overfull \hbox (5.32239pt too wide) in paragraph at lines 974--983
+Overfull \hbox (5.32239pt too wide) in paragraph at lines 976--985
 \T1/lmr/m/n/10.95 (-20) con la pro-por-ción del con-jun-to com-ple-to. Los ar-c
 hi-vos \T1/lmtt/m/n/10.95 data/splits/{train,val,test}_tics.csv
  []
@@ -1132,80 +1133,80 @@ Package microtype Info: Character `029' is missing
 (microtype)             in font `T1/lmr/m/sc/10'.
 (microtype)             Ignoring protrusion settings for this character.
 
-Overfull \hbox (45.18294pt too wide) in paragraph at lines 1132--1147
+Overfull \hbox (45.18294pt too wide) in paragraph at lines 1134--1149
  [][] 
  []
 
 [17] [18]
-<figures/learning_curves_mamba_seed789.png, id=480, 803.30885pt x 514.22885pt>
+<figures/learning_curves_mamba_seed789.png, id=481, 803.30885pt x 514.22885pt>
 File: figures/learning_curves_mamba_seed789.png Graphic file (type png)
 <use figures/learning_curves_mamba_seed789.png>
 Package pdftex.def Info: figures/learning_curves_mamba_seed789.png  used on inp
-ut line 1291.
+ut line 1293.
 (pdftex.def)             Requested size: 432.48051pt x 276.85556pt.
  [19] [20 <./figures/learning_curves_mamba_seed789.png>]
-Overfull \hbox (38.24045pt too wide) in paragraph at lines 1374--1379
+Overfull \hbox (38.24045pt too wide) in paragraph at lines 1376--1381
 []\T1/lmr/m/n/10.95 (-20) Cada vez que se en-tre-na un mo-de-lo, el \T1/lmr/m/i
 t/10.95 (-20) script \T1/lmr/m/n/10.95 (-20) crea un di-rec-to-rio \T1/lmtt/m/n
 /10.95 experiments/<timestamp>_<nombre>/
  []
 
 [21] [22]
-<figures/roc_tier1.png, id=512, 578.16pt x 433.62pt>
+<figures/roc_tier1.png, id=513, 578.16pt x 433.62pt>
 File: figures/roc_tier1.png Graphic file (type png)
 <use figures/roc_tier1.png>
-Package pdftex.def Info: figures/roc_tier1.png  used on input line 1558.
+Package pdftex.def Info: figures/roc_tier1.png  used on input line 1560.
 (pdftex.def)             Requested size: 355.08984pt x 266.31412pt.
  [23]
-<results/mamba_ensemble/confusion_matrix.png, id=520, 578.16pt x 433.62pt>
+<results/mamba_ensemble/confusion_matrix.png, id=521, 578.16pt x 433.62pt>
 File: results/mamba_ensemble/confusion_matrix.png Graphic file (type png)
 <use results/mamba_ensemble/confusion_matrix.png>
 Package pdftex.def Info: results/mamba_ensemble/confusion_matrix.png  used on i
-nput line 1585.
+nput line 1587.
 (pdftex.def)             Requested size: 218.51521pt x 163.88408pt.
-<results/mamba_ensemble/calibration.png, id=521, 578.16pt x 433.62pt>
+<results/mamba_ensemble/calibration.png, id=522, 578.16pt x 433.62pt>
 File: results/mamba_ensemble/calibration.png Graphic file (type png)
 <use results/mamba_ensemble/calibration.png>
 Package pdftex.def Info: results/mamba_ensemble/calibration.png  used on input 
-line 1590.
+line 1592.
 (pdftex.def)             Requested size: 218.51521pt x 163.88408pt.
  [24 <./figures/roc_tier1.png> <./results/mamba_ensemble/confusion_matrix.png> 
 <./results/mamba_ensemble/calibration.png>]
-<results/error_analysis/mamba_ensemble/prob_histogram.png, id=531, 578.16pt x 3
+<results/error_analysis/mamba_ensemble/prob_histogram.png, id=532, 578.16pt x 3
 61.35pt>
 File: results/error_analysis/mamba_ensemble/prob_histogram.png Graphic file (ty
 pe png)
 <use results/error_analysis/mamba_ensemble/prob_histogram.png>
 Package pdftex.def Info: results/error_analysis/mamba_ensemble/prob_histogram.p
-ng  used on input line 1624.
+ng  used on input line 1626.
 (pdftex.def)             Requested size: 327.7763pt x 204.85786pt.
-<results/error_analysis/mamba_ensemble/error_rate_by_feature.png, id=533, 1084.
+<results/error_analysis/mamba_ensemble/error_rate_by_feature.png, id=534, 1084.
 05pt x 289.08pt>
 File: results/error_analysis/mamba_ensemble/error_rate_by_feature.png Graphic f
 ile (type png)
 <use results/error_analysis/mamba_ensemble/error_rate_by_feature.png>
 Package pdftex.def Info: results/error_analysis/mamba_ensemble/error_rate_by_fe
-ature.png  used on input line 1646.
+ature.png  used on input line 1648.
 (pdftex.def)             Requested size: 432.48051pt x 115.32558pt.
  [25 <./results/error_analysis/mamba_ensemble/prob_histogram.png>]
-<results/error_analysis/mamba_ensemble/top_fn_curves.png, id=543, 1445.4pt x 25
+<results/error_analysis/mamba_ensemble/top_fn_curves.png, id=544, 1445.4pt x 25
 2.945pt>
 File: results/error_analysis/mamba_ensemble/top_fn_curves.png Graphic file (typ
 e png)
 <use results/error_analysis/mamba_ensemble/top_fn_curves.png>
 Package pdftex.def Info: results/error_analysis/mamba_ensemble/top_fn_curves.pn
-g  used on input line 1677.
+g  used on input line 1679.
 (pdftex.def)             Requested size: 218.51521pt x 38.23729pt.
-<results/error_analysis/mamba_ensemble/top_fp_curves.png, id=544, 1445.4pt x 25
+<results/error_analysis/mamba_ensemble/top_fp_curves.png, id=545, 1445.4pt x 25
 2.945pt>
 File: results/error_analysis/mamba_ensemble/top_fp_curves.png Graphic file (typ
 e png)
 <use results/error_analysis/mamba_ensemble/top_fp_curves.png>
 Package pdftex.def Info: results/error_analysis/mamba_ensemble/top_fp_curves.pn
-g  used on input line 1682.
+g  used on input line 1684.
 (pdftex.def)             Requested size: 218.51521pt x 38.23729pt.
 
-Overfull \hbox (183.84772pt too wide) in paragraph at lines 1693--1698
+Overfull \hbox (183.84772pt too wide) in paragraph at lines 1695--1700
 []\T1/lmr/m/n/10.95 (-20) Los lis-ta-dos com-ple-tos en CSV (\T1/lmtt/m/n/10.95
  top_fn.csv\T1/lmr/m/n/10.95 (-20) , \T1/lmtt/m/n/10.95 top_fp.csv\T1/lmr/m/n/1
 0.95 (-20) ) es-tán dis-po-ni-bles en \T1/lmtt/m/n/10.95 paper/results/error_an
@@ -1215,32 +1216,32 @@ alysis/mamba_ensemble/\T1/lmr/m/n/10.95 (-20) .
 [26 <./results/error_analysis/mamba_ensemble/error_rate_by_feature.png> <./resu
 lts/error_analysis/mamba_ensemble/top_fn_curves.png> <./results/error_analysis/
 mamba_ensemble/top_fp_curves.png>]
-Overfull \hbox (2.26768pt too wide) in paragraph at lines 1781--1785
+Overfull \hbox (2.26768pt too wide) in paragraph at lines 1783--1787
 \T1/lmr/m/n/10.95 (-20) ción se ha-ce con \T1/lmtt/m/n/10.95 scripts/run_xai.py
 \T1/lmr/m/n/10.95 (-20) ; las fi-gu-ras vi-ven en \T1/lmtt/m/n/10.95 paper/figu
 res/xai/mamba_seed789/\T1/lmr/m/n/10.95 (-20) . 
  []
 
-<figures/xai/mamba_seed789/_summary.png, id=556, 1011.78pt x 722.7pt>
+<figures/xai/mamba_seed789/_summary.png, id=557, 1011.78pt x 722.7pt>
 File: figures/xai/mamba_seed789/_summary.png Graphic file (type png)
 <use figures/xai/mamba_seed789/_summary.png>
 Package pdftex.def Info: figures/xai/mamba_seed789/_summary.png  used on input 
-line 1796.
+line 1798.
 (pdftex.def)             Requested size: 432.48051pt x 308.91335pt.
 [27]
-<figures/xai/mamba_seed789/TP_1_tic218795833_saliency.png, id=569, 722.7pt x 43
+<figures/xai/mamba_seed789/TP_1_tic218795833_saliency.png, id=570, 722.7pt x 43
 3.62pt>
 File: figures/xai/mamba_seed789/TP_1_tic218795833_saliency.png Graphic file (ty
 pe png)
 <use figures/xai/mamba_seed789/TP_1_tic218795833_saliency.png>
 Package pdftex.def Info: figures/xai/mamba_seed789/TP_1_tic218795833_saliency.p
-ng  used on input line 1813.
+ng  used on input line 1815.
 (pdftex.def)             Requested size: 386.96027pt x 232.1796pt.
  [28 <./figures/xai/mamba_seed789/_summary.png>]
 Package hyperref Info: bookmark level for unknown lstlisting defaults to 0 on i
-nput line 1842.
+nput line 1844.
  [29 <./figures/xai/mamba_seed789/TP_1_tic218795833_saliency.png>]
-Overfull \hbox (11.971pt too wide) in paragraph at lines 1864--1876
+Overfull \hbox (11.971pt too wide) in paragraph at lines 1866--1878
 []\T1/lmr/m/n/10.95 (-20) Cada ex-pe-ri-men-to del pro-yec-to es \T1/lmr/m/it/1
 0.95 (-20) una \T1/lmr/m/n/10.95 (-20) co-rri-da de \T1/lmtt/m/n/10.95 scripts/
 train.py --config <archivo.yaml>\T1/lmr/m/n/10.95 (-20) .
@@ -1258,11 +1259,11 @@ Package rerunfilecheck Info: File `Reporte_Etapa2.out' has not changed.
 (rerunfilecheck)             Checksum: D3010EA08378EDA5B86510EA299A9F5E;8930.
  ) 
 Here is how much of TeX's memory you used:
- 30950 strings out of 467871
- 578907 string characters out of 5418376
+ 30964 strings out of 467871
+ 579074 string characters out of 5418376
  1151574 words of memory out of 5000000
- 58733 multiletter control sequences out of 15000+600000
- 773681 words of font info for 322 fonts, out of 8000000 for 9000
+ 58737 multiletter control sequences out of 15000+600000
+ 781379 words of font info for 328 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  98i,16n,108p,1016b,1125s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <C:/Users/jfzum/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmbx10.pf
@@ -1278,17 +1279,18 @@ b><C:/Users/jfzum/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmr10.pfb
 C:/Users/jfzum/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmr8.pfb><C:
 /Users/jfzum/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmri10.pfb><C:
 /Users/jfzum/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmri8.pfb><C:/
-Users/jfzum/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmsy10.pfb><C:/
-Users/jfzum/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmsy7.pfb><C:/U
-sers/jfzum/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmsy8.pfb><C:/Us
-ers/jfzum/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmtk10.pfb><C:/Us
-ers/jfzum/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmtt10.pfb><C:/Us
-ers/jfzum/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/symbols/msa
-m10.pfb><C:/Users/jfzum/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfon
-ts/symbols/msbm10.pfb>
-Output written on Reporte_Etapa2.pdf (33 pages, 3870718 bytes).
+Users/jfzum/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmri9.pfb><C:/U
+sers/jfzum/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmsy10.pfb><C:/U
+sers/jfzum/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmsy7.pfb><C:/Us
+ers/jfzum/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmsy8.pfb><C:/Use
+rs/jfzum/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmtk10.pfb><C:/Use
+rs/jfzum/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmtt10.pfb><C:/Use
+rs/jfzum/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/symbols/msam
+10.pfb><C:/Users/jfzum/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfont
+s/symbols/msbm10.pfb>
+Output written on Reporte_Etapa2.pdf (33 pages, 3725664 bytes).
 PDF statistics:
- 766 PDF objects out of 1000 (max. 8388607)
+ 771 PDF objects out of 1000 (max. 8388607)
  197 named destinations out of 1000 (max. 500000)
- 75726 words of extra memory for PDF output out of 89155 (max. 10000000)
+ 79822 words of extra memory for PDF output out of 89155 (max. 10000000)
 
