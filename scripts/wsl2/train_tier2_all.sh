@@ -2,7 +2,7 @@
 # Entrena ExoMamba V1 + AstroNet multibranch en 3 seeds cada uno (6 runs total).
 # Secuencial: la RTX 3050 4GB solo aguanta un training a la vez.
 set -e
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 source .venv/bin/activate
 
 SEEDS=(42 123 789)

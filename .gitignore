@@ -37,6 +37,7 @@ wandb/
 mlruns/
 lightning_logs/
 tensorboard/
+logs/
 
 # --- Notebooks: guardamos código, no outputs ---
 .ipynb_checkpoints/

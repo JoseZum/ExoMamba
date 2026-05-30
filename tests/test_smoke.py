@@ -1,4 +1,4 @@
-"""Prueba básica de importación: verifica que el paquete y sus submódulos cargan sin errores."""
+"""Verifica que el paquete y sus submódulos cargan sin errores."""
 
 import importlib
 

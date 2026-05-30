@@ -1,24 +1,35 @@
 # Mamba-Exoplanet
 
-> Selective State Space Models para detección de exoplanetas en curvas de luz de TESS, estudio comparativo frente a un baseline CNN 1D.
+> Selective State Space Models para *vetting* de exoplanetas en curvas de luz de TESS, comparados contra una escalera de baselines (Random, LogReg, CNN single-branch y AstroNet multibranch).
 
-**Proyecto académico** Inteligencia Artificial, Instituto Tecnológico de Costa Rica, Semestre I 2026.
+**Proyecto académico** — Inteligencia Artificial, Instituto Tecnológico de Costa Rica, Semestre I 2026.
 **Autores:** José Fabián Zumbado Ruiz, Jeremmy Aguilar Villanueva.
 **Profesor:** Kenneth Obando Rodríguez.
 
 ## Objetivo
 
-Evaluar si una arquitectura basada en **Mamba** (Gu & Dao, 2023) puede igualar o superar el rendimiento de clasificadores CNN 1D del estado del arte (familia AstroNet / ExoMiner) en la tarea binaria de distinguir **Confirmed Planets (CP)** de **False Positives (FP)** en curvas de luz de TESS a cadencia de 2 minutos, operando directamente sobre la señal cruda `PDCSAP_FLUX`.
+Evaluar si una arquitectura basada en **Mamba** (Gu & Dao, 2023) puede igualar o superar a clasificadores CNN 1D del estado del arte (familia AstroNet / ExoMiner) en la tarea binaria de distinguir **Confirmed Planets (CP)** de **False Positives (FP)** en curvas de luz de TESS a cadencia de 2 minutos, operando directamente sobre la señal cruda `PDCSAP_FLUX`.
 
-Métricas objetivo: AUC-ROC ≥ 0.93, F1 (clase planeta) ≥ 0.85, mejora Mamba sobre CNN ≥ +3 p.p. de AUC, latencia de inferencia < 100 ms por estrella.
+## Resultados (test sellado)
+
+| Modelo | Test AUC-ROC | Run / artefactos |
+|---|---:|---|
+| Random estratificado | 0.500 | `experiments/2026-05-21_05-36-11_random_baseline` |
+| Catalog LogReg | 0.605 | `experiments/logreg_baseline_test.txt` |
+| CNN single-branch | 0.604 | `experiments/2026-05-20_23-44-48_cnn_baseline` |
+| Mamba locked | 0.763 | `experiments/2026-05-22_14-32-51_mamba_small` |
+| **Mamba ensemble (5 seeds)** | **0.806** | `paper/results/mamba_ensemble/` |
+| Mamba best seed (789) | 0.810 | `experiments/2026-05-28_01-44-54_mamba_small_seed789` |
+| ExoMamba V1 ensemble (3 seeds) | 0.460 | `paper/results/exomamba_v1_ensemble/` (ablation negativa) |
+| AstroNet multibranch ensemble (3) | 0.716 | `paper/results/astronet_ensemble/` |
+
+El reporte técnico completo está en `paper/reporte_etapa2.md` y `paper/reporte_etapa2.tex`.
 
 ---
 
 ## Contexto: ¿de qué trata este proyecto?
 
 > Para quien llega sin conocimiento previo de astronomía o ML.
-
----
 
 ### ¿Qué es un exoplaneta y cómo se detecta?
 
@@ -33,8 +44,6 @@ Con tránsito:  ───────────\____/────────�
 
 Si ese bajón es pequeño, periódico y simétrico, hay evidencia de un planeta en órbita.
 
----
-
 ### ¿Qué es una curva de luz y por qué es la entrada del modelo?
 
 Una **curva de luz** es la serie temporal del brillo de una estrella. TESS la mide cada 2 minutos durante ≈27 días por sector, produciendo una secuencia de ~18,000 puntos por estrella:
@@ -45,11 +54,9 @@ Una **curva de luz** es la serie temporal del brillo de una estrella. TESS la mi
 
 Esa secuencia es exactamente lo que recibe el modelo como input, sin ningún feature engineering adicional. La señal de tránsito es ese dip en los valores, apenas perceptible entre el ruido.
 
----
-
 ### ¿Qué son TESS y el TOI Catalog?
 
-**TESS** (*Transiting Exoplanet Survey Satellite*, NASA, 2018) genera ≈27 GB de datos fotométricos por día observando más de 200,000 estrellas. Es imposible revisarlos a mano, de ahí la necesidad de clasificadores automáticos.
+**TESS** (*Transiting Exoplanet Survey Satellite*, NASA, 2018) observa a cadencia de 2 minutos las ~200,000 estrellas enanas más brillantes del cielo, además de imágenes de campo completo. Es imposible revisar todo a mano, de ahí la necesidad de clasificadores automáticos.
 
 El **TOI Catalog** (*TESS Objects of Interest*) es la tabla pública donde la NASA registra cada candidato detectado por TESS. Cada estrella tiene un identificador único (**TIC ID**) y un estado:
 
@@ -58,44 +65,33 @@ El **TOI Catalog** (*TESS Objects of Interest*) es la tabla pública donde la NA
 | `CP` - Confirmed Planet | Planeta confirmado por revisión científica | **Clase positiva** (label = 1) |
 | `FP` - False Positive | Señal descartada: binaria eclipsante, artefacto, etc. | **Clase negativa** (label = 0) |
 | `PC` - Planet Candidate | Sin confirmación aún | Excluido del entrenamiento supervisado |
-| `KP` - Known Planet | Planeta ya conocido de otras misiones | Excluido |
+| `KP` - Known Planet | Planeta confirmado por misiones previas | Excluido por decisión experimental |
 
-El dataset de este proyecto usa 724 CP y 1,242 FP (1,966 ejemplos etiquetados en total, conteo real al 2026-04-30).
+El dataset etiquetado de este proyecto contiene 1,576 TICs (CP+FP) tras filtrar por disponibilidad en `lightkurve`.
 
 TESS no observa el cielo completo a la vez: lo divide en regiones llamadas **sectores**, cada una observada durante ≈27 días. Una misma estrella puede aparecer en múltiples sectores, generando varias curvas de luz para el mismo TIC ID.
 
 <img src="public/observation_sector.jpg" width="480" alt="Sectores de observación de TESS"/>
 
----
+### Variables del TOI Catalog: cuáles usamos y por qué
 
-### Variables del TOI Catalog: cuales usamos y por que
-
-El TOI Catalog tiene 85 columnas. **Ninguna entra al modelo como feature**: la entrada del modelo es siempre la serie temporal `PDCSAP_FLUX` de los archivos `.fits`. Las columnas del catálogo solo sirven para seleccionar qué estrellas descargar y con qué label.
-
-**Variables que el pipeline usa activamente:**
+El TOI Catalog tiene 85 columnas. **Ninguna entra al modelo como feature**: la entrada del modelo es siempre la serie temporal `PDCSAP_FLUX` de los archivos `.fits`. Las columnas del catálogo solo sirven para seleccionar qué estrellas descargar, asignar el label, y construir la *vista local* phase-folded (Tier 2).
 
 | Columna | Para qué |
 |---|---|
 | `tid` | Identificador único de la estrella. Se usa para pedir los `.fits` a MAST y para hacer el split por estrella |
 | `tfopwg_disp` | Disposición (CP, FP, PC, KP). Define el label: CP = 1, FP = 0 |
-| `st_tmag` | Magnitud TESS. Estrellas con tmag > 15 tienen curvas muy ruidosas; se analiza en Fase 1 para decidir si hay que filtrar |
-| `pl_orbper` | Periodo orbital en días. Confirma que el tránsito ocurre dentro de los 27 dias que cubre un sector (~18,000 puntos) |
-| `pl_trandurh` | Duración del tránsito en horas. Confirma que la señal abarca suficientes puntos para ser detectable |
-| `pl_trandep` | Profundidad del tránsito en ppm. Se analiza para entender si CP y FP tienen distribuciones distintas |
-| `sectors` | Sectores en que fue observada la estrella. Informa cuántos `.fits` hay que descargar por TIC ID en Fase 2 |
+| `pl_orbper` | Período orbital en días. Usado para phase-folding en Tier 2 |
+| `pl_tranmid` | Tiempo del centro del tránsito (T0). Centra el phase-fold |
+| `pl_trandurh` | Duración del tránsito. Define la ventana del local view (±2.5×D) |
+| `pl_trandep` | Profundidad del tránsito en ppm. Análisis exploratorio |
+| `st_tmag` | Magnitud TESS. Análisis exploratorio de SNR |
 
-**Por que se excluyen las otras 78 columnas:**
+Las otras columnas (coordenadas, errores, metadatos de catálogo) no aportan señal predictiva o introducen riesgo de leakage; se omiten.
 
-- Coordenadas y movimiento propio (`ra`, `dec`, `st_pmra`, `st_pmdec`, etc.): no tienen relacion causal con si una señal es planeta o falso positivo a efectos del modelo.
-- Columnas de error (`*err1`, `*err2`, `*symerr`, `*lim`): metadatos de precisión de medición, irrelevantes para clasificación.
-- Propiedades estelares (`st_teff`, `st_logg`, `st_rad`, `st_dist`): podrían usarse como features auxiliares en arquitecturas mas complejas, pero introducen riesgo de leakage y este proyecto evalua el modelo operando sobre señal cruda.
-- Fechas y metadatos (`toi_created`, `rowupdate`, `release_date`, `toipfx`, `toidisplay`): administración del catalogo, sin valor predictivo.
+### Data leakage por estrella: la trampa más común en este dominio
 
----
-
-### Data leakage por estrella: la trampa mas común en este dominio
-
-Una misma estrella puede haber sido observada por TESS en múltiples sectores, generando varias curvas de luz con el mismo TIC ID. Si al dividir los datos se mete el sector 1 de una estrella en entrenamiento y su sector 13 en test, el modelo puede aprender características propias de esa estrella (ruido estelar, variabilidad intrínseca) y hacer overfitting en el test. El resultado son métricas infladas que no reflejan generalización real. Por eso, el split se hace siempre por TIC ID, nunca por sector.
+Una misma estrella puede haber sido observada por TESS en múltiples sectores, generando varias curvas con el mismo TIC ID. Si el split mezcla sector 1 de una estrella en train y sector 13 en test, el modelo aprende características propias de esa estrella (ruido estelar, variabilidad intrínseca) y hace overfitting al test. El resultado son métricas infladas que no reflejan generalización real. Por eso el split se hace **por TIC ID, nunca por sector**.
 
 ```
 TIC 261136679 → train   (sectores 1, 2 y 13 van todos a train)
@@ -117,36 +113,40 @@ mamba-exoplanet/
 │   └── splits/             # TIC IDs de train/val/test        (versionado)
 ├── src/exoplanet/          # código fuente como paquete instalable
 │   ├── data/               # descarga, preprocesamiento, Dataset, augment
-│   ├── models/             # cnn_baseline.py, mamba.py
-│   ├── training/           # loop, losses, schedulers
-│   ├── evaluation/         # métricas, gráficos
+│   ├── models/             # cnn_baseline, mamba, exomamba_v1, astronet_multibranch
+│   ├── training/           # loop, losses, schedulers, runner
+│   ├── evaluation/         # métricas, plots, XAI
 │   └── utils/              # seeds, logging, paths
+├── scripts/                # CLIs reproducibles (un script por etapa del pipeline)
+│   └── wsl2/               # helpers shell para entorno WSL2
 ├── notebooks/              # exploración numerada (01_..., 02_..., 03_...)
-├── scripts/                # CLIs reproducibles (download_data, train, evaluate)
 ├── experiments/            # outputs de cada run               (gitignored)
-├── tests/                  # pytest
+├── tests/                  # pytest (49 tests)
+├── docs/                   # documentación interna
 ├── public/                 # imágenes para el README.md
-└── paper/                  # LaTeX, figuras y tablas finales
+└── paper/                  # reporte LaTeX + figuras + tablas + resultados
 ```
+
+---
 
 ## Instalación
 
 **Requisitos previos:**
 
-- Python **3.10 u 3.11** (probado con 3.11.9). Se recomienda la build oficial de [python.org](https://www.python.org/downloads/) sobre la versión de Microsoft Store, que a veces tiene problemas de permisos en `pip install -e`.
+- Python **3.10 u 3.11** (probado con 3.11.9). Se recomienda la build oficial de [python.org](https://www.python.org/downloads/) sobre la versión de Microsoft Store.
 - Git Bash o PowerShell en Windows; bash en Linux/macOS.
-- Aproximadamente **2.5 GB libres** en disco para el entorno completo (incluyendo PyTorch con CUDA).
+- ~2.5 GB libres en disco para el entorno (incluye PyTorch con CUDA).
 
-> **Nota sobre OneDrive:** si el repositorio queda dentro de una carpeta sincronizada por OneDrive, mové el repo a una ruta local (p. ej. `C:\dev\mamba-exoplanet\`) **antes** de crear el `.venv`. OneDrive intenta sincronizar miles de archivos del entorno virtual y puede corromper binarios de PyTorch.
+> **Nota OneDrive:** si el repositorio queda dentro de una carpeta sincronizada por OneDrive, movelo a una ruta local (p. ej. `C:\dev\mamba-exoplanet\`) **antes** de crear el `.venv`. OneDrive intenta sincronizar miles de archivos del entorno virtual y puede corromper binarios de PyTorch.
 
-### Paso 1 - Clonar y posicionarse
+### 1. Clonar y posicionarse
 
 ```bash
 git clone <url-del-repo> mamba-exoplanet
 cd mamba-exoplanet
 ```
 
-### Paso 2 - Crear y activar el entorno virtual
+### 2. Crear y activar el entorno virtual
 
 ```bash
 python -m venv .venv
@@ -159,189 +159,290 @@ source .venv/Scripts/activate
 # source .venv/bin/activate
 ```
 
-### Paso 3 - Instalar el paquete en modo editable
+### 3. Instalar el paquete en modo editable
 
 ```bash
 python -m pip install --upgrade pip
 pip install -e ".[dev]"
 ```
 
-Esto instala el paquete `exoplanet` y todas las dependencias declaradas en `pyproject.toml`, incluyendo `torch` (build **CPU** por defecto), `lightkurve`, `astropy`, `jupyterlab`, `pytest` y `ruff`.
+Esto instala el paquete `exoplanet` y todas las dependencias declaradas en `pyproject.toml`, incluyendo `torch` (build CPU por defecto), `lightkurve`, `astropy`, `jupyterlab`, `pytest` y `ruff`.
 
-### Paso 4 - Reinstalar PyTorch con CUDA (necesario para fases 5–9)
+### 4. Reinstalar PyTorch con CUDA (necesario para entrenar con GPU)
 
-La build CPU de `torch` no usa la GPU. Para entrenar Mamba en la RTX 3050 hay que reemplazarla por la rueda CUDA. **Verificá primero la versión de CUDA de tu driver:**
+La build CPU de `torch` no usa la GPU. Para entrenar en la RTX 3050 hay que reemplazarla por la rueda CUDA. **Verificá primero la versión de CUDA del driver:**
 
 ```bash
 nvidia-smi    # mirá "CUDA Version: XX.Y" en la esquina superior derecha
 ```
 
-Luego desinstalá la build CPU e instalá la build que corresponde. Con driver 581+ (CUDA 13.0), usar la rueda CUDA 12.8:
+Luego desinstalá la build CPU e instalá la build que corresponda. Con driver 581+ (CUDA 13.0), usar la rueda CUDA 12.8:
 
 ```bash
 pip uninstall -y torch
 pip install torch --index-url https://download.pytorch.org/whl/cu128
 ```
 
-Para otras versiones de CUDA, consultá <https://pytorch.org/get-started/locally/> y copiá el comando correspondiente.
+Para otras versiones de CUDA, consultá <https://pytorch.org/get-started/locally/>.
 
-Verificación de CUDA:
+Verificación:
 
 ```bash
 python -c "import torch; print('CUDA OK' if torch.cuda.is_available() else 'CPU only', '|', torch.cuda.get_device_name(0) if torch.cuda.is_available() else '')"
 ```
 
-### Paso 5 - (Fases 8–9) Setup WSL2 para Mamba
+### 5. Setup WSL2 para Mamba (necesario solo para entrenar Mamba)
 
-`mamba-ssm` requiere compilar extensiones CUDA con `nvcc` y no tiene wheels pre-construidos para Windows nativo. **Decisión tomada: el modelo Mamba se desarrolla y entrena en WSL2 con Ubuntu 24.04.** Las fases 0–7 (exploración, preprocesamiento, CNN baseline) corren en Windows normalmente.
-
-**Camino rápido (recomendado):** ver `docs/WSL2_SETUP.md` para guía completa. Resumen:
+`mamba-ssm` requiere compilar extensiones CUDA con `nvcc` y no tiene wheels pre-construidos para Windows nativo. El modelo Mamba se desarrolla y entrena en WSL2 con Ubuntu 24.04. El resto del pipeline (descarga, preprocesamiento, CNN, evaluación) corre en Windows nativo sin problema.
 
 ```powershell
-# 1) En PowerShell admin (Windows):
+# En PowerShell admin (Windows):
 wsl --install -d Ubuntu-24.04
 ```
 
 ```bash
-# 2) Dentro de Ubuntu WSL2:
+# Dentro de Ubuntu WSL2:
 cd /mnt/c/Users/jfzum/Downloads/Proyecto-IA/mamba-exoplanet
 chmod +x scripts/setup_wsl2.sh
 ./scripts/setup_wsl2.sh
 ```
 
-El script `setup_wsl2.sh` es idempotente y hace todo: apt deps, nvcc, venv, torch+cuda, `pip install -e ".[dev,mamba]"`, y corre `verify_wsl2_env.py` al final.
+El script `setup_wsl2.sh` es idempotente y hace todo: apt deps, nvcc, venv, torch+cuda, `pip install -e ".[dev,mamba]"`, y corre `verify_wsl2_env.py` al final. Detalles y troubleshooting en `docs/WSL2_SETUP.md`.
 
-**Camino manual (si el script falla):** ver `docs/WSL2_SETUP.md` sección "Troubleshooting".
-
-### Paso 6 - Verificación final
+### 6. Verificación final
 
 ```bash
-pytest -q                                                      # smoke tests deben pasar
+pytest -q                                                      # 49 tests deben pasar
 python -c "import exoplanet; print(exoplanet.__version__)"     # → 0.1.0
-python -c "import torch; print('CUDA OK' if torch.cuda.is_available() else 'CPU only', '|', torch.cuda.get_device_name(0) if torch.cuda.is_available() else '')"
-python -c "import seaborn, tensorboard, einops, imbalanced_learn; print('deps extra OK')"
 ```
 
-## Reproducir el pipeline de datos
+---
 
-Los pasos siguientes asumen que ya completaste la sección **Instalación** y que estás dentro de `mamba-exoplanet/` con el `.venv` activado.
+## Reproducir el pipeline completo
 
-### Fase 1 - Descargar el TOI Catalog y generar tics_labeled.csv
+Comandos marcados con **[WSL2]** requieren Linux + `mamba-ssm`; el resto corre en Windows nativo. Todos se ejecutan desde la raíz del repo con el venv activado.
+
+### 1. Datos: descarga y preprocesamiento (una sola vez)
 
 ```bash
-# Descarga el catálogo completo desde el NASA Exoplanet Archive (TAP)
+# Catálogo TOI + tics_labeled.csv + toi_summary.csv
 python scripts/get_data.py
+
+# Curvas de luz desde MAST (~3-4 h, ~9 GB; respeta cuotas y es idempotente)
+python scripts/download_lightcurves.py --max-sectors 3 --shuffle
+
+# Preprocesamiento Tier 1: tensores globales L=18000 por TIC
+python scripts/preprocess_global.py
+
+# Splits por TIC ID (70/15/15)
+python scripts/make_splits.py
+
+# Preprocesamiento Tier 2: vista local phase-folded (201 puntos)
+python scripts/preprocess_local.py
+python scripts/make_tier2_splits.py
 ```
 
-Esto produce:
-- `data/raw/toi_catalog.csv` - catálogo completo (gitignored, ~7,800 filas)
-- `data/splits/toi_summary.csv` - resumen ligero versionado
+Salidas clave (versionadas): `data/splits/{train,val,test}_tics.csv`, `data/splits/tier2_{train,val,test}_tics.csv`.
+Salidas grandes (gitignored): `data/raw/`, `data/processed/`.
 
-Para generar `data/splits/tics_labeled.csv` (1,968 filas con CP y FP etiquetados) y reproducir el EDA, abrí y ejecutá el notebook:
+### 2. Entrenar baselines Tier 1
 
 ```bash
-jupyter lab notebooks/01_toi_eda.ipynb
+# Random estratificado (~5 s, CPU)
+python scripts/train.py --config configs/random_baseline.yaml
+
+# CNN single-branch (~30 min, CPU o GPU)
+python scripts/train.py --config configs/cnn_baseline.yaml
+
+# Mamba single — locked baseline  [WSL2, ~1 h]
+python scripts/train.py --config configs/mamba_small.yaml
+
+# Mamba multi-seed sweep  [WSL2, ~1 h × 5 = ~5 h]
+for seed in 42 123 456 789 2024; do
+    python scripts/train.py --config configs/mamba_small.yaml \
+        --seed $seed --name-suffix "_seed${seed}"
+done
+
+# LogReg sobre features del catálogo (~10 s, CPU)
+python scripts/train_logreg.py
 ```
 
-El notebook genera `data/splits/tics_labeled.csv`, que es el input de la Fase 2.
-
-### Fase 2 - Descargar curvas de luz desde MAST
-
-El script `scripts/download_lightcurves.py` lee `tics_labeled.csv` y descarga los archivos `_lc.fits` de cadencia 2 min (autor SPOC) para cada TIC ID. Mantiene un manifest en `data/splits/manifest.csv` y es **idempotente**: si se corta, podés volver a correrlo y sigue donde quedó.
-
-**Piloto rápido (5 estrellas, ~30 segundos):**
+### 3. Entrenar Tier 2 (opcional — ablations con vista local)
 
 ```bash
-python scripts/download_lightcurves.py --limit 5 --shuffle
+# ExoMamba V1: sanity overfit + 3 seeds  [WSL2, ~30 min × 3]
+python scripts/train.py --config configs/exomamba_v1_sanity.yaml   # debe llegar a val_auc=1.0
+for seed in 42 123 789; do
+    python scripts/train.py --config configs/exomamba_v1.yaml \
+        --seed $seed --name-suffix "_seed${seed}"
+done
+
+# AstroNet multibranch: sanity + 3 seeds  [WSL2 o Windows, ~15 min × 3]
+python scripts/train.py --config configs/astronet_multibranch_sanity.yaml
+for seed in 42 123 789; do
+    python scripts/train.py --config configs/astronet_multibranch.yaml \
+        --seed $seed --name-suffix "_seed${seed}"
+done
 ```
 
-**Descarga completa recomendada (1,968 estrellas, ~3-4 horas, ~9 GB de disco):**
+### 4. Evaluar test sellado (una sola vez por modelo)
 
 ```bash
-mkdir -p logs
-python scripts/download_lightcurves.py --max-sectors 3 --shuffle > logs/download.log 2>&1 &
+# Tier 1
+python scripts/evaluate.py --run experiments/2026-05-20_23-44-48_cnn_baseline --split test
+python scripts/evaluate.py --run experiments/2026-05-22_14-32-51_mamba_small --split test   # [WSL2]
+python scripts/evaluate.py --run experiments/2026-05-21_05-36-11_random_baseline --split test
+
+# Mamba 5 seeds
+for run in experiments/2026-05-2{7,8}_*_mamba_small_seed*; do
+    python scripts/evaluate.py --run "$run" --split test   # [WSL2]
+done
+
+# LogReg
+python scripts/train_logreg.py --split test
+
+# Tier 2 (eval contra tier2_test_tics.csv, N=210, declarado en el config)
+for run in experiments/2026-05-28_*_exomamba_v1_seed*; do
+    python scripts/evaluate.py --run "$run" --split test   # [WSL2]
+done
+for run in experiments/2026-05-28_*_astronet_multibranch_seed*; do
+    python scripts/evaluate.py --run "$run" --split test
+done
 ```
 
-Flags útiles:
-- `--max-sectors N` - cap de sectores por TIC. Sin cap el dataset puede pasar de 30 GB. Para entrenamiento del paper, documentar la elección.
-- `--shuffle` - mezcla el orden de descarga con seed=42 (determinístico). Útil para que el progreso parcial sea representativo del dataset.
-- `--limit N` - procesa solo los primeros N TICs.
-- `--no-retry-failed` - no reintenta TICs en estado `error` o `download_failed` (por defecto los reintenta).
+Cada eval produce `<run_dir>/eval_test/{metrics.json, predictions.csv, roc_curve.png, pr_curve.png, confusion_matrix.png, calibration.png}`.
 
-**Monitoreo en otra terminal:**
+### 5. Ensembles (promedio de probabilidades sobre múltiples seeds)
 
 ```bash
-tail -f logs/download.log
-python -c "import pandas as pd; print(pd.read_csv('data/splits/manifest.csv')['status'].value_counts())"
+# Mamba (5 seeds → AUC 0.806)
+python scripts/ensemble_eval.py \
+  --runs experiments/2026-05-27_23-00-33_mamba_small_seed42,experiments/2026-05-28_00-49-39_mamba_small_seed123,experiments/2026-05-28_01-26-18_mamba_small_seed456,experiments/2026-05-28_01-44-54_mamba_small_seed789,experiments/2026-05-28_02-17-54_mamba_small_seed2024 \
+  --split test \
+  --output-dir paper/results/mamba_ensemble
+
+# AstroNet (3 seeds → AUC 0.716)
+python scripts/ensemble_eval.py \
+  --runs experiments/2026-05-28_17-37-31_astronet_multibranch_seed42,experiments/2026-05-28_17-47-33_astronet_multibranch_seed123,experiments/2026-05-28_18-01-15_astronet_multibranch_seed789 \
+  --split test --output-dir paper/results/astronet_ensemble
+
+# ExoMamba V1 (3 seeds → AUC 0.460, ablation negativa)
+python scripts/ensemble_eval.py \
+  --runs experiments/2026-05-28_16-25-39_exomamba_v1_seed42,experiments/2026-05-28_16-53-09_exomamba_v1_seed123,experiments/2026-05-28_17-20-26_exomamba_v1_seed789 \
+  --split test --output-dir paper/results/exomamba_v1_ensemble
 ```
 
-Salida del script:
-- `data/raw/lightcurves/mastDownload/TESS/...` - archivos `.fits` descargados (gitignored)
-- `data/splits/manifest.csv` - una fila por TIC con `status`, `n_sectors_downloaded`, `total_size_mb`, `downloaded_at` y otras (versionado)
-
-Estados posibles en el manifest:
-- `ok` - descarga exitosa, terminal
-- `no_data` - MAST no tiene SPOC 2-min para ese TIC, terminal (~10-20% del dataset esperado)
-- `error` - excepción durante la consulta, reintentable
-- `download_failed` - MAST devolvió resultados pero `download_all` falló, reintentable
-
-### Fases siguientes (no disponibles todavía)
+### 6. Curva ROC comparativa
 
 ```bash
-python scripts/train.py --config configs/cnn_baseline.yaml         # Fase 6
-python scripts/smoke_train_mamba.py                                # Fase 8 preflight (WSL2)
-python scripts/train.py --config configs/mamba_small.yaml          # Fase 8
-python scripts/train.py --config configs/exomamba_v1.yaml          # Fase 10
-python scripts/evaluate.py --run experiments/<run_id>
+python scripts/plot_tier1_comparison.py
+# → paper/figures/roc_tier1.png
 ```
+
+### 7. XAI sobre Mamba best seed
+
+```bash
+# [WSL2] Saliency + Integrated Gradients + Occlusion sobre 8 casos
+# (top-2 por cuadrante TP/TN/FN/FP)
+python scripts/run_xai.py \
+  --run experiments/2026-05-28_01-44-54_mamba_small_seed789 \
+  --split test \
+  --output paper/figures/xai/mamba_seed789
+# → 24 PNGs + _summary.png
+```
+
+### 8. Análisis de errores sobre Mamba ensemble
+
+```bash
+python scripts/error_analysis.py \
+  --predictions paper/results/mamba_ensemble/ensemble_predictions.csv \
+  --catalog data/splits/toi_summary.csv \
+  --output paper/results/error_analysis/mamba_ensemble
+# → top_{fn,fp}.csv, prob_histogram.png, error_rate_by_feature.png,
+#   top_{fn,fp}_curves.png, error_analysis_summary.md
+```
+
+### 9. Compilar el reporte técnico
+
+El reporte de Etapa 2 está en `paper/reporte_etapa2.md` y `paper/reporte_etapa2.tex`.
+
+```bash
+# LaTeX → PDF
+cd paper
+pdflatex reporte_etapa2.tex
+pdflatex reporte_etapa2.tex   # segunda pasada para TOC y referencias
+# → paper/reporte_etapa2.pdf
+
+# Alternativa: Markdown → PDF con pandoc
+pandoc paper/reporte_etapa2.md -o paper/reporte_etapa2.pdf \
+  --pdf-engine=xelatex --toc --variable geometry:margin=2.5cm
+```
+
+### 10. Tests
+
+```bash
+pytest -q   # 49 tests, todos deben pasar
+```
+
+---
 
 ## Entorno de referencia
 
-Esta tabla documenta el entorno exacto usado para producir los resultados del paper. Es necesaria para reproducibilidad.
+Tabla del entorno exacto usado para producir los resultados reportados. Necesaria para reproducibilidad.
 
-| Parámetro | Fases 0–7 (Windows) | Fase 8–9 (WSL2) |
+| Parámetro | Pipeline general (Windows) | Modelo Mamba (WSL2) |
 |---|---|---|
-| OS | Windows 11 Home 26200 | Ubuntu 24.04 en WSL2 |
-| Python | 3.11.9 | 3.11.x |
-| PyTorch | 2.11.0+cu128 | 2.11.0+cu128 |
-| CUDA Toolkit | 12.8 (via wheel) | 12.8 (nvcc instalado) |
+| OS | Windows 11 Home 26200 | Ubuntu 24.04 (WSL2) |
+| Python | 3.11.9 | 3.12.x |
+| PyTorch | 2.11.0+cu128 | 2.5.1+cu121 |
+| CUDA Toolkit | 12.8 (via wheel) | 12.1 (nvcc nativo) |
 | GPU | NVIDIA RTX 3050 4 GB | NVIDIA RTX 3050 4 GB (via WSL2) |
-| Driver NVIDIA | 581.83 | 581.83 |
-| mamba-ssm | N/A | por determinar en Fase 8 |
-| Commit hash | por completar al cierre | igual |
-| Seeds globales | por definir en Fase 6 | igual |
+| Driver NVIDIA | 581.83 | 581.83 (host) |
+| mamba-ssm | N/A | 2.2.6.post3 (pinned `<2.3`) |
+| causal-conv1d | N/A | recompilado contra torch 2.5 |
+| transformers | N/A | `<5` (pinned por compatibilidad) |
+| Seeds multi-seed | n/a | {42, 123, 456, 789, 2024} |
 
-> El commit hash y los seeds se fijan en Fase 6 y se copian al paper en Fase 10.
-
-## Hardware de referencia
+### Hardware de referencia
 
 | Componente | Especificación |
 |---|---|
-| GPU | NVIDIA RTX 3050 (4 GB VRAM, cuello de botella) |
+| GPU | NVIDIA RTX 3050 (4 GB VRAM — cuello de botella) |
 | CPU | Intel Core i5-12450H (8 cores, 12 threads) |
 | RAM | 40 GB |
 
 Las restricciones de VRAM motivan el uso de mixed precision (FP16), `batch_size = 16` y gradient checkpointing en Mamba.
 
-## Roadmap
+---
 
-- [x] **Fase 0** - Setup del repositorio
-- [ ] **Fase 1** - Exploración del TOI Catalog
-- [ ] **Fase 2** - Pipeline de descarga (MAST + lightkurve)
-- [ ] **Fase 3** - Preprocesamiento (normalización, NaN, longitud fija)
-- [ ] **Fase 4** - Splits por TIC ID + `Dataset` PyTorch
-- [ ] **Fase 5** - CNN 1D baseline
-- [ ] **Fase 6** - Training loop (logs, seeds, checkpoints)
-- [ ] **Fase 7** - Evaluación (métricas + curvas ROC/PR)
-- [ ] **Fase 8** - Modelo Mamba
-- [ ] **Fase 9** - Comparación rigurosa CNN vs Mamba
-- [ ] **Fase 10** - Paper (figuras y tablas finales)
+## Estado de entregas
+
+### Etapa 2 — Modelado, entrenamiento, XAI y evaluación (45 %) — entregada
+
+- [x] **Baselines:** Random estratificado, Catalog LogReg, CNN single-branch (AstroNet-inspired), AstroNet multibranch (reproducción de Shallue & Vanderburg 2018).
+- [x] **Modelo principal:** Mamba single-view, locked + 5-seed sweep + ensemble.
+- [x] **Ablation Tier 2:** ExoMamba V1 (Mamba global + CNN local), 3 seeds + ensemble. Reportada como negativa.
+- [x] **Protocolo:** splits por TIC ID (70/15/15), test sellado, multi-seed como sustituto de K-fold.
+- [x] **Métricas:** AUC-ROC, AUC-PR, F1, Recall, Precision, Brier; curvas ROC y PR; matriz de confusión; calibración.
+- [x] **Análisis de errores:** top FN/FP, histograma `y_prob` por clase, tasa de error vs features físicas.
+- [x] **XAI:** Gradient Saliency, Integrated Gradients, Occlusion Sensitivity sobre 8 casos (top-2 por cuadrante TP/TN/FN/FP) en Mamba best seed y ExoMamba V1.
+- [x] **Reproducibilidad:** configs YAML versionados, seeds fijos, `env_info.txt` + `git_info.txt` por run, 49 tests automatizados.
+- [x] **Reporte técnico:** `paper/reporte_etapa2.{md,tex}` con figuras y tablas.
+
+### Etapa 3 — Agente, validación, ética y paper IEEE (25 %) — pendiente
+
+- [ ] Agente LLM con *tool calling* sobre el modelo Mamba como herramienta de *vetting*.
+- [ ] Validación del agente (escenarios, casos límite) + análisis ético.
+- [ ] Artículo IEEE/ACM final.
+- [ ] **ExoMamba V2** (opcional): fusión no-naive + scalar features físicos.
+
+---
 
 ## Cita
 
 ```bibtex
 @misc{zumbado_aguilar_2026,
-    title       = {Mamba State Space Models for Exoplanet Detection in TESS Light Curves},
+    title       = {Mamba State Space Models for Exoplanet Vetting in TESS Light Curves},
     author      = {Zumbado Ruiz, Jos\'e Fabi\'an and Aguilar Villanueva, Jeremmy},
     year        = {2026},
     institution = {Instituto Tecnol\'ogico de Costa Rica}

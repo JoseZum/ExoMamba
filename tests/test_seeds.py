@@ -1,4 +1,4 @@
-"""Pruebas de set_seed: misma semilla → misma secuencia aleatoria."""
+"""Pruebas de set_seed para verificar que sean la misma secuencia aleatoria."""
 
 from __future__ import annotations
 

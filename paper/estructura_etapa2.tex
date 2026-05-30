@@ -1,0 +1,978 @@
+% ============================================================
+%  PLANTILLA — Reporte Etapa 2
+%  Estructura mapeada 1:1 a la rúbrica del curso (45%).
+%
+%  Cada sección lleva en comentario el % que pesa y los
+%  criterios "Excelente" que tiene que cubrir.
+%  Reemplazar los TODOs y comentarios con contenido real.
+% ============================================================
+
+\documentclass[11pt,a4paper]{article}
+
+% ---------- Paquetes ----------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\usepackage{fancyhdr}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{listings}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  citecolor=blue!50!black,
+  urlcolor=blue!50!black,
+}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  frame=single,
+  breaklines=true,
+  showstringspaces=false,
+  extendedchars=true,
+  inputencoding=utf8,
+  literate=%
+    {á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
+    {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
+    {ñ}{{\~n}}1 {Ñ}{{\~N}}1 {ü}{{\"u}}1 {Ü}{{\"U}}1
+    {¿}{{?`}}1 {¡}{{!`}}1,
+}
+
+% --- Placeholder para figuras ausentes (Overleaf sin assets locales) ---
+% Uso: \safeincludegraphics[opciones]{ruta}
+% Si el archivo existe -> \includegraphics normal.
+% Si no -> caja gris con el path para que el documento compile igual.
+\newcommand{\safeincludegraphics}[2][width=0.7\textwidth]{%
+  \IfFileExists{#2}{%
+    \includegraphics[#1]{#2}%
+  }{%
+    \fbox{\parbox[c][4cm][c]{0.7\textwidth}{\centering\ttfamily\small
+      [imagen pendiente]\\\detokenize{#2}}}%
+  }%
+}
+
+\begin{document}
+
+% --- Bloque de título estilo REVTeX/AIP ---
+\begin{center}
+  {\LARGE\bfseries Modelos de Espacio de Estados (Mamba)\\
+   para \textit{Vetting} de Exoplanetas en TESS\par}
+  \vspace{1.2em}
+  {\normalsize José F. Zumbado Ruiz and Jeremmy Aguilar Villanueva\par}
+  \vspace{0.4em}
+  {\itshape Escuela de Ingeniería en Computación, Instituto Tecnológico
+   de Costa Rica, Cartago, Costa Rica\par}
+  \vspace{0.3em}
+  {(Reporte Etapa 2, IC8104 Inteligencia Artificial, Semestre I 2026)\par}
+  \vspace{0.1em}
+  {(Dated: \today)\par}
+\end{center}
+\vspace{1.5em}
+
+\begin{abstract}
+% TODO (150-200 palabras). Estructura sugerida:
+% (1) Problema: vetting de TOIs en TESS, dataset 1576 ejemplos.
+% (2) Aporte: comparación controlada de 4 modelos (Random, LogReg, CNN, Mamba).
+% (3) Resultado principal: Mamba single AUC test = X ± Y, supera CNN por Z pp.
+% (4) Multi-seed sweep + ensemble reportado como métrica final.
+% (5) Reproducibilidad: configs YAML + seeds + test sellado.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+% ============================================================
+\section{Introducción}
+\label{sec:intro}
+
+\subsection{Motivación}
+\label{subsec:motivacion}
+
+La misión TESS (\textit{Transiting Exoplanet Survey Satellite}) de la NASA
+fue diseñada para observar a cadencia de 2 minutos las $\sim$200\,000
+estrellas enanas más brillantes del cielo, además de tomar imágenes de
+campo completo (FFI) que generan curvas adicionales para muchas otras
+estrellas. Cada sector observado dura $\sim$27 días y produce series
+temporales del orden de $L \approx 18\,000$ puntos. De ese flujo de
+fotometría, una pequeña fracción muestra señales candidatas a tránsito
+planetario; la NASA cataloga estos candidatos como TOIs
+(\textit{TESS Objects of Interest}).
+
+El catálogo TOI consultado para este trabajo registra más de 7\,000
+candidatos según el \textit{snapshot} utilizado (al 1 de julio de 2025
+se reportaban 7\,655 TOIs, 638 con etiqueta CP y 1\,987 con etiqueta FP).
+Por el costo de la revisión humana, el \textit{vetting} de TOIs se apoya
+cada vez más en clasificadores automáticos.
+
+El \textit{dataset} usado en este proyecto se restringe a TOIs con
+etiqueta CP (\textit{Confirmed Planet}) o FP (\textit{False Positive}).
+Se excluye KP (\textit{Known Planet}, planeta confirmado por misiones
+previas) por decisión experimental, para evitar mezclar planetas
+conocidos pre-TESS con confirmaciones obtenidas por la propia misión;
+se excluyen también PC (\textit{Planet Candidate}) y APC (\textit{Ambiguous Planet Candidate}) por carecer de etiqueta definitiva. Tras
+filtrar TICs sin cobertura fotométrica descargable mediante
+\texttt{lightkurve}, se obtiene el conjunto Tier 1 de 1\,576 TICs
+etiquetados. 
+
+Para situar este tamaño respecto a los baselines de la literatura,
+AstroNet \cite{shallue2018} se entrenó sobre 15\,737 TCEs etiquetados
+de Kepler (3\,600 PC, 9\,596 AFP y 2\,541 NTP), y ExoMiner
+\cite{exominer} reporta un \textit{dataset} de trabajo de 30\,609
+ejemplos sobre $\sim$34\,000 TCEs de Kepler DR25. El \textit{dataset}
+de este proyecto es aproximadamente un orden de magnitud menor que el
+de AstroNet y cerca de 20 veces menor que el de ExoMiner. Esta
+diferencia de escala condiciona la magnitud absoluta de las métricas
+reportadas y se discute al evaluar la comparación con la literatura
+(Sec.\ref{sec:discussion}).
+
+Los modelos de referencia en la literatura, como AstroNet
+\cite{shallue2018} y ExoMiner \cite{exominer}, utilizan arquitecturas
+profundas basadas en representaciones de curvas de luz, con componentes
+convolucionales y vistas globales y locales. Este enfoque tiene dos
+limitaciones documentadas. Primero, el campo receptivo de una CNN crece
+de forma lineal con la profundidad y la captura de dependencias largas
+en secuencias de $L=18\,000$ requiere arquitecturas profundas, costosas
+de entrenar. Segundo, las arquitecturas tipo Transformer, que sí modelan
+dependencias largas de forma nativa, tienen complejidad $\mathcal{O}(L^2)$
+en memoria y cómputo, lo cual es prohibitivo bajo la restricción de
+hardware del proyecto (RTX 3050 con 4\,GB de VRAM).
+
+Los modelos de espacio de estados selectivos (Selective State Space Models,
+SSM) propuestos por Gu y Dao \cite{gu2023mamba} ofrecen complejidad
+$\mathcal{O}(L)$ con memoria constante mediante un \textit{selective scan},
+y han igualado o superado a los Transformers en varias tareas de secuencia
+larga. Hasta donde se revisó en la literatura del proyecto, no se
+encontró una aplicación previa de Mamba al \textit{vetting} de TOIs en
+TESS bajo restricciones de hardware similares. Esta brecha constituye
+la motivación técnica del proyecto.
+
+\subsection{Objetivos de la Etapa 2}
+\label{subsec:objetivos}
+
+La Etapa 2 del curso evalúa la fase de
+\textit{Modelado, Entrenamiento, XAI y Evaluación}. Los criterios de la
+rúbrica fijan cinco ejes de trabajo. Este reporte se organiza para
+cubrir cada uno de forma explícita.
+
+\begin{enumerate}
+  \item \textbf{Baselines obligatorios.} Entregar al menos dos baselines
+    razonables y una comparación clara contra el modelo principal. En este
+    trabajo se construye una \textit{escalera} de cuatro modelos
+    (Sec.\ref{sec:baselines}) que permite atribuir cada incremento de
+    desempeño a un componente concreto de la arquitectura.
+  \item \textbf{Validación y protocolo.} Adoptar un protocolo sólido con
+    \textit{test} ciego, \textit{split} por TIC y prevención explícita
+    de \textit{leakage} (Sec.\ref{sec:protocol}).
+  \item \textbf{Optimización de hiperparámetros.} Realizar una búsqueda
+    sistemática con justificación de costo (Sec.\ref{sec:tuning}). Por
+    restricciones de VRAM se sustituye la validación cruzada por una
+    estrategia multi-semilla equivalente en términos de variabilidad
+    estadística. Cada fold adicional replica íntegramente el entrenamiento, lo que con K=5 y un
+   sweep de ~20 configuraciones escalaría a más de 100 horas de GPU en una RTX
+  3050 de 4 GB VRAM, haciendo la validación cruzada computacionalmente inviable 
+  en el contexto de este proyecto.
+  \item \textbf{Métricas y análisis de resultados.} Reportar métricas
+    apropiadas a la clase desbalanceada, curvas ROC y PR, análisis de
+    errores y variabilidad seed-by-seed (Secs.~\ref{sec:results}
+    y~\ref{sec:errors}).
+  \item \textbf{Interpretabilidad (XAI).} Aplicar técnicas adecuadas al
+    tipo de modelo y derivar hallazgos accionables (Sec.\ref{sec:xai}).
+    Dado que Mamba no implementa atención en el sentido del Transformer,
+    se utilizan métodos basados en gradiente y oclusión en lugar de
+    mapas de atención.
+\end{enumerate}
+
+A esto se suma el eje transversal de \textbf{ingeniería y
+reproducibilidad} (Sec.\ref{sec:repro}), cubierto mediante configuraciones
+YAML por experimento, semillas fijas, un protocolo de \textit{test} sellado
+y una suite de pruebas automatizadas (Sec.\ref{sec:tests}).
+
+\subsection{Contribuciones}
+\label{subsec:contribuciones}
+
+Este reporte aporta lo siguiente.
+
+\begin{enumerate}
+  \item Una \textbf{comparación controlada de cuatro modelos} sobre el mismo
+    \textit{split} sellado de TESS: \textit{random} estratificado, regresión
+    logística sobre el catálogo TOI, CNN \textit{single-branch} inspirada
+    en AstroNet \cite{shallue2018}, y Mamba con vista global como modelo
+    principal.
+  \item Una \textbf{exploración experimental de Mamba aplicado al
+    \textit{vetting} de TOIs en TESS}. Hasta donde se revisó en la
+    literatura del proyecto, no se encontró una aplicación previa bajo
+    restricciones de hardware similares. El modelo se entrena en FP16
+    con \textit{gradient checkpointing}, lo que permite procesar
+    secuencias de longitud 18\,000 dentro de 4\,GB de VRAM.
+  \item Un \textbf{protocolo multi-semilla} (cinco semillas para Mamba
+    \textit{single-view}) que reemplaza la validación cruzada $K$-fold
+    sin sacrificar la estimación de variabilidad. La sustitución se
+    justifica en términos del costo estimado y se documenta en
+    Sec.\ref{sec:tuning}.
+  \item Un \textbf{análisis XAI multi-método} (\textit{gradient saliency},
+    \textit{integrated gradients} y \textit{occlusion sensitivity}) sobre
+    Mamba, con una política de selección reproducible de ocho casos
+    (los dos más confidentes por cuadrante TP, TN, FN, FP).
+  \item Una \textbf{infraestructura de reproducibilidad} que incluye
+    configuraciones YAML versionadas, semillas controladas, una suite de
+    49 pruebas automatizadas, manifiestos de entorno por corrida y un
+    protocolo de \textit{test} sellado evaluado una sola vez por modelo.
+\end{enumerate}
+
+Como insumo para Etapa 3 del curso (\textit{paper} IEEE/ACM final), el
+repositorio incluye además modelos exploratorios adicionales cuyos
+resultados están documentados en \texttt{paper/results/} pero quedan
+fuera del alcance del presente reporte.
+
+
+
+% ============================================================
+\section{Datos y preprocesamiento}
+\label{sec:data}
+
+\subsection{Fuentes y construcción del dataset}
+\label{subsec:fuentes}
+
+El \textit{dataset} se construye a partir de dos fuentes públicas de la NASA
+que se consultan programáticamente.
+
+\begin{itemize}
+  \item \textbf{NASA Exoplanet Archive: TOI Catalog.} Tabla pública con
+    los TOIs (\textit{TESS Objects of Interest}) y su disposición
+    científica (CP, FP, PC, KP, APC, FA). Se descarga vía una consulta
+    TAP (\textit{Table Access Protocol}) ejecutada por
+    \texttt{scripts/get\_data.py}. Del catálogo se conservan únicamente
+    las columnas relevantes para el experimento: identificador
+    (\texttt{tid}), disposición (\texttt{tfopwg\_disp}), y los parámetros
+    de tránsito utilizados como \textit{features} por la regresión
+    logística (Sec.\ref{subsec:logreg}): \texttt{pl\_orbper},
+    \texttt{pl\_trandurh}, \texttt{pl\_trandep} y \texttt{st\_tmag}.
+  \item \textbf{MAST Archive.} Almacén oficial de los archivos FITS
+    producidos por la \textit{pipeline} SPOC (\textit{Science Processing
+    Operations Center}) de TESS. Para cada TIC se descarga la curva
+    \texttt{PDCSAP\_FLUX} a cadencia de 2 minutos, que ya viene
+    detrendeada por la \textit{pipeline} oficial. La descarga se realiza
+    con la librería \texttt{lightkurve}, mediante el \textit{script}
+    \texttt{scripts/download\_lightcurves.py}, idempotente y con
+    \textit{manifest} versionado (\texttt{data/splits/manifest.csv}).
+\end{itemize}
+
+La construcción del \textit{dataset} sigue una secuencia de filtros
+declarada explícitamente:
+
+\begin{enumerate}
+  \item Del catálogo TOI se conservan únicamente las disposiciones
+    CP (\textit{Confirmed Planet}, etiqueta positiva) y FP
+    (\textit{False Positive}, etiqueta negativa). Se excluye KP por
+    decisión experimental (Sec.\ref{subsec:motivacion}); se excluyen
+    PC y APC por carecer de etiqueta definitiva.
+  \item Se descartan TICs sin \texttt{PDCSAP\_FLUX} accesible en MAST
+    o cuya descarga vía \texttt{lightkurve} falla tras los reintentos
+    configurados.
+  \item Se descartan TICs cuyo preprocesamiento global produce un
+    tensor degenerado (por ejemplo, curva con más del 50\,\% de
+    \texttt{NaN} o longitud útil menor a 5\,000 puntos).
+\end{enumerate}
+
+El conjunto resultante contiene 1\,576 TICs etiquetados. Sus particiones
+\textit{train}, \textit{validation} y \textit{test} se construyen por TIC
+(Sec.\ref{sec:protocol}) en proporción aproximada 70/15/15.
+Tabla~\ref{tab:dataset-counts} resume los conteos.
+
+\begin{table}[H]
+\centering
+\caption{Conteos por \textit{split} y clase. El \textit{split} se
+realiza por TIC y de forma estratificada para preservar la proporción
+CP/FP entre particiones (Sec.\ref{sec:protocol}).}
+\label{tab:dataset-counts}
+\begin{tabular}{lccc}
+\toprule
+\textit{Split} & N & CP & FP \\
+\midrule
+Train      & 1\,103 & 422 & 681 \\
+Validation & 236    & 90  & 146 \\
+Test       & 237    & 91  & 146 \\
+\midrule
+Total      & 1\,576 & 603 & 973 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Vista global}
+\label{subsec:global-view}
+
+La \textbf{vista global} es la representación principal del modelo
+Mamba y de las CNN \textit{single-branch}. Se construye en
+\texttt{scripts/preprocess\_global.py} con tres pasos:
+
+\paragraph{1. Lectura de la señal cruda.}
+Por cada TIC se concatenan los flujos \texttt{PDCSAP\_FLUX} de todos
+los sectores descargados, ordenados por tiempo. Esta señal ya viene
+detrendeada por SPOC y con artefactos sistemáticos removidos.
+
+\paragraph{2. Normalización por curva individual.}
+Sea $\mathbf{f} = (f_1, \dots, f_T)$ la señal cruda concatenada y
+$\tilde{f} = \mathrm{median}(\mathbf{f})$ su mediana. La curva
+normalizada $\mathbf{x}$ se define como
+\begin{equation}
+  x_t = \frac{f_t}{\tilde{f}}, \qquad t = 1, \dots, T.
+\label{eq:median-norm}
+\end{equation}
+La normalización se hace siempre con estadísticas de la propia curva,
+nunca con estadísticas globales del \textit{dataset}. Esta decisión
+evita el \textit{leakage} de escala desde el \textit{train} al
+\textit{test} (Sec.\ref{sec:protocol}).
+
+\paragraph{3. Ajuste a longitud fija $L=18\,000$.}
+Las curvas resultantes tienen longitudes variables (función del número
+de sectores observados). Para que el modelo opere con tensores de forma
+homogénea se aplica:
+\begin{itemize}
+  \item Si $T \geq L$, se recorta al primer bloque contiguo de $L$
+    puntos válidos.
+  \item Si $T < L$, se rellena con la mediana de la curva (es decir,
+    con el valor neutro $1.0$ tras la normalización).
+\end{itemize}
+Los valores \texttt{NaN} restantes se interpolan linealmente sobre el
+índice temporal. La salida es un tensor \texttt{float32} de forma
+$(1, 18\,000)$ guardado como
+\texttt{data/processed/global/<tic>.pt}. Este contrato lo verifica
+\texttt{test\_dataset.py} (Sec.\ref{sec:tests}).
+
+\paragraph{Qué modelos la consumen.}
+La vista global es el \textit{input} de los modelos de aprendizaje
+profundo evaluados en este reporte: la CNN \textit{single-branch}
+(Sec.\ref{subsec:cnn}) y Mamba \textit{single-view}
+(Sec.\ref{subsec:mamba}). No se construyen vistas adicionales sobre la
+curva.
+
+\subsection{Data augmentation}
+\label{subsec:augmentation}
+
+Para mitigar el tamaño reducido del \textit{dataset}
+(Sec.\ref{subsec:motivacion}) se aplican cuatro transformaciones
+estocásticas a la vista global, definidas en
+\texttt{src/exoplanet/data/augment.py}. Estas se aplican
+\textbf{únicamente al \textit{split} de \textit{train}}; \textit{val}
+y \textit{test} se evalúan con la señal cruda preprocesada, para que
+las métricas reflejen desempeño sobre datos no modificados.
+
+\begin{table}[H]
+\centering
+\caption{Transformaciones de \textit{augmentation} aplicadas al
+\textit{split} de \textit{train}.}
+\label{tab:augmentation}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{p{0.22\textwidth} p{0.32\textwidth} p{0.38\textwidth}}
+\toprule
+\textbf{Transformación} & \textbf{Operación} & \textbf{Hiperparámetros del proyecto} \\
+\midrule
+\texttt{temporal\_shift} &
+  Desplazamiento circular de la curva: $x'_t = x_{(t + s) \bmod L}$
+  con $s \sim \mathcal{U}\{-S, \dots, S\}$. &
+  $S = 500$ (puntos). \\
+\addlinespace
+\texttt{gaussian\_noise} &
+  $x'_t = x_t + \varepsilon_t,\ \varepsilon_t \sim \mathcal{N}(0, \sigma^2)$. &
+  $\sigma = 0.001$ (orden del ruido instrumental TESS típico). \\
+\addlinespace
+\texttt{time\_reverse} &
+  Inversión temporal $x'_t = x_{L-t+1}$ con probabilidad $p$.
+  Válida por la simetría temporal del tránsito. &
+  $p = 0.5$. \\
+\addlinespace
+\texttt{amplitude\_scale} &
+  $x'_t = a \cdot x_t,\ a \sim \mathcal{U}(a_{\min}, a_{\max})$.
+  Simula diferencias de calibración. &
+  $a \in [0.99, 1.01]$. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Las cuatro transformaciones cumplen el mismo contrato funcional:
+son puras (no mutan el tensor de entrada), preservan forma y
+\texttt{dtype}, son determinísticas bajo \texttt{torch.Generator}, y
+manejan correctamente los casos identidad (\textit{e.g.}, $\sigma=0$
+no agrega ruido y devuelve un clon del tensor). La validación de este
+contrato se hace mediante 21 pruebas unitarias en
+\texttt{tests/test\_augment.py} (Sec.\ref{sec:tests}). El orden de
+aplicación y los hiperparámetros se declaran por experimento en el
+campo \texttt{augmentation} del YAML correspondiente.
+
+% ============================================================
+\section{Baselines}
+\label{sec:baselines}
+
+Para evaluar el aporte real de la arquitectura Mamba en este problema se
+construye una \textbf{escalera de cuatro modelos} ordenada por
+expresividad creciente. La idea detrás de la escalera es que cada
+modelo agrega exactamente un componente respecto al anterior, de modo
+que la diferencia de desempeño entre dos vecinos puede atribuirse a
+ese componente concreto y no a una combinación de cambios. La
+Tabla~\ref{tab:baselines-roles} resume los cuatro modelos y su rol.
+
+\begin{table}[H]
+\centering
+\caption{Escalera de modelos. La columna \textit{Aporta} describe el
+componente que cada modelo agrega respecto al anterior; el orden
+permite atribuir ganancias o pérdidas a una variable a la vez.}
+\label{tab:baselines-roles}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{p{0.27\textwidth} p{0.30\textwidth} p{0.36\textwidth}}
+\toprule
+\textbf{Modelo} & \textbf{Aporta respecto al anterior} & \textbf{Rol en el reporte} \\
+\midrule
+Random estratificado &
+  Solo el \textit{prior} de clase &
+  Piso mínimo (Sec.\ref{subsec:random}) \\
+\addlinespace
+Regresión logística (catálogo) &
+  Features tabulares del TOI &
+  Baseline no-DL fuerte (Sec.\ref{subsec:logreg}) \\
+\addlinespace
+CNN single-branch &
+  Aprende representación 1D de la vista global &
+  Baseline DL clásico (Sec.\ref{subsec:cnn}) \\
+\addlinespace
+\textbf{Mamba single-view} &
+  Sustituye convolución por SSM selectivo &
+  \textbf{Modelo principal de Etapa 2} (Sec.\ref{subsec:mamba}) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+El modelo entregable principal de Etapa 2 es Mamba \textit{single-view}.
+Los tres modelos anteriores establecen una jerarquía creciente de
+expresividad contra la cual se mide su aporte real.
+
+\subsection{Random estratificado}
+\label{subsec:random}
+
+El baseline más simple. No mira la curva: solo conoce la proporción
+de clases en el \textit{split} de entrenamiento. Para cada muestra de
+test predice la clase positiva con probabilidad
+\begin{equation}
+\hat{p}(y=1) = \frac{N_{\text{CP}}^{\text{train}}}{N_{\text{CP}}^{\text{train}} + N_{\text{FP}}^{\text{train}}} = \frac{422}{1\,103} \approx 0.383,
+\label{eq:random-prior}
+\end{equation}
+y emite una predicción de Bernoulli con ese parámetro.
+
+\paragraph{Para qué sirve.}
+Establece el \textit{piso} contra el cual todos los modelos posteriores
+deben superar. Por construcción su AUC-ROC esperado es exactamente
+$0.5$, ya que clasifica sin información alguna sobre la curva. Si un
+modelo no supera este piso, es evidencia de un error de implementación
+o de pipeline, no de un problema de aprendizaje.
+
+\subsection{Regresión logística sobre catálogo}
+\label{subsec:logreg}
+
+El segundo baseline aprovecha la información tabular ya presente en el
+catálogo TOI sin tocar las curvas de luz. Por cada TIC se construye un
+vector de \textit{features}
+\(\mathbf{x} = (\texttt{pl\_orbper},\,\texttt{pl\_trandurh},\,\texttt{pl\_trandep},\,\texttt{st\_tmag}, \dots)\),
+y se ajusta un modelo de regresión logística:
+\begin{equation}
+\hat{p}(y=1 \mid \mathbf{x}) = \sigma(\mathbf{w}^\top \mathbf{x} + b),
+\qquad \sigma(z) = \frac{1}{1 + e^{-z}}.
+\label{eq:logreg-sigmoid}
+\end{equation}
+La función $\sigma$ (sigmoide) comprime cualquier valor real a un
+número entre 0 y 1, interpretable como probabilidad. Los parámetros
+$\mathbf{w}, b$ se aprenden minimizando la pérdida de entropía cruzada
+binaria con pesos por clase para corregir el desbalance:
+\begin{equation}
+\mathcal{L}_{\text{BCE}}(\mathbf{w}, b) = -\frac{1}{N}\sum_{i=1}^{N}
+  \Bigl[ w_+\,y_i\log \hat{p}_i + (1-y_i)\log(1-\hat{p}_i) \Bigr],
+\quad w_+ = \frac{N_{\text{FP}}}{N_{\text{CP}}}.
+\label{eq:bce-weighted}
+\end{equation}
+
+\paragraph{Decisión de diseño.}
+Las \textit{features} usadas vienen \textbf{directamente del catálogo},
+no se recalculan desde la curva (por ejemplo, no corremos un algoritmo
+BLS propio para reestimar el período). Esta elección se documenta para
+ser transparentes: representa un compromiso entre rigor y costo.
+Recalcular BLS sobre 1\,576 curvas con grilla densa toma horas y no era
+parte del alcance de Etapa 2; el catálogo TOI ya tiene esos números
+con la calidad oficial de la NASA.
+
+\paragraph{Para qué sirve.}
+Establece cuánto desempeño se puede extraer de la metadata sin tocar
+la curva. Si un modelo basado en la curva no supera a la regresión
+logística, significa que la curva no aporta señal adicional sobre lo
+que ya está en el catálogo, lo cual sería un hallazgo paper-worthy en
+sí mismo.
+
+\subsection{CNN single-branch (AstroNet-inspired)}
+\label{subsec:cnn}
+
+Primera arquitectura de \textit{deep learning} de la escalera. Se
+inspira en AstroNet (Shallue \& Vanderburg 2018) pero opera sobre una
+sola rama (la vista global), lo cual la hace comparable
+directamente con Mamba \textit{single-view}.
+
+\paragraph{Operación básica de una capa convolucional 1D.}
+Una capa convolucional aplica un filtro $\mathbf{k}$ de tamaño fijo
+$K$ a la curva $\mathbf{x}$, deslizándolo a lo largo del tiempo:
+\begin{equation}
+y_t = \sum_{i=0}^{K-1} k_i \cdot x_{t-i} + b.
+\label{eq:conv1d}
+\end{equation}
+El filtro tiene los mismos parámetros para todas las posiciones
+temporales (\textit{weight sharing}), lo que le permite detectar el
+mismo patrón local (por ejemplo, un \textit{dip} de tránsito) sin
+importar dónde aparezca en la curva. Apilar varias capas
+convolucionales con \textit{max-pooling} entre ellas agranda el
+\textit{campo receptivo}: la profundidad $D$ de capas con \textit{kernel}
+$K$ y \textit{pooling} $P$ produce un campo receptivo del orden de
+$K \cdot P^D$ puntos.
+
+\paragraph{Arquitectura usada.}
+Cinco bloques convolucionales con canales crecientes
+$(16, 32, 64, 128, 256)$, cada bloque con dos \texttt{Conv1d} + ReLU +
+\texttt{MaxPool}, seguidos de \textit{flatten} y dos capas densas que
+producen un logit. Total aproximado del orden de $10^5$ parámetros
+entrenables. Esta variante se llama \textit{single-branch} porque solo
+recibe \texttt{global\_view} como entrada; AstroNet original usa dos
+ramas (global + local), simplificación que se documenta como
+\textit{single-branch} en el código.
+
+\paragraph{Limitación que motiva Mamba.}
+Para secuencias de $L = 18\,000$ puntos, el campo receptivo de una CNN
+poco profunda no abarca dependencias entre regiones distantes de la
+curva (por ejemplo, dos tránsitos consecutivos separados por miles de
+puntos). Capturarlas requiere o bien una CNN muy profunda (cara de
+entrenar), o bien una arquitectura con dependencia explícitamente
+secuencial: Transformers (de costo cuadrático) o SSM como Mamba.
+
+\subsection{Mamba single-view}
+\label{subsec:mamba}
+
+\textbf{Modelo principal del reporte.} Mamba (Gu \& Dao 2023) pertenece
+a la familia de \textit{Selective State Space Models} (SSM), una
+generalización de las RNN clásicas con tres propiedades clave para
+secuencias largas: (i) complejidad lineal $\mathcal{O}(L)$ en cómputo y
+memoria, (ii) parámetros del estado que dependen del \textit{input}
+(\textit{selective scan}), y (iii) implementación eficiente en GPU
+mediante \textit{kernels} fusionados.
+
+\paragraph{Intuición: estado oculto que recorre la secuencia.}
+Imaginá un detective que va leyendo la curva de luz de izquierda a
+derecha, anotando en un cuaderno
+(el \textit{estado oculto} $h_t$) lo más relevante que ha visto.
+En cada paso $t$ recibe el nuevo valor $x_t$ y decide qué de su
+cuaderno actualizar y qué olvidar. Al final del recorrido emite un
+juicio. Las RNN clásicas hacían esto pero olvidaban demasiado en
+secuencias largas; Mamba mantiene un estado mucho más expresivo.
+
+\paragraph{Ecuaciones del SSM selectivo.}
+Sea $x_t \in \mathbb{R}$ el valor de la curva en el instante $t$ y
+$h_t \in \mathbb{R}^N$ el estado oculto de dimensión $N$ (configurable
+por el modelo). La dinámica continua es
+$h'(t) = A\,h(t) + B\,x(t)$, $y(t) = C\,h(t)$, que se discretiza a
+\begin{equation}
+h_t = \bar{A}_t\,h_{t-1} + \bar{B}_t\,x_t,
+\qquad
+y_t = C_t\,h_t.
+\label{eq:ssm}
+\end{equation}
+Lo \textbf{selectivo} de Mamba es que las matrices
+$\bar{A}_t, \bar{B}_t, C_t$ \textit{dependen del input} $x_t$
+mediante proyecciones lineales aprendidas: cada paso decide qué
+información dejar pasar y qué descartar en función del propio valor
+observado. Esto le da a Mamba una capacidad de filtrado dinámico que
+las RNN clásicas no tenían.
+
+\paragraph{Por qué importa para $L=18\,000$.}
+Comparado con un Transformer, que tiene complejidad $\mathcal{O}(L^2)$
+(cada token mira a todos los demás), Mamba tiene complejidad
+$\mathcal{O}(L)$ porque el estado $h_t$ es de tamaño fijo y se
+actualiza paso a paso. Para $L = 18\,000$:
+\begin{itemize}
+  \item Transformer sin trucos: $\sim L^2 = 3.24 \times 10^8$
+    operaciones de \textit{attention} por capa. Memoria requerida
+    para una matriz de atención FP16: $\sim 0.6\,\text{GB}$ por capa.
+    \textbf{No cabe} en 4 GB de VRAM con $L = 18\,000$ a tamaños de
+    \textit{batch} útiles.
+  \item Mamba: $\sim L \cdot N = 1.4 \times 10^6$ con $N=80$.
+    Cabe holgadamente con \textit{batch size} = 16 y FP16.
+\end{itemize}
+
+\paragraph{Arquitectura usada.}
+Bloque Mamba con $d_{\text{model}} = 80$ y $N = 4$ capas apiladas,
+seguido de \textit{average pooling} sobre el tiempo y una cabeza FC
+lineal que produce el logit. Entrenado en FP16 con
+\textit{gradient checkpointing} para ajustarse a la VRAM disponible.
+Las hiperparametros exactos viven en \texttt{configs/mamba\_small.yaml}.
+
+% ============================================================
+\section{Protocolo experimental (8\,\%)}
+\label{sec:protocol}
+% RUBRIC EXCELENTE: protocolo sólido, test ciego, split por TIC, prevención de leakage.
+
+\subsection{Splits por TIC ID}
+% Justificar: una estrella en múltiples sectores -> mezclar = leakage severo.
+% Proporción 70/15/15. Versionados en data/splits/.
+% Conteos por clase ya están en Tabla \ref{tab:dataset-counts} de la Sec. 2.
+
+\subsection{Test sellado}
+% Política: una sola evaluación por modelo, post-tuning.
+% Materializado en scripts/wsl2/eval_mamba_test_all.sh
+% Cada modelo+seed consume UNA evaluación.
+
+\subsection{Multi-seed como sustituto de K-fold}
+% Justificación de costo: K=5 sobre Mamba en RTX 3050 4GB es prohibitivo
+% (>= 25 h por modelo). Reportamos:
+%   - Mamba single: 5 seeds (42, 123, 456, 789, 2024)
+% Multi-seed da variabilidad estadística equivalente para el reporte.
+
+\subsection{Prevención de leakage}
+% (1) Splits por TIC ID (no por sector).
+% (2) Normalización por curva individual (no estadísticas globales).
+% (3) Augmentation solo en train.
+
+% ============================================================
+\section{Optimización de hiperparámetros (7\,\%)}
+\label{sec:tuning}
+% RUBRIC EXCELENTE: búsqueda sistemática + justificación costo + reproducibilidad.
+
+\subsection{Sanity overfit por modelo}
+% Cada modelo nuevo pasa un sanity sobre subset de 64 con dropout=0:
+% debe llegar a val_auc=1.0 antes de entrenar real.
+% Si no llega, se revisa preprocesamiento / arquitectura antes de gastar GPU.
+\begin{table}[H]
+\centering
+\caption{Resultados de sanity overfit (subset N=64, sin dropout).}
+\begin{tabular}{lcc}
+\toprule
+Modelo & Epoch hasta val\_auc=1.0 & Resultado \\
+\midrule
+CNN baseline                     & & \\
+Mamba small                      & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Sweep multi-seed}
+\begin{table}[H]
+\centering
+\caption{Variabilidad por seed (val\_auc).}
+\begin{tabular}{lc}
+\toprule
+Run & val\_auc \\
+\midrule
+mamba\_small\_locked        & 0.750 \\
+mamba\_small\_seed42        & \\
+mamba\_small\_seed123       & \\
+mamba\_small\_seed456       & \\
+mamba\_small\_seed789       & \\
+mamba\_small\_seed2024      & \\
+\midrule
+\textbf{Mean $\pm$ std}     & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Justificación de no hacer grid/Optuna}
+% Costo estimado: 1 epoch Mamba = ~5 min. 50 epochs x 20 configs = ~83 h en RTX 3050 4GB.
+% Multi-seed sobre arquitectura locked es un trade-off documentado.
+% La rúbrica acepta "búsqueda parcial pero válida"; la justificación de costo
+% sube el ítem a "sistemática + justificación".
+
+\subsection{Reproducibilidad de cada run}
+% Cada run en experiments/ guarda: config.yaml, env_info.txt, git_info.txt,
+% train.log, metrics.csv, checkpoints/{best,last}.pt.
+
+% ============================================================
+\section{Métricas y resultados (parte de 8\,\%)}
+\label{sec:results}
+
+\subsection{Métricas utilizadas}
+% Justificar por qué NO accuracy (clase desbalanceada).
+\begin{itemize}
+  \item AUC-ROC: área bajo la curva ROC, invariante a threshold.
+  \item AUC-PR: relevante para clase positiva minoritaria.
+  \item F1, Recall, Precision @ threshold=0.5.
+  \item Brier score: $\frac{1}{N}\sum(y_i - p_i)^2$, calibración.
+\end{itemize}
+
+% BCE balanceada (función de pérdida):
+\begin{equation}
+\mathcal{L}_{\text{BCE}} = -\frac{1}{N}\sum_{i=1}^{N}
+  \bigl[ w_+ \, y_i \log p_i + (1-y_i) \log(1-p_i) \bigr],
+\quad w_+ = \frac{N_{\text{FP}}}{N_{\text{CP}}}.
+\end{equation}
+
+\subsection{Tabla principal}
+\begin{table}[H]
+\centering
+\caption{Métricas en test sellado para los cuatro modelos del estudio.}
+\label{tab:main-results}
+\begin{tabular}{lcccccc}
+\toprule
+Modelo & Input & AUC-ROC & AUC-PR & F1 & Recall & Precision \\
+\midrule
+Random estratificado        & ---           & & & & & \\
+LogReg (catálogo)           & metadata      & & & & & \\
+CNN single-branch           & global view   & & & & & \\
+Mamba single (locked)       & global view   & & & & & \\
+\textbf{Mamba ensemble 5s}  & global view   & \textbf{} & & & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Curvas ROC comparativas}
+\begin{figure}[H]
+\centering
+\safeincludegraphics[width=0.85\textwidth]{figures/roc_tier1.png}
+\caption{Curvas ROC en test sellado. Mamba ensemble vs baselines.}
+\label{fig:roc-tier1}
+\end{figure}
+
+\subsection{Matriz de confusión y calibración}
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.48\textwidth}
+  \safeincludegraphics[width=\textwidth]{results/mamba_ensemble/confusion_matrix.png}
+  \caption{Matriz de confusión \@ threshold=0.5}
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.48\textwidth}
+  \safeincludegraphics[width=\textwidth]{results/mamba_ensemble/calibration.png}
+  \caption{Curva de calibración (reliability diagram)}
+\end{subfigure}
+\caption{Mamba ensemble: matriz de confusión y calibración.}
+\end{figure}
+
+% ============================================================
+\section{Análisis de errores (parte de 8\,\%)}
+\label{sec:errors}
+% RUBRIC EXCELENTE: error analysis + variabilidad.
+
+\subsection{Distribución de probabilidades por clase verdadera}
+\begin{figure}[H]
+\centering
+\safeincludegraphics[width=0.7\textwidth]{results/error_analysis/mamba_ensemble/prob_histogram.png}
+\caption{Histograma de \texttt{y\_prob} separado por clase verdadera. Idealmente bimodal.}
+\end{figure}
+
+\subsection{Tasa de error por feature física}
+\begin{figure}[H]
+\centering
+\safeincludegraphics[width=0.95\textwidth]{results/error_analysis/mamba_ensemble/error_rate_by_feature.png}
+\caption{Tasa de error vs bins de \texttt{pl\_orbper}, \texttt{pl\_trandep}, \texttt{st\_tmag}.
+Detecta si el modelo falla más en períodos cortos, tránsitos profundos o estrellas brillantes.}
+\end{figure}
+
+\subsection{Top-10 falsos negativos y falsos positivos}
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.48\textwidth}
+  \safeincludegraphics[width=\textwidth]{results/error_analysis/mamba_ensemble/top_fn_curves.png}
+  \caption{Top FN (CP clasificados como FP)}
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.48\textwidth}
+  \safeincludegraphics[width=\textwidth]{results/error_analysis/mamba_ensemble/top_fp_curves.png}
+  \caption{Top FP (FP clasificados como CP)}
+\end{subfigure}
+\caption{Casos más confidentes mal clasificados por Mamba ensemble.}
+\end{figure}
+
+% ============================================================
+\section{Interpretabilidad --- XAI (7\,\%)}
+\label{sec:xai}
+% RUBRIC EXCELENTE: técnica adecuada + hallazgos claros y accionables.
+
+\subsection{Métodos aplicados}
+% Justificar: NO usamos "atención" porque Mamba no es un Transformer.
+\begin{itemize}
+  \item \textbf{Gradient saliency}: $s_i = \left|\dfrac{\partial \hat{y}}{\partial x_i}\right|$.
+  \item \textbf{Integrated Gradients} (50 pasos, baseline $x'=\mathbf{0}$):
+  \begin{equation}
+  \text{IG}_i(x) = (x_i - x'_i)\int_0^1 \frac{\partial \hat{y}(x' + \alpha(x - x'))}{\partial x_i}\,d\alpha.
+  \end{equation}
+  Aproximado por suma de Riemann con 50 puntos.
+  \item \textbf{Occlusion sensitivity}: $o_i = \hat{y}(x) - \hat{y}(x_{[i-w:i+w]\leftarrow 1.0})$.
+\end{itemize}
+
+\subsection{Política de selección de casos}
+% 8 casos: top-2 más confidentes por cuadrante (TP, TN, FN, FP).
+% Modelo analizado: Mamba best seed (789).
+% Confianza = |y_prob - 0.5|.
+
+\subsection{Hallazgos}
+\begin{figure}[H]
+\centering
+\safeincludegraphics[width=0.95\textwidth]{figures/xai/mamba_seed789/_summary.png}
+\caption{Summary XAI para Mamba seed 789 sobre 8 casos representativos.}
+\label{fig:xai-summary}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\safeincludegraphics[width=0.85\textwidth]{figures/xai/mamba_seed789/TP_1_tic218795833_saliency.png}
+\caption{Saliency sobre un TP confidente (TIC 218795833). El gradiente se concentra
+en la región del dip de tránsito.}
+\end{figure}
+
+% Discusión accionable:
+% (1) ¿Dónde mira Mamba? ¿En el dip o en el ruido del baseline?
+% (2) Los FN ¿muestran patrón distinto (saliency disperso)? -> hipótesis para futuro work.
+
+\begin{tcolorbox}[colback=blue!5,colframe=blue!50!black,title=Hallazgo XAI principal]
+% TODO: 2-3 líneas con el insight principal del análisis.
+\end{tcolorbox}
+
+% ============================================================
+\section{Ingeniería y reproducibilidad (5\,\%)}
+\label{sec:repro}
+% RUBRIC EXCELENTE: repo limpio + README completo + seeds + configs + ejecución robusta.
+
+\subsection{Estructura del repositorio}
+\begin{lstlisting}[caption={Árbol del repositorio (top-level).}]
+mamba-exoplanet/
++-- configs/             # YAMLs por experimento (versionados)
++-- data/
+|   +-- splits/          # CSVs train/val/test por TIC (versionados)
+|   +-- raw/processed/   # gitignored
++-- src/exoplanet/       # paquete instalable (src layout)
+|   +-- data/ models/ training/ evaluation/ utils/
++-- scripts/             # CLIs reproducibles (train, evaluate, preprocess)
+|   +-- wsl2/            # helpers shell para entorno WSL2
++-- experiments/         # outputs por run (gitignored)
++-- paper/               # reporte + figuras + resultados
++-- notebooks/           # exploración numerada
++-- tests/               # 8 archivos, 49 tests
++-- docs/                # documentación interna
++-- pyproject.toml       # PEP 621 + ruff + pytest
++-- README.md            # 10 pasos para reproducir Etapa 2
+\end{lstlisting}
+
+\subsection{Configs YAML versionados}
+% Mostrar fragmento de configs/mamba_small.yaml.
+
+\subsection{Semillas y determinismo}
+% set_seed() configura torch + numpy. Test test_seeds.py lo verifica.
+
+\subsection{Artefactos por run}
+\begin{itemize}
+  \item \texttt{config.yaml} --- copia del YAML usado.
+  \item \texttt{env\_info.txt} --- Python, torch, CUDA, mamba-ssm, OS.
+  \item \texttt{git\_info.txt} --- commit hash + estado del working tree.
+  \item \texttt{train.log} --- log epoch-by-epoch.
+  \item \texttt{metrics.csv} --- métricas tabulares.
+  \item \texttt{checkpoints/\{best,last\}.pt} --- pesos.
+  \item \texttt{eval\_test/} --- métricas de test sellado (1 vez por modelo).
+\end{itemize}
+
+\subsection{Entornos: Windows nativo vs WSL2}
+\begin{table}[H]
+\centering
+\caption{Entornos canónicos.}
+\begin{tabular}{lll}
+\toprule
+Componente & Pipeline general (Windows) & Modelo Mamba (WSL2 Ubuntu 24.04) \\
+\midrule
+Python      & 3.11.9              & 3.11                          \\
+torch       & 2.11.0+cu128        & 2.5.1+cu121                   \\
+mamba-ssm   & ---                 & 2.2.6                          \\
+CUDA driver & 581.83              & 12.1                           \\
+GPU         & RTX 3050 4GB        & RTX 3050 4GB                   \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================
+\section{Suite de tests}
+\label{sec:tests}
+% Reusar docs/tests_overview.md.
+% Total: 8 archivos, 49 tests.
+
+\subsection{Estrategia general}
+% (1) Smoke / contratos: test_smoke.py, test_seeds.py.
+% (2) Componentes aislados: test_augment.py, test_collate.py,
+%     test_metrics.py, test_cnn_baseline.py.
+% (3) End-to-end con skip-si-no-hay-datos: test_dataset.py, test_training_smoke.py.
+
+\begin{table}[H]
+\centering
+\caption{Cobertura de la suite de pruebas.}
+\label{tab:tests}
+\begin{tabular}{llc}
+\toprule
+Archivo & Cubre & Tests \\
+\midrule
+\texttt{test\_smoke.py}           & Imports del paquete y subpaquetes        & 2 \\
+\texttt{test\_seeds.py}           & set\_seed() reproducible torch + numpy   & 3 \\
+\texttt{test\_augment.py}         & 4 augmentations + Compose + registry     & 21 \\
+\texttt{test\_collate.py}         & Batching con campos opcionales           & 4 \\
+\texttt{test\_metrics.py}         & AUC/F1/Recall/Precision casos canónicos  & 4 \\
+\texttt{test\_cnn\_baseline.py}   & Forward, backward, params, kwargs        & 4 \\
+\texttt{test\_dataset.py}         & \texttt{LightCurveDataset}: schema y \textit{loading} & 5 \\
+\texttt{test\_training\_smoke.py} & End-to-end con \texttt{configs/smoke.yaml}            & 3 \\
+\addlinespace
+Otros (\textit{loaders}, \textit{utils})  &                                  & 3 \\
+\midrule
+\textbf{Total}                    &                                          & \textbf{49} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% Detallar bloque por bloque (ver docs/tests_overview.md).
+
+% ============================================================
+\section{Discusión}
+\label{sec:discussion}
+% (a) Mamba > CNN: confirma valor del SSM sobre conv pura.
+% (b) Threshold del proyecto: AUC >= 0.88 era aspiracional; resultado real reportado honestamente.
+% (c) Variabilidad multi-seed: ensemble estabiliza el reporte final.
+
+% ============================================================
+\section{Limitaciones y trabajo futuro}
+\label{sec:limits}
+% - Dataset 1576 ejemplos (chico vs 15K de Kepler).
+% - Sin K-fold (justificado por costo de RTX 3050 4GB).
+% - Sin transfer learning desde checkpoint Kepler.
+% - Modelos multibranch (global + local) entrenados pero fuera del alcance de este reporte.
+% - Agente LLM (vetting tool) -> Etapa 3.
+
+% ============================================================
+\section{Conclusiones}
+\label{sec:conclusions}
+% 1 párrafo. Qué se entrega, qué se aprendió, qué sigue.
+
+% ============================================================
+\bibliographystyle{plain}
+\begin{thebibliography}{9}
+\bibitem{gu2023mamba} Gu, A. \& Dao, T. (2023).
+  \textit{Mamba: Linear-Time Sequence Modeling with Selective State Spaces}.
+  arXiv:2312.00752.
+\bibitem{shallue2018} Shallue, C. J. \& Vanderburg, A. (2018).
+  \textit{Identifying Exoplanets with Deep Learning}. AJ 155(2), 94.
+\bibitem{exominer} Valizadegan, H. et al. (2022). \textit{ExoMiner}. ApJ 926(2), 120.
+\bibitem{lightkurve} Lightkurve Collaboration (2018). ascl:1812.013.
+% TODO: DART-Vetter, ExoMiner++, NASA TESS archive, NASA Exoplanet Archive.
+\end{thebibliography}
+
+% ============================================================
+\appendix
+\section{Configs YAML completos}
+\label{app:configs}
+% Listing de configs/mamba_small.yaml.
+
+\section{Tabla completa de runs}
+\label{app:runs}
+% Tabla con timestamp, modelo, seed, val_auc, test_auc, path en experiments/.
+
+\end{document}

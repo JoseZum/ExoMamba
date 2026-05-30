@@ -2,7 +2,7 @@
 # Eval test sealed sobre los 6 runs Tier 2 (ExoMamba V1 + AstroNet, 3 seeds c/u).
 # Cada corrida cuenta como UNA evaluación del test sellado por modelo+seed.
 set -e
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 source .venv/bin/activate
 
 RUNS=(

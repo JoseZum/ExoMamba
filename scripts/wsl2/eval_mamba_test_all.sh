@@ -2,7 +2,7 @@
 # One-shot helper: corre eval test sobre Mamba locked + 5 seeds en WSL2.
 # Cada corrida cuenta como UNA evaluación del test sellado.
 set -e
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 source .venv/bin/activate
 
 RUNS=(

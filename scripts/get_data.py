@@ -50,13 +50,11 @@ def summarize(df: pd.DataFrame) -> None:
         for disp, n in counts.items():
             print(f"  {str(disp):6s}  {n:>5,}")
     else:
-        print("Columna 'tfopwg_disp' no encontrada — columnas disponibles:")
+        print("Columna 'tfopwg_disp' no encontrada, columnas disponibles:")
         print(df.columns.tolist())
 
 
 def save_summary(df: pd.DataFrame) -> None:
-    # `pl_tranmid` (epoch BJD del tránsito) y `pl_trandurh` (duración en horas) se
-    # incluyen para poder construir la vista local phase-folded (Fase 3.b / Tier 2).
     cols = [
         c
         for c in [

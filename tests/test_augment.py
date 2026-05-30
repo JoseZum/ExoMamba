@@ -32,7 +32,7 @@ def _make_curve(length: int = 18000, channels: int = 1) -> torch.Tensor:
     return base
 
 
-# ---------- temporal_shift ----------
+# Desplazamiento temporal 
 
 
 def test_temporal_shift_preserva_shape_y_dtype() -> None:
@@ -71,7 +71,7 @@ def test_temporal_shift_1d_tensor() -> None:
     assert out.shape == x.shape
 
 
-# ---------- gaussian_noise ----------
+# Ruido gaussiano 
 
 
 def test_gaussian_noise_preserva_shape_y_dtype() -> None:
@@ -113,7 +113,7 @@ def test_gaussian_noise_sigma_cero_es_clon() -> None:
     assert out is not x
 
 
-# ---------- time_reverse ----------
+# Tiempo invertido
 
 
 def test_time_reverse_prob_uno_invierte() -> None:
@@ -145,7 +145,7 @@ def test_time_reverse_reproducible() -> None:
     assert torch.equal(a, b)
 
 
-# ---------- amplitude_scale ----------
+# Escalado de amplitud
 
 
 def test_amplitude_scale_preserva_shape_y_dtype() -> None:
@@ -186,7 +186,7 @@ def test_amplitude_scale_low_mayor_que_high_lanza_error() -> None:
         amplitude_scale(x, low=1.5, high=0.5)
 
 
-# ---------- Compose y registry ----------
+# Compose y registry
 
 
 def test_compose_aplica_en_orden() -> None:
