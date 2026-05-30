@@ -3,8 +3,8 @@
 > Selective State Space Models para *vetting* de exoplanetas en curvas de luz de TESS, comparados contra una escalera de baselines (Random, LogReg, CNN single-branch).
 
 **Proyecto académico**  Inteligencia Artificial, Instituto Tecnológico de Costa Rica, Semestre I 2026.\
-**Autores:** José Fabián Zumbado Ruiz, Jeremmy Aguilar Villanueva.
-**Profesor:** Kenneth Obando Rodríguez.
+**Autores:** José Fabián Zumbado Ruiz, Jeremmy Aguilar Villanueva.\
+**Profesor:** Kenneth Obando Rodríguez.\
 
 ## Objetivo
 
@@ -20,8 +20,6 @@ Evaluar si una arquitectura basada en **Mamba** (Gu & Dao, 2023) puede igualar o
 | Mamba locked | 0.763 | `experiments/2026-05-22_14-32-51_mamba_small` |
 | **Mamba ensemble (5 seeds)** | **0.806** | `paper/results/mamba_ensemble/` |
 | Mamba best seed (789) | 0.810 | `experiments/2026-05-28_01-44-54_mamba_small_seed789` |
-
-El reporte técnico completo está en `paper/reporte_etapa2.md` y `paper/reporte_etapa2.tex`.
 
 ---
 

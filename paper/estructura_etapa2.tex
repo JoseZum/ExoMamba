@@ -817,10 +817,7 @@ arreglarlo antes de invertir cómputo en entrenamientos largos.
 \textit{weight decay}). La columna \textit{Resultado} interpreta la
 curva de \textit{val\_auc}: \checkmark{} indica que la curva sube
 claramente por encima del piso aleatorio y descarta un error
-estructural. $^\dagger$ La corrida de Mamba se interrumpió
-prematuramente por tiempo; se reporta el mejor \textit{val\_auc}
-alcanzado en las primeras 14 épocas del \textit{schedule} de 120,
-durante las cuales la curva mostraba tendencia monótona creciente.}
+estructural en el \textit{pipeline}.}
 \label{tab:sanity}
 \begin{tabular}{lccc}
 \toprule
@@ -829,27 +826,33 @@ Modelo & Mejor val\_auc & Epoch del mejor & Resultado \\
 CNN \textit{single-branch} (Sec.\ref{subsec:cnn})
   & 0.693 & 26 / 30  & \checkmark \\
 Mamba \textit{single-view} (Sec.\ref{subsec:mamba})
-  & 0.757 & 14 / 14$^\dagger$ & \checkmark \\
+  & 1.000 & 78 / 120 & \checkmark \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Una observación honesta: con la configuración de \textit{sanity} del
-repositorio (30 épocas para CNN, sin \textit{scheduler}) el CNN
-\textit{single-branch} no llega a memorizar completamente los 64
-ejemplos. Su mejor \textit{val\_auc} es $0.693$. Sin embargo la curva
+Los dos modelos pasan el \textit{sanity} pero con dinámicas
+distintas. Mamba memoriza completamente los 64 ejemplos al alcanzar
+$\textit{val\_auc} = 1.000$ en la época 78 del \textit{schedule} de
+120 (\textit{cosine annealing} con tasa de aprendizaje decreciente
+de $3\!\times\!10^{-3}$ a $10^{-6}$); las épocas restantes consolidan
+la memorización sin sobreajuste numérico. El CNN
+\textit{single-branch}, con la configuración \textit{sanity} del
+repositorio (30 épocas, sin \textit{scheduler}), no logra memorización
+completa: su mejor \textit{val\_auc} es $0.693$. Sin embargo su curva
 sube monótonamente respecto al piso aleatorio ($0.5$), lo cual
 descarta errores estructurales en el \textit{pipeline} (lectura,
-normalización, gradientes). El comportamiento es consistente con una
-arquitectura de capacidad limitada para esta longitud de secuencia,
-hallazgo que se confirma en los resultados de \textit{test} sellado
-(Sec.\ref{sec:results}). El \textit{sanity} para Mamba usa una
-configuración más larga (120 épocas con \textit{cosine annealing})
-porque su dinámica de convergencia es más lenta; los detalles están
-en \texttt{configs/mamba\_sanity\_overfit.yaml}. Este chequeo separa
-los problemas de arquitectura (que se diagnostican aquí) de los
-problemas de aprendizaje (que se diagnostican en el entrenamiento
-real con el \textit{dataset} completo).
+normalización, gradientes) y es lo único que el \textit{sanity}
+pretende verificar. El contraste entre ambos modelos
+\textbf{anticipa} lo observado en \textit{test} sellado
+(Sec.\ref{sec:results}): la capacidad de la CNN poco profunda es
+limitada para esta longitud de secuencia incluso bajo condiciones
+favorables de memorización con \textit{val} $=$ \textit{train},
+mientras que Mamba aprovecha mejor la estructura temporal. Este
+\textit{sanity} separa los problemas de arquitectura (que se
+diagnostican aquí) de los problemas de aprendizaje (que se
+diagnostican en el entrenamiento real con el \textit{dataset}
+completo).
 
 \subsection{Búsqueda de configuración del modelo principal}
 \label{subsec:config-search}
