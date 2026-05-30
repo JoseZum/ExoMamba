@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.28 (MiKTeX 25.12) (preloaded format=pdflatex 2026.4.29)  29 MAY 2026 21:41
+This is pdfTeX, Version 3.141592653-2.6-1.40.28 (MiKTeX 25.12) (preloaded format=pdflatex 2026.4.29)  29 MAY 2026 21:52
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1068,12 +1068,12 @@ LaTeX Font Info:    External font `lmex10' loaded for size
 \openout5 = `Reporte_Etapa2.toc'.
 
  [3]
-<figures/concept_lightcurve_transit.png, id=272, 641.597pt x 279.0425pt>
+<figures/concept_lightcurve_transit.png, id=272, 864.22874pt x 586.19pt>
 File: figures/concept_lightcurve_transit.png Graphic file (type png)
 <use figures/concept_lightcurve_transit.png>
 Package pdftex.def Info: figures/concept_lightcurve_transit.png  used on input 
 line 152.
-(pdftex.def)             Requested size: 327.7763pt x 142.55247pt.
+(pdftex.def)             Requested size: 327.7763pt x 222.32518pt.
 LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 1
 82.
 
@@ -1288,7 +1288,7 @@ rs/jfzum/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmtt10.pfb><C:/Use
 rs/jfzum/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/symbols/msam
 10.pfb><C:/Users/jfzum/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfont
 s/symbols/msbm10.pfb>
-Output written on Reporte_Etapa2.pdf (33 pages, 3725664 bytes).
+Output written on Reporte_Etapa2.pdf (33 pages, 3885593 bytes).
 PDF statistics:
  771 PDF objects out of 1000 (max. 8388607)
  197 named destinations out of 1000 (max. 500000)
