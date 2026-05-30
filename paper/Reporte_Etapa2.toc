@@ -1,94 +1,94 @@
 \babel@toc {spanish}{}\relax 
-\contentsline {section}{\numberline {1}Introducción}{3}{section.1}%
-\contentsline {subsection}{\numberline {1.1}Motivación}{3}{subsection.1.1}%
-\contentsline {subsection}{\numberline {1.2}Objetivos de la Etapa 2}{4}{subsection.1.2}%
-\contentsline {subsection}{\numberline {1.3}Contribuciones}{5}{subsection.1.3}%
-\contentsline {section}{\numberline {2}Datos y preprocesamiento}{6}{section.2}%
-\contentsline {subsection}{\numberline {2.1}Fuentes y construcción del dataset}{6}{subsection.2.1}%
-\contentsline {subsection}{\numberline {2.2}Vista global}{6}{subsection.2.2}%
-\contentsline {paragraph}{1. Lectura de la señal cruda.}{6}{section*.5}%
-\contentsline {paragraph}{2. Normalización por curva individual.}{7}{section*.6}%
-\contentsline {paragraph}{3. Ajuste a longitud fija $L=18\,000$.}{7}{section*.7}%
-\contentsline {paragraph}{Qué modelos la consumen.}{7}{section*.8}%
-\contentsline {subsection}{\numberline {2.3}Data augmentation}{7}{subsection.2.3}%
-\contentsline {paragraph}{\texttt {temporal\_shift}: variabilidad en la posición temporal del tránsito.}{8}{section*.10}%
-\contentsline {paragraph}{\texttt {gaussian\_noise}: tolerancia al ruido fotométrico.}{8}{section*.11}%
-\contentsline {paragraph}{\texttt {time\_reverse}: aprovechar la simetría del tránsito.}{8}{section*.12}%
-\contentsline {paragraph}{\texttt {amplitude\_scale}: tolerancia a diferencias de calibración.}{8}{section*.13}%
-\contentsline {paragraph}{Contrato funcional común.}{8}{section*.14}%
-\contentsline {section}{\numberline {3}Baselines}{8}{section.3}%
-\contentsline {subsection}{\numberline {3.1}Random estratificado}{9}{subsection.3.1}%
-\contentsline {paragraph}{Para qué sirve.}{9}{section*.16}%
-\contentsline {subsection}{\numberline {3.2}Regresión logística sobre catálogo}{9}{subsection.3.2}%
-\contentsline {paragraph}{Intuición.}{10}{section*.17}%
-\contentsline {paragraph}{Decisión de diseño.}{10}{section*.18}%
-\contentsline {paragraph}{Para qué sirve.}{10}{section*.19}%
-\contentsline {subsection}{\numberline {3.3}CNN single-branch (AstroNet-inspired)}{10}{subsection.3.3}%
-\contentsline {paragraph}{Operación básica de una capa convolucional 1D.}{10}{section*.20}%
-\contentsline {paragraph}{Arquitectura usada.}{10}{section*.21}%
-\contentsline {paragraph}{Tamaño del modelo.}{11}{section*.22}%
-\contentsline {paragraph}{Por qué se llama \textit {single-branch}.}{11}{section*.23}%
-\contentsline {paragraph}{Limitación que motiva Mamba.}{11}{section*.24}%
-\contentsline {subsection}{\numberline {3.4}Mamba single-view}{11}{subsection.3.4}%
-\contentsline {paragraph}{Intuición: estado oculto que recorre la secuencia.}{12}{section*.25}%
-\contentsline {paragraph}{Ecuaciones del SSM selectivo.}{12}{section*.26}%
-\contentsline {paragraph}{Por qué importa para $L=18\,000$.}{12}{section*.27}%
-\contentsline {paragraph}{Arquitectura usada.}{12}{section*.28}%
-\contentsline {paragraph}{Tamaño del modelo.}{13}{section*.29}%
-\contentsline {paragraph}{Detalles de entrenamiento.}{13}{section*.30}%
-\contentsline {section}{\numberline {4}Protocolo experimental}{13}{section.4}%
-\contentsline {subsection}{\numberline {4.1}Splits por TIC ID}{13}{subsection.4.1}%
-\contentsline {paragraph}{Tamaños y estratificación.}{14}{section*.32}%
-\contentsline {subsection}{\numberline {4.2}Test sellado}{14}{subsection.4.2}%
-\contentsline {paragraph}{Por qué importa.}{14}{section*.33}%
-\contentsline {paragraph}{Materialización operativa.}{15}{section*.34}%
-\contentsline {subsection}{\numberline {4.3}Multi-seed como sustituto de K-fold}{15}{subsection.4.3}%
-\contentsline {paragraph}{Estrategia adoptada.}{15}{section*.35}%
-\contentsline {paragraph}{Justificación estadística.}{15}{section*.36}%
-\contentsline {subsection}{\numberline {4.4}Prevención de \textit {leakage}}{15}{subsection.4.4}%
-\contentsline {section}{\numberline {5}Optimización de hiperparámetros}{16}{section.5}%
-\contentsline {subsection}{\numberline {5.1}Sanity overfit por modelo}{16}{subsection.5.1}%
-\contentsline {paragraph}{Lectura del hallazgo.}{16}{section*.38}%
-\contentsline {subsection}{\numberline {5.2}Configuración del modelo principal}{17}{subsection.5.2}%
-\contentsline {paragraph}{Por qué se congela la configuración.}{17}{section*.39}%
-\contentsline {subsection}{\numberline {5.3}Sweep multi-seed sobre la arquitectura \textit {locked}}{17}{subsection.5.3}%
-\contentsline {subsection}{\numberline {5.4}Curvas de aprendizaje y diagnóstico de \textit {overfitting}/\textit {underfitting}}{18}{subsection.5.4}%
-\contentsline {paragraph}{Lectura del entrenamiento.}{19}{section*.42}%
-\contentsline {paragraph}{Diagnóstico de \textit {overfitting}/\textit {underfitting}.}{19}{section*.43}%
-\contentsline {subsection}{\numberline {5.5}Justificación de no usar \textit {grid search} ni Optuna}{20}{subsection.5.5}%
-\contentsline {paragraph}{Trade-off explícito.}{20}{section*.44}%
-\contentsline {subsection}{\numberline {5.6}Reproducibilidad por \textit {run}}{20}{subsection.5.6}%
-\contentsline {section}{\numberline {6}Métricas y resultados}{20}{section.6}%
-\contentsline {subsection}{\numberline {6.1}Métricas utilizadas}{20}{subsection.6.1}%
-\contentsline {subsection}{\numberline {6.2}Tabla principal}{21}{subsection.6.2}%
-\contentsline {paragraph}{Lectura.}{22}{section*.47}%
-\contentsline {subsection}{\numberline {6.3}Curva ROC comparativa}{22}{subsection.6.3}%
-\contentsline {subsection}{\numberline {6.4}Matriz de confusión y calibración del \textit {ensemble}}{23}{subsection.6.4}%
-\contentsline {section}{\numberline {7}Análisis de errores}{24}{section.7}%
-\contentsline {subsection}{\numberline {7.1}Distribución de probabilidades por clase verdadera}{24}{subsection.7.1}%
-\contentsline {subsection}{\numberline {7.2}Tasa de error por \textit {feature} física}{24}{subsection.7.2}%
-\contentsline {paragraph}{Lectura.}{25}{section*.52}%
-\contentsline {subsection}{\numberline {7.3}Casos más confidentes mal clasificados}{25}{subsection.7.3}%
-\contentsline {section}{\numberline {8}Interpretabilidad: XAI}{25}{section.8}%
-\contentsline {paragraph}{Sobre la elección de métodos.}{25}{section*.54}%
-\contentsline {subsection}{\numberline {8.1}Métodos aplicados}{26}{subsection.8.1}%
-\contentsline {paragraph}{Gradient saliency.}{26}{section*.55}%
-\contentsline {paragraph}{Integrated Gradients (IG).}{26}{section*.56}%
-\contentsline {paragraph}{Occlusion sensitivity.}{26}{section*.57}%
-\contentsline {subsection}{\numberline {8.2}Política de selección de casos}{26}{subsection.8.2}%
-\contentsline {subsection}{\numberline {8.3}Hallazgos}{26}{subsection.8.3}%
-\contentsline {section}{\numberline {9}Ingeniería y reproducibilidad}{28}{section.9}%
-\contentsline {subsection}{\numberline {9.1}Estructura del repositorio}{28}{subsection.9.1}%
-\contentsline {subsection}{\numberline {9.2}Configs YAML versionados}{29}{subsection.9.2}%
-\contentsline {subsection}{\numberline {9.3}Semillas y determinismo}{29}{subsection.9.3}%
-\contentsline {subsection}{\numberline {9.4}Artefactos por \textit {run}}{29}{subsection.9.4}%
-\contentsline {subsection}{\numberline {9.5}Entornos: Windows nativo vs WSL2}{29}{subsection.9.5}%
-\contentsline {section}{\numberline {10}Suite de tests}{30}{section.10}%
-\contentsline {subsection}{\numberline {10.1}Estrategia general}{30}{subsection.10.1}%
-\contentsline {section}{\numberline {11}Discusión}{30}{section.11}%
-\contentsline {paragraph}{Mamba supera a la convolución pura.}{30}{section*.62}%
-\contentsline {paragraph}{La regresión logística sobre catálogo.}{30}{section*.63}%
-\contentsline {paragraph}{Variabilidad y \textit {ensembling}.}{30}{section*.64}%
-\contentsline {paragraph}{Umbrales aspiracionales del proyecto.}{30}{section*.65}%
-\contentsline {paragraph}{Modos de falla del modelo.}{31}{section*.66}%
-\contentsline {section}{\numberline {12}Conclusiones}{31}{section.12}%
+\contentsline {section}{\numberline {1}Introducción}{4}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Motivación}{4}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Objetivos de la Etapa 2}{5}{subsection.1.2}%
+\contentsline {subsection}{\numberline {1.3}Contribuciones}{6}{subsection.1.3}%
+\contentsline {section}{\numberline {2}Datos y preprocesamiento}{7}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Fuentes y construcción del dataset}{7}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Vista global}{7}{subsection.2.2}%
+\contentsline {paragraph}{1. Lectura de la señal cruda.}{7}{section*.5}%
+\contentsline {paragraph}{2. Normalización por curva individual.}{8}{section*.6}%
+\contentsline {paragraph}{3. Ajuste a longitud fija $L=18\,000$.}{8}{section*.7}%
+\contentsline {paragraph}{Qué modelos la consumen.}{8}{section*.8}%
+\contentsline {subsection}{\numberline {2.3}Data augmentation}{8}{subsection.2.3}%
+\contentsline {paragraph}{\texttt {temporal\_shift}: variabilidad en la posición temporal del tránsito.}{9}{section*.10}%
+\contentsline {paragraph}{\texttt {gaussian\_noise}: tolerancia al ruido fotométrico.}{9}{section*.11}%
+\contentsline {paragraph}{\texttt {time\_reverse}: aprovechar la simetría del tránsito.}{9}{section*.12}%
+\contentsline {paragraph}{\texttt {amplitude\_scale}: tolerancia a diferencias de calibración.}{9}{section*.13}%
+\contentsline {paragraph}{Contrato funcional común.}{9}{section*.14}%
+\contentsline {section}{\numberline {3}Baselines}{9}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Random estratificado}{10}{subsection.3.1}%
+\contentsline {paragraph}{Para qué sirve.}{10}{section*.16}%
+\contentsline {subsection}{\numberline {3.2}Regresión logística sobre catálogo}{10}{subsection.3.2}%
+\contentsline {paragraph}{Intuición.}{11}{section*.17}%
+\contentsline {paragraph}{Decisión de diseño.}{11}{section*.18}%
+\contentsline {paragraph}{Para qué sirve.}{11}{section*.19}%
+\contentsline {subsection}{\numberline {3.3}CNN single-branch (AstroNet-inspired)}{11}{subsection.3.3}%
+\contentsline {paragraph}{Operación básica de una capa convolucional 1D.}{11}{section*.20}%
+\contentsline {paragraph}{Arquitectura usada.}{11}{section*.21}%
+\contentsline {paragraph}{Tamaño del modelo.}{12}{section*.22}%
+\contentsline {paragraph}{Por qué se llama \textit {single-branch}.}{12}{section*.23}%
+\contentsline {paragraph}{Limitación que motiva Mamba.}{12}{section*.24}%
+\contentsline {subsection}{\numberline {3.4}Mamba single-view}{12}{subsection.3.4}%
+\contentsline {paragraph}{Intuición: estado oculto que recorre la secuencia.}{13}{section*.25}%
+\contentsline {paragraph}{Ecuaciones del SSM selectivo.}{13}{section*.26}%
+\contentsline {paragraph}{Por qué importa para $L=18\,000$.}{13}{section*.27}%
+\contentsline {paragraph}{Arquitectura usada.}{13}{section*.28}%
+\contentsline {paragraph}{Tamaño del modelo.}{14}{section*.29}%
+\contentsline {paragraph}{Detalles de entrenamiento.}{14}{section*.30}%
+\contentsline {section}{\numberline {4}Protocolo experimental}{14}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Splits por TIC ID}{14}{subsection.4.1}%
+\contentsline {paragraph}{Tamaños y estratificación.}{15}{section*.32}%
+\contentsline {subsection}{\numberline {4.2}Test sellado}{15}{subsection.4.2}%
+\contentsline {paragraph}{Por qué importa.}{15}{section*.33}%
+\contentsline {paragraph}{Materialización operativa.}{16}{section*.34}%
+\contentsline {subsection}{\numberline {4.3}Multi-seed como sustituto de K-fold}{16}{subsection.4.3}%
+\contentsline {paragraph}{Estrategia adoptada.}{16}{section*.35}%
+\contentsline {paragraph}{Justificación estadística.}{16}{section*.36}%
+\contentsline {subsection}{\numberline {4.4}Prevención de \textit {leakage}}{16}{subsection.4.4}%
+\contentsline {section}{\numberline {5}Optimización de hiperparámetros}{17}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Sanity overfit por modelo}{17}{subsection.5.1}%
+\contentsline {paragraph}{Lectura del hallazgo.}{17}{section*.38}%
+\contentsline {subsection}{\numberline {5.2}Configuración del modelo principal}{18}{subsection.5.2}%
+\contentsline {paragraph}{Por qué se congela la configuración.}{18}{section*.39}%
+\contentsline {subsection}{\numberline {5.3}Sweep multi-seed sobre la arquitectura \textit {locked}}{18}{subsection.5.3}%
+\contentsline {subsection}{\numberline {5.4}Curvas de aprendizaje y diagnóstico de \textit {overfitting}/\textit {underfitting}}{19}{subsection.5.4}%
+\contentsline {paragraph}{Lectura del entrenamiento.}{20}{section*.42}%
+\contentsline {paragraph}{Diagnóstico de \textit {overfitting}/\textit {underfitting}.}{20}{section*.43}%
+\contentsline {subsection}{\numberline {5.5}Justificación de no usar \textit {grid search} ni Optuna}{21}{subsection.5.5}%
+\contentsline {paragraph}{Trade-off explícito.}{21}{section*.44}%
+\contentsline {subsection}{\numberline {5.6}Reproducibilidad por \textit {run}}{21}{subsection.5.6}%
+\contentsline {section}{\numberline {6}Métricas y resultados}{21}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Métricas utilizadas}{21}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Tabla principal}{22}{subsection.6.2}%
+\contentsline {paragraph}{Lectura.}{23}{section*.47}%
+\contentsline {subsection}{\numberline {6.3}Curva ROC comparativa}{23}{subsection.6.3}%
+\contentsline {subsection}{\numberline {6.4}Matriz de confusión y calibración del \textit {ensemble}}{24}{subsection.6.4}%
+\contentsline {section}{\numberline {7}Análisis de errores}{25}{section.7}%
+\contentsline {subsection}{\numberline {7.1}Distribución de probabilidades por clase verdadera}{25}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}Tasa de error por \textit {feature} física}{25}{subsection.7.2}%
+\contentsline {paragraph}{Lectura.}{26}{section*.52}%
+\contentsline {subsection}{\numberline {7.3}Casos más confidentes mal clasificados}{26}{subsection.7.3}%
+\contentsline {section}{\numberline {8}Interpretabilidad: XAI}{26}{section.8}%
+\contentsline {paragraph}{Sobre la elección de métodos.}{26}{section*.54}%
+\contentsline {subsection}{\numberline {8.1}Métodos aplicados}{27}{subsection.8.1}%
+\contentsline {paragraph}{Gradient saliency.}{27}{section*.55}%
+\contentsline {paragraph}{Integrated Gradients (IG).}{27}{section*.56}%
+\contentsline {paragraph}{Occlusion sensitivity.}{27}{section*.57}%
+\contentsline {subsection}{\numberline {8.2}Política de selección de casos}{27}{subsection.8.2}%
+\contentsline {subsection}{\numberline {8.3}Hallazgos}{27}{subsection.8.3}%
+\contentsline {section}{\numberline {9}Ingeniería y reproducibilidad}{29}{section.9}%
+\contentsline {subsection}{\numberline {9.1}Estructura del repositorio}{29}{subsection.9.1}%
+\contentsline {subsection}{\numberline {9.2}Configs YAML versionados}{30}{subsection.9.2}%
+\contentsline {subsection}{\numberline {9.3}Semillas y determinismo}{30}{subsection.9.3}%
+\contentsline {subsection}{\numberline {9.4}Artefactos por \textit {run}}{30}{subsection.9.4}%
+\contentsline {subsection}{\numberline {9.5}Entornos: Windows nativo vs WSL2}{30}{subsection.9.5}%
+\contentsline {section}{\numberline {10}Suite de tests}{31}{section.10}%
+\contentsline {subsection}{\numberline {10.1}Estrategia general}{31}{subsection.10.1}%
+\contentsline {section}{\numberline {11}Discusión}{31}{section.11}%
+\contentsline {paragraph}{Mamba supera a la convolución pura.}{31}{section*.62}%
+\contentsline {paragraph}{La regresión logística sobre catálogo.}{31}{section*.63}%
+\contentsline {paragraph}{Variabilidad y \textit {ensembling}.}{31}{section*.64}%
+\contentsline {paragraph}{Umbrales aspiracionales del proyecto.}{31}{section*.65}%
+\contentsline {paragraph}{Modos de falla del modelo.}{32}{section*.66}%
+\contentsline {section}{\numberline {12}Conclusiones}{32}{section.12}%

@@ -78,7 +78,13 @@
   \vspace{0.1em}
   {(Dated: \today)\par}
 \end{center}
-\vspace{1.5em}
+\vspace{1.2em}
+
+% --- Banner de portada ---
+\begin{center}
+  \safeincludegraphics[width=\textwidth]{figures/banner_satellite.jpg}
+\end{center}
+\vspace{1.2em}
 
 \begin{abstract}
 \noindent
@@ -121,12 +127,13 @@ evaluado una sola vez por modelo.
 \label{subsec:motivacion}
 
 La misión TESS (\textit{Transiting Exoplanet Survey Satellite}) de la NASA
-fue diseñada para observar a cadencia de 2 minutos las $\sim$200\,000
-estrellas enanas más brillantes del cielo, además de tomar imágenes de
-campo completo (FFI) que generan curvas adicionales para muchas otras
-estrellas. Cada sector observado dura $\sim$27 días y produce series
-temporales del orden de $L \approx 18\,000$ puntos. De ese flujo de
-fotometría, una pequeña fracción muestra señales candidatas a tránsito
+\cite{ricker2015tess, tessMission} fue diseñada para observar a cadencia
+de 2 minutos las $\sim$200\,000 estrellas enanas más brillantes del
+cielo, además de tomar imágenes de campo completo (FFI) que generan
+curvas adicionales para muchas otras estrellas. Cada sector observado
+dura $\sim$27 días y produce series temporales del orden de
+$L \approx 18\,000$ puntos. De ese flujo de fotometría, una pequeña
+fracción muestra señales candidatas a tránsito
 planetario; la NASA cataloga estos candidatos como TOIs
 (\textit{TESS Objects of Interest}).
 
@@ -331,24 +338,27 @@ El \textit{dataset} se construye a partir de dos fuentes públicas de la NASA
 que se consultan programáticamente.
 
 \begin{itemize}
-  \item \textbf{NASA Exoplanet Archive: TOI Catalog.} Tabla pública con
-    los TOIs (\textit{TESS Objects of Interest}) y su disposición
-    científica (CP, FP, PC, KP, APC, FA). Se descarga vía una consulta
-    TAP (\textit{Table Access Protocol}) ejecutada por
+  \item \textbf{NASA Exoplanet Archive: TOI Catalog}
+    \cite{nasaExoplanetArchiveTOI}. Tabla pública con los TOIs
+    (\textit{TESS Objects of Interest}) y su disposición científica
+    (CP, FP, PC, KP, APC, FA). Se descarga vía una consulta TAP
+    (\textit{Table Access Protocol}) ejecutada por
     \texttt{scripts/get\_data.py}. Del catálogo se conservan únicamente
     las columnas relevantes para el experimento: identificador
     (\texttt{tid}), disposición (\texttt{tfopwg\_disp}), y los parámetros
     de tránsito utilizados como \textit{features} por la regresión
     logística (Sec.\ref{subsec:logreg}): \texttt{pl\_orbper},
     \texttt{pl\_trandurh}, \texttt{pl\_trandep} y \texttt{st\_tmag}.
-  \item \textbf{MAST Archive.} Almacén oficial de los archivos FITS
-    producidos por la \textit{pipeline} SPOC (\textit{Science Processing
-    Operations Center}) de TESS. Para cada TIC se descarga la curva
-    \texttt{PDCSAP\_FLUX} a cadencia de 2 minutos, que ya viene
-    detrendeada por la \textit{pipeline} oficial. La descarga se realiza
-    con la librería \texttt{lightkurve}, mediante el \textit{script}
-    \texttt{scripts/download\_lightcurves.py}, idempotente y con
-    \textit{manifest} versionado (\texttt{data/splits/manifest.csv}).
+  \item \textbf{MAST Archive} \cite{mastTessProducts}. Almacén oficial
+    de los archivos FITS producidos por la \textit{pipeline} SPOC
+    (\textit{Science Processing Operations Center}) de TESS. Para cada
+    TIC se descarga la curva \texttt{PDCSAP\_FLUX} a cadencia de 2
+    minutos, que ya viene detrendeada de sistemáticos instrumentales
+    por la \textit{pipeline} oficial. La descarga se realiza con la
+    librería \texttt{lightkurve} \cite{lightkurve}, mediante el
+    \textit{script} \texttt{scripts/download\_lightcurves.py},
+    idempotente y con \textit{manifest} versionado
+    (\texttt{data/splits/manifest.csv}).
 \end{itemize}
 
 La construcción del \textit{dataset} sigue una secuencia de filtros
@@ -2092,6 +2102,26 @@ limitado.
   \textit{Identifying Exoplanets with Deep Learning}. AJ 155(2), 94.
 \bibitem{exominer} Valizadegan, H. et al. (2022). \textit{ExoMiner}. ApJ 926(2), 120.
 \bibitem{lightkurve} Lightkurve Collaboration (2018). ascl:1812.013.
+
+\bibitem{ricker2015tess}
+Ricker, G. R., Winn, J. N., Vanderspek, R., et al. (2015).
+\textit{Transiting Exoplanet Survey Satellite (TESS)}.
+Journal of Astronomical Telescopes, Instruments, and Systems, 1(1), 014003.
+
+\bibitem{nasaExoplanetArchiveTOI}
+NASA Exoplanet Archive. (2026).
+\textit{TESS Objects of Interest (TOI) Table Data Column Definitions}.
+California Institute of Technology / IPAC.
+
+\bibitem{mastTessProducts}
+Mikulski Archive for Space Telescopes (MAST). (2026).
+\textit{TESS Archive Documentation: Data Product Overview}.
+Space Telescope Science Institute.
+
+\bibitem{tessMission}
+NASA. (2026).
+\textit{TESS: Transiting Exoplanet Survey Satellite}.
+NASA Science Mission Directorate.
 \end{thebibliography}
 
 % ============================================================
