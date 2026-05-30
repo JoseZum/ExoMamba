@@ -1,0 +1,211 @@
+\relax 
+\providecommand \babel@aux [2]{\global \let \babel@toc \@gobbletwo }
+\@nameuse{bbl@beforestart}
+\catcode `"\active 
+\catcode `<\active 
+\catcode `>\active 
+\@nameuse{es@quoting}
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\babel@aux{spanish}{}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introducción}{3}{section.1}\protected@file@percent }
+\newlabel{sec:intro}{{1}{3}{Introducción}{section.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.1}Motivación}{3}{subsection.1.1}\protected@file@percent }
+\newlabel{subsec:motivacion}{{1.1}{3}{Motivación}{subsection.1.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Representación conceptual de un tránsito planetario en una curva de luz. Cuando un planeta pasa frente a su estrella, bloquea una pequeña fracción de la luz observada y produce una caída temporal en el brillo medido. La tarea de \textit  {vetting} consiste en distinguir este tipo de señales reales de falsos positivos causados por ruido, estrellas binarias u otros fenómenos astrofísicos.}}{3}{figure.caption.2}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig:concept-lightcurve-transit}{{1}{3}{Representación conceptual de un tránsito planetario en una curva de luz. Cuando un planeta pasa frente a su estrella, bloquea una pequeña fracción de la luz observada y produce una caída temporal en el brillo medido. La tarea de \textit {vetting} consiste en distinguir este tipo de señales reales de falsos positivos causados por ruido, estrellas binarias u otros fenómenos astrofísicos}{figure.caption.2}{}}
+\citation{shallue2018}
+\citation{exominer}
+\citation{shallue2018}
+\citation{exominer}
+\citation{gu2023mamba}
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Disposiciones (\texttt  {tfopwg\_disp}) del catálogo TOI y su uso en este trabajo.}}{4}{table.caption.3}\protected@file@percent }
+\newlabel{tab:tfopwg-dispositions}{{1}{4}{Disposiciones (\texttt {tfopwg\_disp}) del catálogo TOI y su uso en este trabajo}{table.caption.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.2}Objetivos de la Etapa 2}{4}{subsection.1.2}\protected@file@percent }
+\newlabel{subsec:objetivos}{{1.2}{4}{Objetivos de la Etapa 2}{subsection.1.2}{}}
+\citation{shallue2018}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.3}Contribuciones}{5}{subsection.1.3}\protected@file@percent }
+\newlabel{subsec:contribuciones}{{1.3}{5}{Contribuciones}{subsection.1.3}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2}Datos y preprocesamiento}{6}{section.2}\protected@file@percent }
+\newlabel{sec:data}{{2}{6}{Datos y preprocesamiento}{section.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Fuentes y construcción del dataset}{6}{subsection.2.1}\protected@file@percent }
+\newlabel{subsec:fuentes}{{2.1}{6}{Fuentes y construcción del dataset}{subsection.2.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Conteos por \textit  {split} y clase. El \textit  {split} se realiza por TIC y de forma estratificada para preservar la proporción CP/FP entre particiones (Sec.\ref {sec:protocol}).}}{6}{table.caption.4}\protected@file@percent }
+\newlabel{tab:dataset-counts}{{2}{6}{Conteos por \textit {split} y clase. El \textit {split} se realiza por TIC y de forma estratificada para preservar la proporción CP/FP entre particiones (Sec.\ref {sec:protocol})}{table.caption.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Vista global}{6}{subsection.2.2}\protected@file@percent }
+\newlabel{subsec:global-view}{{2.2}{6}{Vista global}{subsection.2.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{1. Lectura de la señal cruda.}{6}{section*.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{2. Normalización por curva individual.}{7}{section*.6}\protected@file@percent }
+\newlabel{eq:median-norm}{{1}{7}{2. Normalización por curva individual}{equation.1}{}}
+\@writefile{toc}{\contentsline {paragraph}{3. Ajuste a longitud fija $L=18\,000$.}{7}{section*.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Qué modelos la consumen.}{7}{section*.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Data augmentation}{7}{subsection.2.3}\protected@file@percent }
+\newlabel{subsec:augmentation}{{2.3}{7}{Data augmentation}{subsection.2.3}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Transformaciones de \textit  {augmentation} aplicadas al \textit  {split} de \textit  {train}.}}{7}{table.caption.9}\protected@file@percent }
+\newlabel{tab:augmentation}{{3}{7}{Transformaciones de \textit {augmentation} aplicadas al \textit {split} de \textit {train}}{table.caption.9}{}}
+\@writefile{toc}{\contentsline {paragraph}{\texttt  {temporal\_shift}: variabilidad en la posición temporal del tránsito.}{8}{section*.10}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\texttt  {gaussian\_noise}: tolerancia al ruido fotométrico.}{8}{section*.11}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\texttt  {time\_reverse}: aprovechar la simetría del tránsito.}{8}{section*.12}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\texttt  {amplitude\_scale}: tolerancia a diferencias de calibración.}{8}{section*.13}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Contrato funcional común.}{8}{section*.14}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}Baselines}{8}{section.3}\protected@file@percent }
+\newlabel{sec:baselines}{{3}{8}{Baselines}{section.3}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Escalera de modelos. La columna \textit  {Aporta} describe el componente que cada modelo agrega respecto al anterior; el orden permite atribuir ganancias o pérdidas a una variable a la vez.}}{9}{table.caption.15}\protected@file@percent }
+\newlabel{tab:baselines-roles}{{4}{9}{Escalera de modelos. La columna \textit {Aporta} describe el componente que cada modelo agrega respecto al anterior; el orden permite atribuir ganancias o pérdidas a una variable a la vez}{table.caption.15}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Random estratificado}{9}{subsection.3.1}\protected@file@percent }
+\newlabel{subsec:random}{{3.1}{9}{Random estratificado}{subsection.3.1}{}}
+\newlabel{eq:random-prior}{{2}{9}{Random estratificado}{equation.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Para qué sirve.}{9}{section*.16}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Regresión logística sobre catálogo}{9}{subsection.3.2}\protected@file@percent }
+\newlabel{subsec:logreg}{{3.2}{9}{Regresión logística sobre catálogo}{subsection.3.2}{}}
+\newlabel{eq:logreg-sigmoid}{{3}{9}{Regresión logística sobre catálogo}{equation.3}{}}
+\@writefile{toc}{\contentsline {paragraph}{Intuición.}{10}{section*.17}\protected@file@percent }
+\newlabel{eq:bce-weighted}{{4}{10}{Intuición}{equation.4}{}}
+\@writefile{toc}{\contentsline {paragraph}{Decisión de diseño.}{10}{section*.18}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Para qué sirve.}{10}{section*.19}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}CNN single-branch (AstroNet-inspired)}{10}{subsection.3.3}\protected@file@percent }
+\newlabel{subsec:cnn}{{3.3}{10}{CNN single-branch (AstroNet-inspired)}{subsection.3.3}{}}
+\@writefile{toc}{\contentsline {paragraph}{Operación básica de una capa convolucional 1D.}{10}{section*.20}\protected@file@percent }
+\newlabel{eq:conv1d}{{5}{10}{Operación básica de una capa convolucional 1D}{equation.5}{}}
+\@writefile{toc}{\contentsline {paragraph}{Arquitectura usada.}{10}{section*.21}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Tamaño del modelo.}{11}{section*.22}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Por qué se llama \textit  {single-branch}.}{11}{section*.23}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Limitación que motiva Mamba.}{11}{section*.24}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Mamba single-view}{11}{subsection.3.4}\protected@file@percent }
+\newlabel{subsec:mamba}{{3.4}{11}{Mamba single-view}{subsection.3.4}{}}
+\@writefile{toc}{\contentsline {paragraph}{Intuición: estado oculto que recorre la secuencia.}{12}{section*.25}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Ecuaciones del SSM selectivo.}{12}{section*.26}\protected@file@percent }
+\newlabel{eq:ssm}{{6}{12}{Ecuaciones del SSM selectivo}{equation.6}{}}
+\@writefile{toc}{\contentsline {paragraph}{Por qué importa para $L=18\,000$.}{12}{section*.27}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Arquitectura usada.}{12}{section*.28}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Tamaño del modelo.}{13}{section*.29}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Detalles de entrenamiento.}{13}{section*.30}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4}Protocolo experimental}{13}{section.4}\protected@file@percent }
+\newlabel{sec:protocol}{{4}{13}{Protocolo experimental}{section.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Splits por TIC ID}{13}{subsection.4.1}\protected@file@percent }
+\newlabel{subsec:splits}{{4.1}{13}{Splits por TIC ID}{subsection.4.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Cobertura observacional de TESS. La misión divide el cielo en sectores observados durante $\sim $27 días cada uno. Una misma estrella puede aparecer en varios sectores, lo cual implica que cada \texttt  {TIC ID} puede tener múltiples curvas de luz asociadas. Fuente: NASA/MIT.}}{14}{figure.caption.31}\protected@file@percent }
+\newlabel{fig:tess-sectors}{{2}{14}{Cobertura observacional de TESS. La misión divide el cielo en sectores observados durante $\sim $27 días cada uno. Una misma estrella puede aparecer en varios sectores, lo cual implica que cada \texttt {TIC ID} puede tener múltiples curvas de luz asociadas. Fuente: NASA/MIT}{figure.caption.31}{}}
+\@writefile{toc}{\contentsline {paragraph}{Tamaños y estratificación.}{14}{section*.32}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Test sellado}{14}{subsection.4.2}\protected@file@percent }
+\newlabel{subsec:test-sellado}{{4.2}{14}{Test sellado}{subsection.4.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Por qué importa.}{14}{section*.33}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Materialización operativa.}{15}{section*.34}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Multi-seed como sustituto de K-fold}{15}{subsection.4.3}\protected@file@percent }
+\newlabel{subsec:multi-seed}{{4.3}{15}{Multi-seed como sustituto de K-fold}{subsection.4.3}{}}
+\@writefile{toc}{\contentsline {paragraph}{Estrategia adoptada.}{15}{section*.35}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Justificación estadística.}{15}{section*.36}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Prevención de \textit  {leakage}}{15}{subsection.4.4}\protected@file@percent }
+\newlabel{subsec:leakage-prevention}{{4.4}{15}{Prevención de \textit {leakage}}{subsection.4.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Optimización de hiperparámetros}{16}{section.5}\protected@file@percent }
+\newlabel{sec:tuning}{{5}{16}{Optimización de hiperparámetros}{section.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Sanity overfit por modelo}{16}{subsection.5.1}\protected@file@percent }
+\newlabel{subsec:sanity}{{5.1}{16}{Sanity overfit por modelo}{subsection.5.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Resultados de \textit  {sanity overfit} (subset $N = 64$, \textit  {val} $=$ \textit  {train}, sin \textit  {dropout} ni \textit  {weight decay}). Para descartar que el bajo \textit  {val\_auc} del CNN se debiera a una configuración de entrenamiento subóptima, se ejecuta una segunda corrida (\textit  {v2}) usando la misma estrategia con la que Mamba sí memoriza: 120 épocas con \textit  {cosine annealing} $3\!\times \!10^{-3} \to 10^{-6}$. La columna \textit  {Resultado} interpreta la curva de \textit  {val\_auc}: \text  {$\mathsurround \z@ \mathchar "458$}{} indica que la curva sube monótonamente por encima del piso aleatorio y descarta un error estructural en el \textit  {pipeline}.}}{16}{table.caption.37}\protected@file@percent }
+\newlabel{tab:sanity}{{5}{16}{Resultados de \textit {sanity overfit} (subset $N = 64$, \textit {val} $=$ \textit {train}, sin \textit {dropout} ni \textit {weight decay}). Para descartar que el bajo \textit {val\_auc} del CNN se debiera a una configuración de entrenamiento subóptima, se ejecuta una segunda corrida (\textit {v2}) usando la misma estrategia con la que Mamba sí memoriza: 120 épocas con \textit {cosine annealing} $3\!\times \!10^{-3} \to 10^{-6}$. La columna \textit {Resultado} interpreta la curva de \textit {val\_auc}: \checkmark {} indica que la curva sube monótonamente por encima del piso aleatorio y descarta un error estructural en el \textit {pipeline}}{table.caption.37}{}}
+\@writefile{toc}{\contentsline {paragraph}{Lectura del hallazgo.}{16}{section*.38}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Configuración del modelo principal}{17}{subsection.5.2}\protected@file@percent }
+\newlabel{subsec:config-search}{{5.2}{17}{Configuración del modelo principal}{subsection.5.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Por qué se congela la configuración.}{17}{section*.39}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Sweep multi-seed sobre la arquitectura \textit  {locked}}{17}{subsection.5.3}\protected@file@percent }
+\newlabel{subsec:multi-seed-sweep}{{5.3}{17}{Sweep multi-seed sobre la arquitectura \textit {locked}}{subsection.5.3}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Variabilidad por semilla del Mamba \textit  {single-view} sobre la arquitectura \textit  {locked}. El \textit  {ensemble} se construye promediando las probabilidades $\hat  {p}_i$ de las cinco semillas (Sec.\ref {sec:results}).}}{18}{table.caption.40}\protected@file@percent }
+\newlabel{tab:seed-sweep}{{6}{18}{Variabilidad por semilla del Mamba \textit {single-view} sobre la arquitectura \textit {locked}. El \textit {ensemble} se construye promediando las probabilidades $\hat {p}_i$ de las cinco semillas (Sec.\ref {sec:results})}{table.caption.40}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Curvas de aprendizaje y diagnóstico de \textit  {overfitting}/\textit  {underfitting}}{18}{subsection.5.4}\protected@file@percent }
+\newlabel{subsec:learning-curves}{{5.4}{18}{Curvas de aprendizaje y diagnóstico de \textit {overfitting}/\textit {underfitting}}{subsection.5.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Curvas de aprendizaje del Mamba \textit  {single-view} para la \textit  {seed} 789 (mejor del \textit  {sweep}). \textbf  {Arriba izquierda:} pérdidas de \textit  {train} y \textit  {validation} (BCE) en función de la época. \textbf  {Arriba derecha:} AUC-ROC y AUC-PR sobre \textit  {validation}; línea vertical en la mejor época, seleccionada para el \textit  {checkpoint} \texttt  {best.pt}. \textbf  {Abajo izquierda:} \textit  {learning rate} con \textit  {cosine annealing}. \textbf  {Abajo derecha:} brecha $\text  {val\_loss} - \text  {train\_loss}$ como indicador de \textit  {overfitting}.}}{19}{figure.caption.41}\protected@file@percent }
+\newlabel{fig:learning-curves}{{3}{19}{Curvas de aprendizaje del Mamba \textit {single-view} para la \textit {seed} 789 (mejor del \textit {sweep}). \textbf {Arriba izquierda:} pérdidas de \textit {train} y \textit {validation} (BCE) en función de la época. \textbf {Arriba derecha:} AUC-ROC y AUC-PR sobre \textit {validation}; línea vertical en la mejor época, seleccionada para el \textit {checkpoint} \texttt {best.pt}. \textbf {Abajo izquierda:} \textit {learning rate} con \textit {cosine annealing}. \textbf {Abajo derecha:} brecha $\text {val\_loss} - \text {train\_loss}$ como indicador de \textit {overfitting}}{figure.caption.41}{}}
+\@writefile{toc}{\contentsline {paragraph}{Lectura del entrenamiento.}{19}{section*.42}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Diagnóstico de \textit  {overfitting}/\textit  {underfitting}.}{19}{section*.43}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.5}Justificación de no usar \textit  {grid search} ni Optuna}{20}{subsection.5.5}\protected@file@percent }
+\newlabel{subsec:why-no-grid}{{5.5}{20}{Justificación de no usar \textit {grid search} ni Optuna}{subsection.5.5}{}}
+\@writefile{toc}{\contentsline {paragraph}{Trade-off explícito.}{20}{section*.44}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.6}Reproducibilidad por \textit  {run}}{20}{subsection.5.6}\protected@file@percent }
+\newlabel{subsec:run-repro}{{5.6}{20}{Reproducibilidad por \textit {run}}{subsection.5.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Métricas y resultados}{20}{section.6}\protected@file@percent }
+\newlabel{sec:results}{{6}{20}{Métricas y resultados}{section.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}Métricas utilizadas}{20}{subsection.6.1}\protected@file@percent }
+\newlabel{subsec:metrics}{{6.1}{20}{Métricas utilizadas}{subsection.6.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces Interpretación intuitiva de las métricas usadas en este reporte.}}{21}{table.caption.45}\protected@file@percent }
+\newlabel{tab:metric-intuition}{{7}{21}{Interpretación intuitiva de las métricas usadas en este reporte}{table.caption.45}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Tabla principal}{21}{subsection.6.2}\protected@file@percent }
+\newlabel{subsec:main-results}{{6.2}{21}{Tabla principal}{subsection.6.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces Métricas en \textit  {test} sellado. Para LogReg no se reporta \textit  {Brier} porque sus probabilidades completas no se conservaron en el artefacto de evaluación original; Random emite una constante, por lo que el \textit  {Brier} reportado en su fila corresponde al error cuadrático del prior $\hat  {p} \approx 0.383$. El \textit  {ensemble} es promedio de probabilidades sobre las cinco semillas Mamba.}}{22}{table.caption.46}\protected@file@percent }
+\newlabel{tab:main-results}{{8}{22}{Métricas en \textit {test} sellado. Para LogReg no se reporta \textit {Brier} porque sus probabilidades completas no se conservaron en el artefacto de evaluación original; Random emite una constante, por lo que el \textit {Brier} reportado en su fila corresponde al error cuadrático del prior $\hat {p} \approx 0.383$. El \textit {ensemble} es promedio de probabilidades sobre las cinco semillas Mamba}{table.caption.46}{}}
+\@writefile{toc}{\contentsline {paragraph}{Lectura.}{22}{section*.47}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.3}Curva ROC comparativa}{22}{subsection.6.3}\protected@file@percent }
+\newlabel{subsec:roc}{{6.3}{22}{Curva ROC comparativa}{subsection.6.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Curvas ROC sobre el \textit  {test} sellado para los cuatro modelos. La curva Mamba \textit  {ensemble} domina al resto en todo el rango de \textit  {thresholds}, evidenciando que el aporte del SSM sobre la convolución es sistemático y no dependiente del punto de operación elegido.}}{23}{figure.caption.48}\protected@file@percent }
+\newlabel{fig:roc-tier1}{{4}{23}{Curvas ROC sobre el \textit {test} sellado para los cuatro modelos. La curva Mamba \textit {ensemble} domina al resto en todo el rango de \textit {thresholds}, evidenciando que el aporte del SSM sobre la convolución es sistemático y no dependiente del punto de operación elegido}{figure.caption.48}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.4}Matriz de confusión y calibración del \textit  {ensemble}}{23}{subsection.6.4}\protected@file@percent }
+\newlabel{subsec:confusion-calibration}{{6.4}{23}{Matriz de confusión y calibración del \textit {ensemble}}{subsection.6.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Mamba \textit  {ensemble} de cinco semillas: comportamiento a \textit  {threshold} de operación y calibración de probabilidades.}}{23}{figure.caption.49}\protected@file@percent }
+\newlabel{fig:cm-cal}{{5}{23}{Mamba \textit {ensemble} de cinco semillas: comportamiento a \textit {threshold} de operación y calibración de probabilidades}{figure.caption.49}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {7}Análisis de errores}{24}{section.7}\protected@file@percent }
+\newlabel{sec:errors}{{7}{24}{Análisis de errores}{section.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1}Distribución de probabilidades por clase verdadera}{24}{subsection.7.1}\protected@file@percent }
+\newlabel{subsec:prob-hist}{{7.1}{24}{Distribución de probabilidades por clase verdadera}{subsection.7.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Histograma de la probabilidad predicha $\hat  {p}$ por el Mamba \textit  {ensemble}, separado por clase verdadera. La bimodalidad parcial indica separación correcta en los casos confidentes; la masa en $[0.3, 0.7]$ explica la mayoría de los errores.}}{24}{figure.caption.50}\protected@file@percent }
+\newlabel{fig:prob-hist}{{6}{24}{Histograma de la probabilidad predicha $\hat {p}$ por el Mamba \textit {ensemble}, separado por clase verdadera. La bimodalidad parcial indica separación correcta en los casos confidentes; la masa en $[0.3, 0.7]$ explica la mayoría de los errores}{figure.caption.50}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2}Tasa de error por \textit  {feature} física}{24}{subsection.7.2}\protected@file@percent }
+\newlabel{subsec:error-features}{{7.2}{24}{Tasa de error por \textit {feature} física}{subsection.7.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Tasa de error del Mamba \textit  {ensemble} en función de \texttt  {pl\_orbper}, \texttt  {pl\_trandep} y \texttt  {st\_tmag}. Permite identificar regiones del espacio físico donde el modelo es sistemáticamente menos confiable.}}{25}{figure.caption.51}\protected@file@percent }
+\newlabel{fig:error-features}{{7}{25}{Tasa de error del Mamba \textit {ensemble} en función de \texttt {pl\_orbper}, \texttt {pl\_trandep} y \texttt {st\_tmag}. Permite identificar regiones del espacio físico donde el modelo es sistemáticamente menos confiable}{figure.caption.51}{}}
+\@writefile{toc}{\contentsline {paragraph}{Lectura.}{25}{section*.52}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.3}Casos más confidentes mal clasificados}{25}{subsection.7.3}\protected@file@percent }
+\newlabel{subsec:top-errors}{{7.3}{25}{Casos más confidentes mal clasificados}{subsection.7.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Curvas de los casos más confidentes mal clasificados por el Mamba \textit  {ensemble}. Los FN típicos son tránsitos poco profundos o curvas ruidosas; los FP típicos son curvas con \textit  {dips} periódicos que el modelo confunde con tránsitos planetarios (suelen ser eclipses estelares).}}{25}{figure.caption.53}\protected@file@percent }
+\newlabel{fig:top-errors}{{8}{25}{Curvas de los casos más confidentes mal clasificados por el Mamba \textit {ensemble}. Los FN típicos son tránsitos poco profundos o curvas ruidosas; los FP típicos son curvas con \textit {dips} periódicos que el modelo confunde con tránsitos planetarios (suelen ser eclipses estelares)}{figure.caption.53}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {8}Interpretabilidad: XAI}{25}{section.8}\protected@file@percent }
+\newlabel{sec:xai}{{8}{25}{Interpretabilidad: XAI}{section.8}{}}
+\@writefile{toc}{\contentsline {paragraph}{Sobre la elección de métodos.}{25}{section*.54}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.1}Métodos aplicados}{26}{subsection.8.1}\protected@file@percent }
+\newlabel{subsec:xai-methods}{{8.1}{26}{Métodos aplicados}{subsection.8.1}{}}
+\@writefile{toc}{\contentsline {paragraph}{Gradient saliency.}{26}{section*.55}\protected@file@percent }
+\newlabel{eq:saliency}{{8}{26}{Gradient saliency}{equation.8}{}}
+\@writefile{toc}{\contentsline {paragraph}{Integrated Gradients (IG).}{26}{section*.56}\protected@file@percent }
+\newlabel{eq:ig}{{9}{26}{Integrated Gradients (IG)}{equation.9}{}}
+\@writefile{toc}{\contentsline {paragraph}{Occlusion sensitivity.}{26}{section*.57}\protected@file@percent }
+\newlabel{eq:occlusion}{{10}{26}{Occlusion sensitivity}{equation.10}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.2}Política de selección de casos}{26}{subsection.8.2}\protected@file@percent }
+\newlabel{subsec:xai-selection}{{8.2}{26}{Política de selección de casos}{subsection.8.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.3}Hallazgos}{26}{subsection.8.3}\protected@file@percent }
+\newlabel{subsec:xai-findings}{{8.3}{26}{Hallazgos}{subsection.8.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Resumen XAI sobre los ocho casos seleccionados (dos por cuadrante TP/TN/FN/FP) para Mamba \textit  {seed} 789. Cada caso se analiza con los tres métodos: \textit  {saliency} de gradiente, \textit  {integrated gradients} y \textit  {occlusion sensitivity}.}}{27}{figure.caption.58}\protected@file@percent }
+\newlabel{fig:xai-summary}{{9}{27}{Resumen XAI sobre los ocho casos seleccionados (dos por cuadrante TP/TN/FN/FP) para Mamba \textit {seed} 789. Cada caso se analiza con los tres métodos: \textit {saliency} de gradiente, \textit {integrated gradients} y \textit {occlusion sensitivity}}{figure.caption.58}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces \textit  {Saliency} sobre un TP confidente (TIC 218795833, $\hat  {p} \approx 0.95$). El gradiente se concentra en la región del \textit  {dip} de tránsito; el resto de la curva contribuye marginalmente a la decisión.}}{28}{figure.caption.59}\protected@file@percent }
+\newlabel{fig:xai-tp-zoom}{{10}{28}{\textit {Saliency} sobre un TP confidente (TIC 218795833, $\hat {p} \approx 0.95$). El gradiente se concentra en la región del \textit {dip} de tránsito; el resto de la curva contribuye marginalmente a la decisión}{figure.caption.59}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {9}Ingeniería y reproducibilidad}{28}{section.9}\protected@file@percent }
+\newlabel{sec:repro}{{9}{28}{Ingeniería y reproducibilidad}{section.9}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.1}Estructura del repositorio}{28}{subsection.9.1}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {1}{\ignorespaces Árbol del repositorio (top-level).}}{28}{lstlisting.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.2}Configs YAML versionados}{29}{subsection.9.2}\protected@file@percent }
+\newlabel{subsec:configs}{{9.2}{29}{Configs YAML versionados}{subsection.9.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.3}Semillas y determinismo}{29}{subsection.9.3}\protected@file@percent }
+\newlabel{subsec:seeds}{{9.3}{29}{Semillas y determinismo}{subsection.9.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.4}Artefactos por \textit  {run}}{29}{subsection.9.4}\protected@file@percent }
+\newlabel{subsec:run-artifacts}{{9.4}{29}{Artefactos por \textit {run}}{subsection.9.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.5}Entornos: Windows nativo vs WSL2}{29}{subsection.9.5}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces Entornos canónicos.}}{29}{table.caption.60}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {10}Suite de tests}{30}{section.10}\protected@file@percent }
+\newlabel{sec:tests}{{10}{30}{Suite de tests}{section.10}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.1}Estrategia general}{30}{subsection.10.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {10}{\ignorespaces Cobertura de la suite de pruebas.}}{30}{table.caption.61}\protected@file@percent }
+\newlabel{tab:tests}{{10}{30}{Cobertura de la suite de pruebas}{table.caption.61}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {11}Discusión}{30}{section.11}\protected@file@percent }
+\newlabel{sec:discussion}{{11}{30}{Discusión}{section.11}{}}
+\@writefile{toc}{\contentsline {paragraph}{Mamba supera a la convolución pura.}{30}{section*.62}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{La regresión logística sobre catálogo.}{30}{section*.63}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Variabilidad y \textit  {ensembling}.}{30}{section*.64}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Umbrales aspiracionales del proyecto.}{30}{section*.65}\protected@file@percent }
+\bibstyle{plain}
+\bibcite{gu2023mamba}{1}
+\@writefile{toc}{\contentsline {paragraph}{Modos de falla del modelo.}{31}{section*.66}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {12}Conclusiones}{31}{section.12}\protected@file@percent }
+\newlabel{sec:conclusions}{{12}{31}{Conclusiones}{section.12}{}}
+\bibcite{shallue2018}{2}
+\bibcite{exominer}{3}
+\bibcite{lightkurve}{4}
+\gdef \@abspage@last{32}
