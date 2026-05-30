@@ -6,12 +6,13 @@ import math
 
 
 class EarlyStopping:
-    """Detiene el entrenamiento si la métrica no mejora durante `patience` epochs.
+    """Detiene el entrenamiento si la métrica no mejora durante un numero de epochs = patience.
 
     Args:
-        metric: nombre de la métrica a vigilar (solo para logs).
+        metric: nombre de la métrica a vigilar (para logs).
         patience: cuántos epochs sin mejora se toleran.
-        mode: "max" (mayor es mejor: AUC, F1, ...) o "min" (menor es mejor: loss).
+        mode: - max: (mayor es mejor: AUC, F1, ..) 
+              - min: (menor es mejor: loss).
         min_delta: mejora mínima para contar como mejora.
     """
 
@@ -38,7 +39,7 @@ class EarlyStopping:
         return value < self.best - self.min_delta
 
     def step(self, value: float) -> bool:
-        """Registra la métrica del epoch actual. Devuelve True si mejoró."""
+        """Registra la métrica del epoch actual y devuelve True si mejoró."""
         if math.isnan(value):
             self.bad_epochs += 1
         elif self._is_better(value):

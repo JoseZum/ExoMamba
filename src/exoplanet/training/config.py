@@ -11,10 +11,12 @@ REQUIRED_TOP_KEYS = {"experiment", "data", "model", "training"}
 
 
 def load_config(path: Path | str) -> dict[str, Any]:
-    """Lee un YAML y verifica claves de primer nivel mínimas.
+    """
+    Lee un YAML y verifica claves de primer nivel mínimas.
 
-    No valida el contenido completo (eso lo hacen las funciones constructoras
-    como build_optimizer, build_loss, etc., al consumir cada sección).
+    No valida el contenido completo pq eso lo hacen las funciones constructoras
+    como build_optimizer, build_loss, etc., al consumir cada sección del config.
+    
     """
     p = Path(path)
     if not p.exists():
