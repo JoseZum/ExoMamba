@@ -31,7 +31,7 @@
 \begin{document}
 
 \title{Selective State-Space Models for TESS Exoplanet Vetting from Long Light
-Curves: A Controlled, Reproducible Feasibility Study}
+Curves}
 
 \author{
 \IEEEauthorblockN{Jos\'e Fabi\'an Zumbado Ruiz and Jeremmy Aguilar Villanueva}
@@ -44,33 +44,24 @@ Cartago, Costa Rica\\
 
 % -----------------------------------------------------------------------------
 \begin{abstract}
-Deep convolutional classifiers such as AstroNet and ExoMiner are central to
-automated vetting of transiting-planet candidates, but their effective receptive
-field is typically far shorter than a full TESS light curve ($\sim$18{,}000
-cadences per sector). Selective state-space models (Mamba) process such sequences
-in linear time with a global latent state, yet to our knowledge they have not been
-evaluated for confirmed-planet (CP) vs.\ false-positive (FP) vetting of TESS
-Objects of Interest (TOIs) from the \emph{complete} global light curve. We present
-a controlled, reproducible feasibility study on 1{,}576 labelled TOIs under a
-single sealed, star-level (TIC) split. Against a stratified-prior baseline, a
-catalog-feature logistic regression, and an AstroNet-style single-branch CNN, a
-compact Mamba model (131K parameters) reaches a test AUC-ROC of 0.806 (95\%
-bootstrap CI $[0.747, 0.857]$), versus 0.604 $[0.530, 0.678]$ for the CNN. The
-$+0.20$ gap is statistically significant (DeLong $p = 3.7\times10^{-8}$;
-paired-bootstrap $\Delta$AUC CI $[+0.13, +0.28]$) and the two confidence intervals
-do not overlap. A larger AstroNet-style dual-branch baseline (with a phase-folded
-local view), trained without Kepler transfer learning, lands between the CNN and
-Mamba. Gradient-, integrated-gradient- and occlusion-based attributions concentrate
-on the transit dips for true positives. We explicitly frame this as a small-data
-feasibility comparison, not a state-of-the-art vetting catalog: the contribution is
-the first controlled evidence that selective state-space modeling of long TESS
-sequences yields a measurable, statistically significant advantage over tabular and
-shallow-convolutional baselines under realistic data and hardware constraints.
+Selective state-space models such as Mamba process long sequences in linear time,
+but their usefulness for exoplanet vetting from TESS light curves has not been
+evaluated. We present a controlled feasibility study for confirmed-planet (CP)
+versus false-positive (FP) vetting of TESS Objects of Interest using complete
+global light curves of length $L=18{,}000$. On 1{,}576 labelled TOIs under a sealed
+TIC-level split, a compact Mamba model reaches AUC-ROC $0.806$ (95\% bootstrap CI
+$[0.747,0.857]$), compared with $0.604$ for an AstroNet-style single-branch CNN and
+$0.605$ for catalog logistic regression. The Mamba--CNN gap is statistically
+significant (DeLong $p=3.7\times10^{-8}$; paired-bootstrap $\Delta$AUC CI
+$[+0.13,+0.28]$). A larger AstroNet-style dual-branch baseline lands between the CNN
+and Mamba. Attribution methods localize Mamba's evidence to transit dips in true
+positives. We frame this as the first controlled feasibility evidence for selective
+state-space modeling in this specific TESS CP/FP vetting setting, not as a
+state-of-the-art vetting catalog.
 \end{abstract}
 
 \begin{IEEEkeywords}
-exoplanet vetting, TESS, state-space models, Mamba, time-series classification,
-reproducibility
+exoplanet vetting, TESS, Mamba, state-space models, light curves, reproducibility
 \end{IEEEkeywords}
 
 % =============================================================================
@@ -83,11 +74,13 @@ morphologically degenerate with eclipsing binaries and instrumental systematics,
 which makes large-scale \emph{vetting}---deciding whether an already-detected
 candidate is a confirmed planet (CP) or a false positive (FP)---a central
 bottleneck. Our task is vetting, not detection: NASA's pipeline performs the
-Box-Least-Squares search; we classify the resulting TESS Objects of Interest
-(TOIs) using their light curves together with the catalog metadata that exists
-\emph{because} the TOI exists (orbital period, transit depth, epoch, stellar
-magnitude). Using catalog metadata as input is therefore not leakage in this
-setting, consistent with established practice~\cite{shallue2018,valizadegan2022}.
+Box-Least-Squares search; we evaluate light-curve models and catalog-feature
+baselines on the resulting TESS Objects of Interest (TOIs). Catalog metadata
+(orbital period, transit depth, epoch, stellar magnitude) is used only where it is
+part of the model definition---as logistic-regression features or for phase-folding
+the local view---not as a side input to the sequence models; using it is therefore
+not leakage in this vetting setting, consistent with established
+practice~\cite{shallue2018,valizadegan2022}.
 
 State-of-the-art vetting is built on 1D convolutional networks
 \cite{shallue2018,valizadegan2022,exominerpp,dartvetter}. A shallow single-branch
@@ -106,7 +99,7 @@ CP/FP vetting of TESS TOIs on the complete global light curve.
 state-space model against tabular and convolutional baselines for TESS TOI
 vetting on full 18{,}000-cadence global curves, under one sealed star-level split.
 (ii) A statistically grounded evaluation---bootstrap confidence intervals for
-AUC-ROC/AUC-PR and DeLong tests for paired AUC differences---rather than point
+AUC-ROC and DeLong tests for paired AUC differences---rather than point
 estimates alone. (iii) A close AstroNet-inspired dual-branch baseline adapted to
 the TESS setting as a strong upper-reference, plus a clearly labelled
 negative ablation (a naive Mamba$+$CNN late-fusion). (iv) Explainability
@@ -264,12 +257,8 @@ adds essentially nothing over three catalog numbers, whereas the state-space mod
 does.
 
 \begin{table*}[!t]
-\caption{Sealed test results. Global-view models use $N{=}237$; dual-branch
-models use the strict local-view subset $N{=}210$ (not directly comparable; see
-paired tests in Table~\ref{tab:delong}). $^{\dagger}$Logistic-regression
-predictions were stored as a summary without per-sample probabilities, so no
-bootstrap CI is computed. $^{\ast}$Negative ablation (below chance); recall
-$=1.0$ reflects a degenerate all-positive collapse.}
+\caption{Sealed test results. Global-view models use $N=237$; dual-branch models
+use the local-view subset ($N=210$).}
 \label{tab:main}
 \centering
 \footnotesize
@@ -290,6 +279,15 @@ AstroNet multibranch (ensemble, 3) & global+local & 210 & 0.716 [0.644, 0.779] &
 ExoMamba V1 (ensemble, 3)\,$^{\ast}$ & global+local & 210 & 0.460 [0.382, 0.541] & 0.371 & 0.542 & 1.000 & 0.254 \\
 \bottomrule
 \end{tabular}
+
+\vspace{2pt}
+\begin{flushleft}\footnotesize
+$^{\dagger}$Logistic-regression predictions were stored without per-sample
+probabilities, so no bootstrap CI is reported. \quad
+$^{\ast}$Negative ablation; recall $=1.0$ reflects a degenerate all-positive
+collapse. Tier-2 rows ($N{=}210$) are not directly comparable to Tier-1
+($N{=}237$); see paired tests in Table~\ref{tab:delong}.
+\end{flushleft}
 \end{table*}
 
 \subsection{Statistical significance}
@@ -379,7 +377,7 @@ error analysis.
 
 \begin{figure*}[!t]
 \centering
-\includegraphics[width=0.95\textwidth]{figures/xai/mamba_seed789/_summary.png}
+\includegraphics[width=0.88\textwidth]{figures/xai/mamba_seed789/_summary.png}
 \caption{Attribution summary (8 cases $\times$ 3 methods) for the best Mamba seed.
 Red/blue indicate evidence toward ``planet''/``not planet''. True positives place
 mass on the transit dips.}
@@ -439,13 +437,15 @@ claim to a within-study, same-split comparison.
 % =============================================================================
 \section{Conclusion and Future Work}
 
-Under a sealed star-level split, quantified uncertainty and matched data, a compact
-selective state-space model is a computationally feasible sequence-modeling
-alternative for long TESS light curves, significantly outperforming tabular and
-shallow-convolutional baselines for CP/FP TOI vetting. Future work: a non-naive
-Mamba$+$CNN$+$scalar fusion with a mandatory scalar-only control to detect
-shortcut learning; Kepler-to-TESS transfer; extension to the PC-vs-FP triage
-setting; and external, cross-sector validation toward a usable follow-up list.
+Under a sealed TIC-level split, matched inputs and quantified uncertainty, a
+compact selective state-space model provides a computationally feasible alternative
+for modeling long TESS light curves and significantly outperforms tabular and
+shallow-convolutional baselines for CP/FP TOI vetting. The result should be
+interpreted as a controlled feasibility study rather than a production vetting
+catalog. Future work should test non-naive fusion of global SSM features, local
+phase-folded views and scalar catalog features; transfer learning from Kepler to
+TESS; extension to the operational PC-vs-FP triage setting; and external validation
+on independent TOI snapshots or held-out sectors.
 
 \textbf{Reproducibility.} All splits are versioned at the TIC level; every run
 stores its config, git commit, environment, training curve, checkpoints and
@@ -453,6 +453,9 @@ per-sample test predictions; the test set is loaded once behind an explicit guar
 49 unit tests cover the data and metrics paths. Inference statistics are computed
 from the stored predictions by a single script, so all confidence intervals and
 DeLong tests in this paper are reproducible without retraining.
+
+\textbf{Code availability.} Code, split files, experiment configurations and stored
+prediction files are available at \url{https://github.com/JoseZum/ExoMamba}.
 
 \balance
 

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.28 (MiKTeX 25.12) (preloaded format=pdflatex 2026.4.29)  24 JUN 2026 00:51
+This is pdfTeX, Version 3.141592653-2.6-1.40.28 (MiKTeX 25.12) (preloaded format=pdflatex 2026.4.29)  24 JUN 2026 01:04
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -562,58 +562,65 @@ Package hyperref Info: Link coloring OFF on input line 31.
 Package caption Info: Begin \AtBeginDocument code.
 Package caption Info: subfig package v1.3 is loaded.
 Package caption Info: End \AtBeginDocument code.
-LaTeX Font Info:    Trying to load font information for OT1+lmr on input line 4
-9.
+LaTeX Font Info:    Trying to load font information for OT1+lmr on input line 5
+1.
 
 (C:\Users\jfzum\AppData\Local\Programs\MiKTeX\tex/latex/lm\ot1lmr.fd
 File: ot1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
-LaTeX Font Info:    Trying to load font information for OML+lmm on input line 4
-9.
+LaTeX Font Info:    Trying to load font information for OML+lmm on input line 5
+1.
 
 (C:\Users\jfzum\AppData\Local\Programs\MiKTeX\tex/latex/lm\omllmm.fd
 File: omllmm.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 LaTeX Font Info:    Trying to load font information for OMS+lmsy on input line 
-49.
+51.
 
 (C:\Users\jfzum\AppData\Local\Programs\MiKTeX\tex/latex/lm\omslmsy.fd
 File: omslmsy.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 LaTeX Font Info:    Trying to load font information for OMX+lmex on input line 
-49.
+51.
 
 (C:\Users\jfzum\AppData\Local\Programs\MiKTeX\tex/latex/lm\omxlmex.fd
 File: omxlmex.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <9> on input line 49.
+(Font)              <9> on input line 51.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <6> on input line 49.
+(Font)              <6> on input line 51.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <5> on input line 49.
-LaTeX Font Info:    Trying to load font information for U+msa on input line 49.
+(Font)              <5> on input line 51.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 51.
 
 
 (C:\Users\jfzum\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 49.
+LaTeX Font Info:    Trying to load font information for U+msb on input line 51.
 
 
 (C:\Users\jfzum\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
-Underfull \hbox (badness 6559) in paragraph at lines 71--74
-\T1/lmr/bx/n/9 mod-els, Mamba, time-series clas-si-fi-ca-tion, re-pro-
+Underfull \hbox (badness 6876) in paragraph at lines 46--61
+[]\T1/lmr/bx/it/9 Abstract\T1/lmr/bx/n/9 ---Selective state-space mod-els such 
+as
+ []
+
+
+Underfull \hbox (badness 1701) in paragraph at lines 63--65
+[]\T1/lmr/bx/it/9 Index Terms\T1/lmr/bx/n/9 ---exoplanet vet-ting, TESS, Mamba,
+
  []
 
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10> on input line 79.
+(Font)              <10> on input line 70.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <7> on input line 79.
+(Font)              <7> on input line 70.
 
-Underfull \hbox (badness 2065) in paragraph at lines 121--135
+Underfull \hbox (badness 2065) in paragraph at lines 114--128
 []\T1/lmr/m/n/10 Deep learn-ing for tran-sit vet-ting be-gan with As-
  []
 
@@ -621,126 +628,115 @@ Underfull \hbox (badness 2065) in paragraph at lines 121--135
 zum/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm-ec.enc}
 
 
-{C:/Users/jfzum/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm-mathsy.enc}
+{C:/Users/jfzum/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm-mathit.enc}
 {C:/Users/jfzum/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm-rm.enc}{C:/
-Users/jfzum/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm-mathit.enc}]
+Users/jfzum/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm-mathsy.enc}]
 LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 1
-47.
+40.
 
 (C:\Users\jfzum\AppData\Local\Programs\MiKTeX\tex/latex/lm\t1lmtt.fd
 File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
-Underfull \hbox (badness 1577) in paragraph at lines 145--151
+Underfull \hbox (badness 1577) in paragraph at lines 138--144
 []\T1/lmr/bx/n/10 Sources. \T1/lmr/m/n/10 La-bels come from the NASA Ex-o-plane
 t
  []
 
 
-Underfull \hbox (badness 1642) in paragraph at lines 145--151
+Underfull \hbox (badness 1642) in paragraph at lines 138--144
 \T1/lmr/m/n/10 Archive TOI cat-a-log [[]12[]]; light curves are the PD-
  []
 
 
-Underfull \hbox (badness 3138) in paragraph at lines 145--151
+Underfull \hbox (badness 3138) in paragraph at lines 138--144
 \T1/lmr/m/n/10 C-SAP_FLUX se-ries re-trieved from MAST [[]13[]] via
  []
 
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <8> on input line 172.
+(Font)              <8> on input line 165.
 
-Underfull \hbox (badness 1616) in paragraph at lines 195--208
+Underfull \hbox (badness 1616) in paragraph at lines 188--201
 \T1/lmr/m/n/10 an em-pir-i-cal floor (AUC $\OT1/lmr/m/n/10 = 0\OML/lmm/m/it/10 
 :\OT1/lmr/m/n/10 5$\T1/lmr/m/n/10 ). (2) \T1/lmr/m/it/10 Cat-a-log lo-gis-
  []
 
 
-Underfull \hbox (badness 1484) in paragraph at lines 209--219
+Underfull \hbox (badness 1484) in paragraph at lines 202--212
 \T1/lmr/m/n/10 bed-ding ($\OT1/lmr/m/n/10 1[]\OML/lmm/m/it/10 d[][]\OT1/lmr/m/n
 /10 64$\T1/lmr/m/n/10 ), four resid-ual Mamba blocks
  []
 
-[2]
-Underfull \hbox (badness 1418) in paragraph at lines 258--265
+
+Underfull \hbox (badness 1418) in paragraph at lines 251--258
 \T1/lmr/m/n/10 (best seed), with a con-fi-dence in-ter-val that lies en-
  []
 
-<figures/roc_tier1.png, id=134, 578.16pt x 433.62pt>
+[2]
+<figures/roc_tier1.png, id=137, 578.16pt x 433.62pt>
 File: figures/roc_tier1.png Graphic file (type png)
 <use figures/roc_tier1.png>
-Package pdftex.def Info: figures/roc_tier1.png  used on input line 333.
+Package pdftex.def Info: figures/roc_tier1.png  used on input line 331.
 (pdftex.def)             Requested size: 252.0pt x 189.00032pt.
-<results/mamba_ensemble/confusion_matrix.png, id=140, 578.16pt x 433.62pt>
+<results/mamba_ensemble/confusion_matrix.png, id=143, 578.16pt x 433.62pt>
 File: results/mamba_ensemble/confusion_matrix.png Graphic file (type png)
 <use results/mamba_ensemble/confusion_matrix.png>
 Package pdftex.def Info: results/mamba_ensemble/confusion_matrix.png  used on i
-nput line 354.
+nput line 352.
 (pdftex.def)             Requested size: 232.19843pt x 174.14627pt.
-<results/mamba_ensemble/calibration.png, id=141, 578.16pt x 433.62pt>
+<results/mamba_ensemble/calibration.png, id=144, 578.16pt x 433.62pt>
 File: results/mamba_ensemble/calibration.png Graphic file (type png)
 <use results/mamba_ensemble/calibration.png>
 Package pdftex.def Info: results/mamba_ensemble/calibration.png  used on input 
-line 356.
+line 354.
 (pdftex.def)             Requested size: 232.19843pt x 174.14627pt.
-<results/error_analysis/mamba_ensemble/error_rate_by_feature.png, id=142, 1084.
+<results/error_analysis/mamba_ensemble/error_rate_by_feature.png, id=145, 1084.
 05pt x 289.08pt>
 File: results/error_analysis/mamba_ensemble/error_rate_by_feature.png Graphic f
 ile (type png)
 <use results/error_analysis/mamba_ensemble/error_rate_by_feature.png>
 Package pdftex.def Info: results/error_analysis/mamba_ensemble/error_rate_by_fe
-ature.png  used on input line 363.
+ature.png  used on input line 361.
 (pdftex.def)             Requested size: 490.19843pt x 130.71997pt.
-<figures/xai/mamba_seed789/_summary.png, id=145, 1011.78pt x 722.7pt>
+<figures/xai/mamba_seed789/_summary.png, id=148, 1011.78pt x 722.7pt>
 File: figures/xai/mamba_seed789/_summary.png Graphic file (type png)
 <use figures/xai/mamba_seed789/_summary.png>
 Package pdftex.def Info: figures/xai/mamba_seed789/_summary.png  used on input 
-line 382.
-(pdftex.def)             Requested size: 490.19843pt x 350.14517pt.
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\leavevmode@ifvmode' on input line 389.
+line 380.
+(pdftex.def)             Requested size: 454.08252pt x 324.35184pt.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                \kern 1.66702pt
-(hyperref)                removed on input line 389.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 389.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 389.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\leavevmode@ifvmode' on input line 389.
+(hyperref)                removing `\leavevmode@ifvmode' on input line 387.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
 (hyperref)                \kern 1.66702pt
-(hyperref)                removed on input line 389.
+(hyperref)                removed on input line 387.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 387.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 387.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\leavevmode@ifvmode' on input line 387.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                \kern 1.66702pt
+(hyperref)                removed on input line 387.
 
 [3 <./figures/roc_tier1.png>]
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
  [4 <./results/mamba_ensemble/confusion_matrix.png> <./results/mamba_ensemble/c
-alibration.png>]
-Underfull \vbox (badness 10000) has occurred while \output is active []
-
-
-Underfull \hbox (badness 1436) in paragraph at lines 442--449
-\T1/lmr/m/n/10 na-tive for long TESS light curves, sig-nif-i-cantly out-
- []
-
-
-Underfull \hbox (badness 2573) in paragraph at lines 442--449
-\T1/lmr/m/n/10 for CP/FP TOI vet-ting. Fu-ture work: a non-naive
- []
-
-[5 <./results/error_analysis/mamba_ensemble/error_rate_by_feature.png> <./figur
-es/xai/mamba_seed789/_summary.png>]
-Underfull \hbox (badness 1400) in paragraph at lines 500--502
+alibration.png>] [5 <./results/error_analysis/mamba_ensemble/error_rate_by_feat
+ure.png> <./figures/xai/mamba_seed789/_summary.png>]
+Underfull \hbox (badness 1400) in paragraph at lines 503--505
 \T1/lmr/m/n/8 se-ries anal-y-sis in Python,'' As-tro-phys. Source Code Libr.,
  []
 
@@ -765,13 +761,13 @@ Package rerunfilecheck Info: File `paper_ssm_tess_vetting.out' has not changed.
 (rerunfilecheck)             Checksum: F532185E4AEA50F5A3812356D2F033AE;2169.
  ) 
 Here is how much of TeX's memory you used:
- 12801 strings out of 467871
- 206040 string characters out of 5418376
- 633959 words of memory out of 5000000
- 41427 multiletter control sequences out of 15000+600000
+ 12803 strings out of 467871
+ 206102 string characters out of 5418376
+ 632655 words of memory out of 5000000
+ 41429 multiletter control sequences out of 15000+600000
  840631 words of font info for 160 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,10n,79p,589b,448s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,10n,79p,388b,448s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <C:/Users/jfzum/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmbx10.pf
 b><C:/Users/jfzum/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmbx8.pfb
 ><C:/Users/jfzum/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmbx9.pfb>
@@ -796,9 +792,9 @@ m/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmsy7.pfb><C:/Users/jfzum
 /AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmsy8.pfb><C:/Users/jfzum/
 AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmsy9.pfb><C:/Users/jfzum/A
 ppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmtt10.pfb>
-Output written on paper_ssm_tess_vetting.pdf (6 pages, 945154 bytes).
+Output written on paper_ssm_tess_vetting.pdf (6 pages, 941334 bytes).
 PDF statistics:
- 306 PDF objects out of 1000 (max. 8388607)
+ 307 PDF objects out of 1000 (max. 8388607)
  44 named destinations out of 1000 (max. 500000)
  146 words of extra memory for PDF output out of 10000 (max. 10000000)
 

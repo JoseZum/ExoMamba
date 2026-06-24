@@ -18,25 +18,25 @@
 \citation{mast}
 \citation{lightkurve}
 \citation{shallue2018}
-\@writefile{toc}{\contentsline {section}{\numberline {III}Data and Problem Setup}{2}{section.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {IV}Models}{2}{section.4}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {I}{\ignorespaces Star-level (TIC) splits. The local-view subset is a strict subset of the global split, filtered to TOIs with usable ephemerides ($P\le 27.4$\,d).}}{2}{table.1}\protected@file@percent }
-\newlabel{tab:splits}{{I}{2}{Star-level (TIC) splits. The local-view subset is a strict subset of the global split, filtered to TOIs with usable ephemerides ($P\le 27.4$\,d)}{table.1}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {V}Experimental Protocol}{2}{section.5}\protected@file@percent }
 \citation{delong1988}
 \citation{sun2014}
+\@writefile{lot}{\contentsline {table}{\numberline {I}{\ignorespaces Star-level (TIC) splits. The local-view subset is a strict subset of the global split, filtered to TOIs with usable ephemerides ($P\le 27.4$\,d).}}{2}{table.1}\protected@file@percent }
+\newlabel{tab:splits}{{I}{2}{Star-level (TIC) splits. The local-view subset is a strict subset of the global split, filtered to TOIs with usable ephemerides ($P\le 27.4$\,d)}{table.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {III}Data and Problem Setup}{2}{section.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {IV}Models}{2}{section.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {V}Experimental Protocol}{2}{section.5}\protected@file@percent }
 \citation{sundararajan2017}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Test ROC curves for the global-view models. Mamba (upper-left) is clearly separated from the CNN and logistic regression (near the diagonal); the visual gap is the $+0.20$ AUC difference quantified in Table~\ref {tab:delong}.}}{3}{figure.1}\protected@file@percent }
+\newlabel{fig:roc}{{1}{3}{Test ROC curves for the global-view models. Mamba (upper-left) is clearly separated from the CNN and logistic regression (near the diagonal); the visual gap is the $+0.20$ AUC difference quantified in Table~\ref {tab:delong}}{figure.1}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {VI}Results}{3}{section.6}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-A}}Main comparison}{3}{subsection.6.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-B}}Statistical significance}{3}{subsection.6.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-C}}Calibration, confusion and error structure}{3}{subsection.6.3}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Test ROC curves for the global-view models. Mamba (upper-left) is clearly separated from the CNN and logistic regression (near the diagonal); the visual gap is the $+0.20$ AUC difference quantified in Table~\ref {tab:delong}.}}{3}{figure.1}\protected@file@percent }
-\newlabel{fig:roc}{{1}{3}{Test ROC curves for the global-view models. Mamba (upper-left) is clearly separated from the CNN and logistic regression (near the diagonal); the visual gap is the $+0.20$ AUC difference quantified in Table~\ref {tab:delong}}{figure.1}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-D}}Explainability}{3}{subsection.6.4}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-E}}Negative ablation: naive Mamba\,$+$\,CNN late fusion}{3}{subsection.6.5}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {VII}Discussion}{3}{section.7}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {II}{\ignorespaces Sealed test results. Global-view models use $N{=}237$; dual-branch models use the strict local-view subset $N{=}210$ (not directly comparable; see paired tests in Table~\ref {tab:delong}). $^{\dagger }$Logistic-regression predictions were stored as a summary without per-sample probabilities, so no bootstrap CI is computed. $^{\ast }$Negative ablation (below chance); recall $=1.0$ reflects a degenerate all-positive collapse.}}{4}{table.2}\protected@file@percent }
-\newlabel{tab:main}{{II}{4}{Sealed test results. Global-view models use $N{=}237$; dual-branch models use the strict local-view subset $N{=}210$ (not directly comparable; see paired tests in Table~\ref {tab:delong}). $^{\dagger }$Logistic-regression predictions were stored as a summary without per-sample probabilities, so no bootstrap CI is computed. $^{\ast }$Negative ablation (below chance); recall $=1.0$ reflects a degenerate all-positive collapse}{table.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {II}{\ignorespaces Sealed test results. Global-view models use $N=237$; dual-branch models use the local-view subset ($N=210$).}}{4}{table.2}\protected@file@percent }
+\newlabel{tab:main}{{II}{4}{Sealed test results. Global-view models use $N=237$; dual-branch models use the local-view subset ($N=210$)}{table.2}{}}
 \@writefile{lot}{\contentsline {table}{\numberline {III}{\ignorespaces Paired AUC-ROC comparisons on shared test samples. DeLong's test with stratified paired-bootstrap confidence intervals on $\Delta $AUC.}}{4}{table.3}\protected@file@percent }
 \newlabel{tab:delong}{{III}{4}{Paired AUC-ROC comparisons on shared test samples. DeLong's test with stratified paired-bootstrap confidence intervals on $\Delta $AUC}{table.3}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Mamba ensemble on the sealed test set.}}{4}{figure.2}\protected@file@percent }
