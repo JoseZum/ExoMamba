@@ -1,89 +1,77 @@
 % =============================================================================
 %  Selective State-Space Models for TESS Exoplanet Vetting from Long Light Curves
-%  Conference / workshop submission (compressed from the Stage-2 technical report).
+%  IEEE conference format (IEEEtran, two columns).
 %
-%  Target venues (in order of fit):
-%    - NeurIPS "Machine Learning and the Physical Sciences" workshop
-%    - Research Notes of the AAS (if cut to <=1500 words / 1 figure)
-%    - IEEE Latin America Transactions
+%  Target venues: IEEE Latin America Transactions / IEEE conference,
+%  NeurIPS "Machine Learning and the Physical Sciences" workshop (port style).
 %
-%  Self-contained: compiles with a stock TeX Live (no external .sty needed).
-%  To port to a venue style, replace the preamble with neurips_2024.sty or
-%  IEEEtran and move the abstract/keywords accordingly.
+%  Font note: lmodern is loaded so the PDF embeds Type 1 outlines (no Type 3
+%  bitmaps) and text/ligatures extract correctly. For a Times camera-ready,
+%  replace lmodern with: \usepackage{newtxtext}\usepackage{newtxmath}.
 % =============================================================================
-\documentclass[10pt,a4paper]{article}
+\documentclass[conference]{IEEEtran}
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage{lmodern}      % Type 1 outline fonts (no Type 3 bitmaps)
-\usepackage{cmap}         % searchable/copyable PDF
+\usepackage{lmodern}        % Type 1 outlines (no Type 3 bitmaps)
 \input{glyphtounicode}
-\pdfgentounicode=1        % correct ToUnicode for ligatures (fi, ff, ...)
-\usepackage[english]{babel}
-\usepackage{amsmath,amssymb}
+\pdfgentounicode=1          % correct ToUnicode for ligatures (fi, ff, ...)
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
 \usepackage{graphicx}
 \usepackage{booktabs}
-\usepackage{siunitx}
 \usepackage{xcolor}
-\usepackage{subcaption}
-\usepackage{array}
-\usepackage[margin=2.3cm]{geometry}
-\usepackage{caption}
+\usepackage{textcomp}
 \usepackage[hidelinks]{hyperref}
 \usepackage{xurl}
-\usepackage{authblk}
-\usepackage{placeins}     % \FloatBarrier para mantener figuras en su seccion
-
-\captionsetup{font=small,labelfont=bf}
-\setlength{\parskip}{0.35em}
-\setlength{\parindent}{0pt}
-\sisetup{detect-weight=true,detect-family=true}
-
-\title{\vspace{-1.2cm}\textbf{Selective State-Space Models for TESS Exoplanet
-Vetting from Long Light Curves: A Controlled, Reproducible Feasibility Study}}
-
-\author[ ]{Jos\'e Fabi\'an Zumbado Ruiz}
-\author[ ]{Jeremmy Aguilar Villanueva}
-\affil[ ]{\small School of Computing, Instituto Tecnol\'ogico de Costa Rica\\
-\texttt{\{jzumbado, jaguilar\}@estudiantec.cr}}
-\date{}
+\usepackage[caption=false,font=footnotesize]{subfig}
+\usepackage{balance}
 
 \begin{document}
+
+\title{Selective State-Space Models for TESS Exoplanet Vetting from Long Light
+Curves: A Controlled, Reproducible Feasibility Study}
+
+\author{
+\IEEEauthorblockN{Jos\'e Fabi\'an Zumbado Ruiz and Jeremmy Aguilar Villanueva}
+\IEEEauthorblockA{School of Computing, Instituto Tecnol\'ogico de Costa Rica\\
+Cartago, Costa Rica\\
+\{jzumbado, jaguilar\}@estudiantec.cr}
+}
+
 \maketitle
 
 % -----------------------------------------------------------------------------
 \begin{abstract}
-\noindent
 Deep convolutional classifiers such as AstroNet and ExoMiner are central to
 automated vetting of transiting-planet candidates, but their effective receptive
-field is typically far shorter
-than a full TESS light curve ($\sim$18{,}000 cadences per sector). Selective
-state-space models (Mamba) process such sequences in linear time with a global
-latent state, yet to our knowledge they have not been evaluated for confirmed-planet
-(CP) vs.\ false-positive (FP) vetting of TESS Objects of Interest (TOIs) from the
-\emph{complete} global light curve. We present a controlled, reproducible
-feasibility study on 1{,}576 labelled TOIs under a single sealed, star-level
-(TIC) split. Against a stratified-prior baseline, a catalog-feature logistic
-regression, and an AstroNet-style single-branch CNN, a compact Mamba model
-(131K parameters) reaches a test AUC-ROC of \textbf{0.806} (95\% bootstrap CI
-$[0.747, 0.857]$), versus \textbf{0.604} $[0.530, 0.678]$ for the CNN.
-The $+0.20$ gap is statistically significant (DeLong $p = 3.7\times10^{-8}$;
-paired-bootstrap $\Delta$AUC CI $[+0.13, +0.28]$) and the two confidence
-intervals do not overlap. A larger AstroNet-style dual-branch
-baseline (with a phase-folded local view), trained without Kepler transfer
-learning, lands between the CNN and Mamba. Gradient-, integrated-gradient- and
-occlusion-based attributions concentrate on the transit dips for true positives. We explicitly frame this as a
-small-data feasibility comparison, not a state-of-the-art vetting catalog: the
-contribution is the first controlled evidence that selective state-space modeling
-of long TESS sequences yields a measurable, statistically significant advantage
-over tabular and shallow-convolutional baselines under realistic data and hardware
-constraints.
+field is typically far shorter than a full TESS light curve ($\sim$18{,}000
+cadences per sector). Selective state-space models (Mamba) process such sequences
+in linear time with a global latent state, yet to our knowledge they have not been
+evaluated for confirmed-planet (CP) vs.\ false-positive (FP) vetting of TESS
+Objects of Interest (TOIs) from the \emph{complete} global light curve. We present
+a controlled, reproducible feasibility study on 1{,}576 labelled TOIs under a
+single sealed, star-level (TIC) split. Against a stratified-prior baseline, a
+catalog-feature logistic regression, and an AstroNet-style single-branch CNN, a
+compact Mamba model (131K parameters) reaches a test AUC-ROC of 0.806 (95\%
+bootstrap CI $[0.747, 0.857]$), versus 0.604 $[0.530, 0.678]$ for the CNN. The
+$+0.20$ gap is statistically significant (DeLong $p = 3.7\times10^{-8}$;
+paired-bootstrap $\Delta$AUC CI $[+0.13, +0.28]$) and the two confidence intervals
+do not overlap. A larger AstroNet-style dual-branch baseline (with a phase-folded
+local view), trained without Kepler transfer learning, lands between the CNN and
+Mamba. Gradient-, integrated-gradient- and occlusion-based attributions concentrate
+on the transit dips for true positives. We explicitly frame this as a small-data
+feasibility comparison, not a state-of-the-art vetting catalog: the contribution is
+the first controlled evidence that selective state-space modeling of long TESS
+sequences yields a measurable, statistically significant advantage over tabular and
+shallow-convolutional baselines under realistic data and hardware constraints.
 \end{abstract}
 
-\noindent\textbf{Keywords:} exoplanet vetting; TESS; state-space models; Mamba;
-time-series classification; reproducibility.
-
-\vspace{0.4em}
+\begin{IEEEkeywords}
+exoplanet vetting, TESS, state-space models, Mamba, time-series classification,
+reproducibility
+\end{IEEEkeywords}
 
 % =============================================================================
 \section{Introduction}
@@ -179,8 +167,12 @@ test set ($N=210$) is smaller than the global test set ($N=237$); the two are no
 directly comparable and we report paired statistics only on shared samples.
 Table~\ref{tab:splits} gives the counts.
 
-\begin{table}[h]
-\centering\small
+\begin{table}[!t]
+\caption{Star-level (TIC) splits. The local-view subset is a strict subset of the
+global split, filtered to TOIs with usable ephemerides ($P\le27.4$\,d).}
+\label{tab:splits}
+\centering
+\footnotesize
 \begin{tabular}{lrlrl}
 \toprule
 Split & Global $N$ & CP/FP & Local-view $N$ & CP/FP \\
@@ -192,9 +184,6 @@ test (sealed) & 237 & 91/146 & 210 & 78/132 \\
 total & 1576 & 603/973 & 1406 & 531/875 \\
 \bottomrule
 \end{tabular}
-\caption{Star-level (TIC) splits. The local-view subset is a strict subset of the
-global split, filtered to TOIs with usable ephemerides ($P\le27.4$\,d).}
-\label{tab:splits}
 \end{table}
 
 % =============================================================================
@@ -210,18 +199,19 @@ each AUC delta is attributable to a concrete component.
 \emph{only} three catalog features (orbital period, transit depth, stellar
 magnitude), standardized with statistics fit on train only and class-balanced.
 Epoch ($T_0$) and transit duration ($D$) are \emph{not} used by this baseline;
-they serve only to build the phase-folded local view (\S below). It answers
+they serve only to build the phase-folded local view. It answers
 whether catalog metadata alone separates CP from FP.
 (3) \emph{CNN single-branch} (AstroNet-inspired, global view only): four
 \texttt{Conv1d}$\,\to\,$BN$\,\to\,$ReLU$\,\to\,$MaxPool blocks
 (channels $16{\to}32{\to}64{\to}128$), global average pooling, and a small MLP head
 (62{,}881 parameters).
 
-\textbf{Mamba single-view (focus model).} A linear embedding ($1{\to}d_{\text{model}}{=}64$),
-four residual Mamba blocks ($d_{\text{state}}{=}16$, $d_{\text{conv}}{=}4$,
-expand$=2$) with LayerNorm, global average pooling, and a linear classifier
-(131{,}393 parameters). Gradient clipping (\texttt{max\_norm}$=1.0$) is essential:
-without it the model diverges to NaN on the long sequences. The state recursion
+\textbf{Mamba single-view (focus model).} A linear embedding
+($1{\to}d_{\text{model}}{=}64$), four residual Mamba blocks
+($d_{\text{state}}{=}16$, $d_{\text{conv}}{=}4$, expand$=2$) with LayerNorm, global
+average pooling, and a linear classifier (131{,}393 parameters). Gradient clipping
+(\texttt{max\_norm}$=1.0$) is essential: without it the model diverges to NaN on the
+long sequences. The state recursion
 $h_t=\bar{\mathbf{A}}_t h_{t-1}+\bar{\mathbf{B}}_t x_t,\; y_t=\mathbf{C}_t h_t$,
 with input-dependent $(\bar{\mathbf{A}},\bar{\mathbf{B}},\mathbf{C})$, lets the
 model integrate evidence across all 18{,}000 cadences and selectively down-weight
@@ -229,13 +219,14 @@ noisy gaps.
 
 \textbf{Dual-branch ablations (local-view subset).}
 (4) \emph{AstroNet multibranch}: a close AstroNet-inspired dual-branch baseline
-following Shallue \& Vanderburg~\cite{shallue2018}, adapted to TESS---a deep global branch
-(five double-conv blocks, $16{\to}256$), a shallow local branch, concatenation,
-and a four-layer FC head (1{,}338{,}081 parameters). Because the original
-\texttt{Flatten} over $L=18{,}000$ is infeasible, we use adaptive average pooling on
-the global branch; the model needs batch size 8, FP16 and gradient checkpointing to
-fit in 4\,GB. (5) \emph{ExoMamba V1 (negative ablation)}: a naive late-concat fusion
-of the Mamba global encoder with a small 3-block local CNN ($\sim$153K parameters).
+following Shallue \& Vanderburg~\cite{shallue2018}, adapted to TESS---a deep global
+branch (five double-conv blocks, $16{\to}256$), a shallow local branch,
+concatenation, and a four-layer FC head (1{,}338{,}081 parameters). Because the
+original \texttt{Flatten} over $L=18{,}000$ is infeasible, we use adaptive average
+pooling on the global branch; the model needs batch size 8, FP16 and gradient
+checkpointing to fit in 4\,GB. (5) \emph{ExoMamba V1 (negative ablation)}: a naive
+late-concat fusion of the Mamba global encoder with a small 3-block local CNN
+($\sim$153K parameters).
 
 % =============================================================================
 \section{Experimental Protocol}
@@ -267,15 +258,23 @@ together with a stratified paired-bootstrap CI for $\Delta$AUC.
 Table~\ref{tab:main} reports test metrics with bootstrap CIs.
 Mamba single-view reaches AUC-ROC $0.806$ (ensemble) and $0.810$ (best seed),
 with a confidence interval that lies entirely above the CNN's confidence interval
-and above the logistic-regression point estimate. The CNN barely matches catalog logistic regression
-($0.604$ vs.\ $0.605$): on this dataset, a shallow global CNN adds essentially
-nothing over three catalog numbers, whereas the state-space model does.
+and above the logistic-regression point estimate. The CNN barely matches catalog
+logistic regression ($0.604$ vs.\ $0.605$): on this dataset, a shallow global CNN
+adds essentially nothing over three catalog numbers, whereas the state-space model
+does.
 
-\begin{table*}[t]
-\centering\footnotesize
-\setlength{\tabcolsep}{5pt}
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{llr l r r r r}
+\begin{table*}[!t]
+\caption{Sealed test results. Global-view models use $N{=}237$; dual-branch
+models use the strict local-view subset $N{=}210$ (not directly comparable; see
+paired tests in Table~\ref{tab:delong}). $^{\dagger}$Logistic-regression
+predictions were stored as a summary without per-sample probabilities, so no
+bootstrap CI is computed. $^{\ast}$Negative ablation (below chance); recall
+$=1.0$ reflects a degenerate all-positive collapse.}
+\label{tab:main}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{llcccccc}
 \toprule
 Model & View & $N$ & AUC-ROC [95\% CI] & AUC-PR & $F_1$ & Recall & Brier \\
 \midrule
@@ -290,14 +289,7 @@ Mamba single (best seed)    & global  & 237 & 0.810 [0.756, 0.862] & 0.722 & 0.6
 AstroNet multibranch (ensemble, 3) & global+local & 210 & 0.716 [0.644, 0.779] & 0.582 & 0.563 & 0.603 & 0.217 \\
 ExoMamba V1 (ensemble, 3)\,$^{\ast}$ & global+local & 210 & 0.460 [0.382, 0.541] & 0.371 & 0.542 & 1.000 & 0.254 \\
 \bottomrule
-\end{tabular}}
-\caption{Sealed test results. Global-view models use $N{=}237$; dual-branch
-models use the strict local-view subset $N{=}210$ (not directly comparable; see
-paired tests in Table~\ref{tab:delong}). $^{\dagger}$logistic-regression
-predictions were stored as a summary without per-sample probabilities, so no
-bootstrap CI is computed. $^{\ast}$negative ablation (below chance); recall
-$=1.0$ reflects a degenerate all-positive collapse.}
-\label{tab:main}
+\end{tabular}
 \end{table*}
 
 \subsection{Statistical significance}
@@ -315,9 +307,14 @@ variance---it averages out a single weak seed (AUC $0.628$)---rather than raisin
 the ceiling. We report this honestly rather than crediting the ensemble with the
 gain.
 
-\begin{table}[h]
-\centering\small
-\begin{tabular}{lr r r}
+\begin{table*}[!t]
+\caption{Paired AUC-ROC comparisons on shared test samples. DeLong's test with
+stratified paired-bootstrap confidence intervals on $\Delta$AUC.}
+\label{tab:delong}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{10pt}
+\begin{tabular}{lccc}
 \toprule
 Comparison ($A$ vs.\ $B$) & $N$ & $\Delta$AUC [95\% CI] & DeLong $p$ \\
 \midrule
@@ -329,14 +326,11 @@ AstroNet vs.\ ExoMamba V1     & 210 & $+0.26$ [$+0.16,+0.36$] & $9.2\times10^{-7
 Mamba ens.\ vs.\ best seed    & 237 & $+0.04$ [$-0.00,+0.08$] & $0.048$ \\
 \bottomrule
 \end{tabular}
-\caption{Paired AUC-ROC comparisons on shared test samples. DeLong's test with
-stratified paired-bootstrap confidence intervals on $\Delta$AUC.}
-\label{tab:delong}
-\end{table}
+\end{table*}
 
-\begin{figure}[h]
+\begin{figure}[!t]
 \centering
-\includegraphics[width=0.78\linewidth]{figures/roc_tier1.png}
+\includegraphics[width=\columnwidth]{figures/roc_tier1.png}
 \caption{Test ROC curves for the global-view models. Mamba (upper-left) is clearly
 separated from the CNN and logistic regression (near the diagonal); the visual
 gap is the $+0.20$ AUC difference quantified in Table~\ref{tab:delong}.}
@@ -346,36 +340,31 @@ gap is the $+0.20$ AUC difference quantified in Table~\ref{tab:delong}.}
 \subsection{Calibration, confusion and error structure}
 
 The Mamba ensemble is also better calibrated (Brier $0.192$ vs.\ $0.271$ for the
-CNN; see Fig.~\ref{fig:cal}). Its improvement is qualitative, not just ranking: relative to
-the CNN it roughly halves false positives (55 vs.\ 96) and nearly doubles true
-negatives (91 vs.\ 50) on the same 237 test stars, i.e.\ it rejects catalog FPs the
-CNN accepts. An automated error breakdown (Fig.~\ref{fig:err}) localizes the
-dominant failure mode: transits with depth $\in(136,770]$\,ppm have a 45.8\% error
-rate ($n=48$)---shallow transits near the TESS photometric noise floor. The
-hardest false positives are eclipsing binaries with deep, symmetric dips, the
-known information limit of single-view vetting.
+CNN; see Fig.~\ref{fig:cal}). Its improvement is qualitative, not just ranking:
+relative to the CNN it roughly halves false positives (55 vs.\ 96) and nearly
+doubles true negatives (91 vs.\ 50) on the same 237 test stars, i.e.\ it rejects
+catalog FPs the CNN accepts. An automated error breakdown (Fig.~\ref{fig:err})
+localizes the dominant failure mode: transits with depth $\in(136,770]$\,ppm have a
+45.8\% error rate ($n=48$)---shallow transits near the TESS photometric noise
+floor. The hardest false positives are eclipsing binaries with deep, symmetric
+dips, the known information limit of single-view vetting.
 
-\begin{figure}[h]
+\begin{figure*}[!t]
 \centering
-\begin{subfigure}{0.48\linewidth}
-  \includegraphics[width=\linewidth]{results/mamba_ensemble/confusion_matrix.png}
-  \caption{Confusion matrix}
-\end{subfigure}\hfill
-\begin{subfigure}{0.48\linewidth}
-  \includegraphics[width=\linewidth]{results/mamba_ensemble/calibration.png}
-  \caption{Reliability diagram}
-\end{subfigure}
+\subfloat[Confusion matrix]{\includegraphics[width=0.45\textwidth]{results/mamba_ensemble/confusion_matrix.png}}
+\hfil
+\subfloat[Reliability diagram]{\includegraphics[width=0.45\textwidth]{results/mamba_ensemble/calibration.png}}
 \caption{Mamba ensemble on the sealed test set.}
 \label{fig:cal}
-\end{figure}
+\end{figure*}
 
-\begin{figure}[h]
+\begin{figure*}[!t]
 \centering
-\includegraphics[width=0.95\linewidth]{results/error_analysis/mamba_ensemble/error_rate_by_feature.png}
+\includegraphics[width=0.95\textwidth]{results/error_analysis/mamba_ensemble/error_rate_by_feature.png}
 \caption{Error rate vs.\ binned period, transit depth and stellar magnitude.
 Errors concentrate in shallow transits near the noise floor.}
 \label{fig:err}
-\end{figure}
+\end{figure*}
 
 \subsection{Explainability}
 
@@ -383,19 +372,19 @@ Applying gradient saliency, integrated gradients~\cite{sundararajan2017} and
 occlusion sensitivity to the best Mamba seed over eight confident test cases
 (top-2 per TP/TN/FN/FP quadrant), the three methods agree
 (Fig.~\ref{fig:xai}): for true positives the attribution concentrates on the
-periodic transit dips---the model "looks in the right place"; for false negatives
+periodic transit dips---the model ``looks in the right place''; for false negatives
 it is weak and diffuse; for false positives it correctly fires on real dips but
 cannot separate planetary transits from eclipsing binaries, consistent with the
 error analysis.
 
-\begin{figure}[h]
+\begin{figure*}[!t]
 \centering
-\includegraphics[width=0.90\linewidth]{figures/xai/mamba_seed789/_summary.png}
+\includegraphics[width=0.95\textwidth]{figures/xai/mamba_seed789/_summary.png}
 \caption{Attribution summary (8 cases $\times$ 3 methods) for the best Mamba seed.
-Red/blue indicate evidence toward "planet"/"not planet". True positives place mass
-on the transit dips.}
+Red/blue indicate evidence toward ``planet''/``not planet''. True positives place
+mass on the transit dips.}
 \label{fig:xai}
-\end{figure}
+\end{figure*}
 
 \subsection{Negative ablation: naive Mamba\,$+$\,CNN late fusion}
 
@@ -410,21 +399,19 @@ combining selective state-space and convolutional features needs a non-trivial,
 jointly trained fusion---naive late concatenation is the wrong operator---which
 motivates gated/attention fusion as future work rather than a headline result.
 
-\FloatBarrier  % todas las figuras de Results se colocan antes de Discussion
-
 % =============================================================================
 \section{Discussion}
 
 The $+0.20$ AUC gap over the CNN is not explained by capacity (Mamba 131K vs.\
-CNN 63K, only $2\times$). It is architectural: our single-branch CNN's effective receptive field
-($\sim$80 cadences) cannot see the multi-day periodicity of transits, while Mamba's
-$O(L)$ state recursion integrates all transits in a sector into one latent
-trajectory. A much larger dual-branch CNN (AstroNet, 1.34M) with an explicit local
-view narrows but does not close the gap, and---without Kepler-to-TESS transfer
-learning, which the strongest published systems rely on---underfits this small
-training set. Taken together, on $\sim$1{.}6K labelled TOIs and a 4\,GB GPU,
-long-range sequence modeling of the complete global curve is the most effective
-single design choice we tested.
+CNN 63K, only $2\times$). It is architectural: our single-branch CNN's effective
+receptive field ($\sim$80 cadences) cannot see the multi-day periodicity of
+transits, while Mamba's $O(L)$ state recursion integrates all transits in a sector
+into one latent trajectory. A much larger dual-branch CNN (AstroNet, 1.34M) with an
+explicit local view narrows but does not close the gap, and---without
+Kepler-to-TESS transfer learning, which the strongest published systems rely
+on---underfits this small training set. Taken together, on $\sim$1{.}6K labelled
+TOIs and a 4\,GB GPU, long-range sequence modeling of the complete global curve is
+the most effective single design choice we tested.
 
 We stress what this does \emph{not} show. It is not a vetting state of the art:
 AstroNet/ExoMiner-class systems use far larger datasets, transfer learning and
@@ -460,60 +447,63 @@ Mamba$+$CNN$+$scalar fusion with a mandatory scalar-only control to detect
 shortcut learning; Kepler-to-TESS transfer; extension to the PC-vs-FP triage
 setting; and external, cross-sector validation toward a usable follow-up list.
 
-\paragraph{Reproducibility.} All splits are versioned at the TIC level; every run
+\textbf{Reproducibility.} All splits are versioned at the TIC level; every run
 stores its config, git commit, environment, training curve, checkpoints and
 per-sample test predictions; the test set is loaded once behind an explicit guard;
 49 unit tests cover the data and metrics paths. Inference statistics are computed
 from the stored predictions by a single script, so all confidence intervals and
 DeLong tests in this paper are reproducible without retraining.
 
+\balance
+
 % =============================================================================
-\begin{thebibliography}{99}
-\small
+\begin{thebibliography}{00}
 
 \bibitem{gu2023mamba} A.~Gu and T.~Dao, ``Mamba: Linear-Time Sequence Modeling with
 Selective State Spaces,'' arXiv:2312.00752, 2023.
 
 \bibitem{shallue2018} C.~J.~Shallue and A.~Vanderburg, ``Identifying Exoplanets with
-Deep Learning: A Five-planet Resonant Chain around Kepler-80,'' \emph{AJ}, 155(2),
-94, 2018.
+Deep Learning: A Five-planet Resonant Chain around Kepler-80,'' \emph{Astron. J.},
+vol.~155, no.~2, p.~94, 2018.
 
-\bibitem{valizadegan2022} H.~Valizadegan et al., ``ExoMiner: A Highly Accurate and
-Explainable Deep Learning Classifier to Mine Exoplanets,'' \emph{ApJ}, 926(2), 120,
-2022.
+\bibitem{valizadegan2022} H.~Valizadegan \emph{et al.}, ``ExoMiner: A Highly
+Accurate and Explainable Deep Learning Classifier to Mine Exoplanets,''
+\emph{Astrophys. J.}, vol.~926, no.~2, p.~120, 2022.
 
-\bibitem{yu2019} L.~Yu et al., ``Identifying Exoplanets with Deep Learning. III.
-Automated Triage and Vetting of TESS Candidates,'' \emph{AJ}, 158(1), 25, 2019.
+\bibitem{yu2019} L.~Yu \emph{et al.}, ``Identifying Exoplanets with Deep Learning.
+III. Automated Triage and Vetting of TESS Candidates,'' \emph{Astron. J.},
+vol.~158, no.~1, p.~25, 2019.
 
-\bibitem{exominerpp} H.~Valizadegan et al., ``ExoMiner++ on TESS with Transfer
-Learning from Kepler: Transit Classification and Vetting Catalog for 2-min Data,''
-arXiv:2502.09790, 2025.
+\bibitem{exominerpp} H.~Valizadegan \emph{et al.}, ``ExoMiner++ on TESS with
+Transfer Learning from Kepler: Transit Classification and Vetting Catalog for
+2-min Data,'' arXiv:2502.09790, 2025.
 
-\bibitem{dartvetter} S.~Fiscale et al., ``DART-Vetter: A Deep LeARning Tool for
-automatic triage of exoplanet candidates,'' arXiv:2506.05556, 2025.
+\bibitem{dartvetter} S.~Fiscale \emph{et al.}, ``DART-Vetter: A Deep LeARning Tool
+for automatic triage of exoplanet candidates,'' arXiv:2506.05556, 2025.
 
 \bibitem{armstrong2020} D.~J.~Armstrong, J.~Gamper, and T.~Damoulas, ``Exoplanet
 Validation with Machine Learning: 50 new validated Kepler planets,''
 arXiv:2008.10516, 2020.
 
 \bibitem{sundararajan2017} M.~Sundararajan, A.~Taly, and Q.~Yan, ``Axiomatic
-Attribution for Deep Networks,'' \emph{ICML}, 2017.
+Attribution for Deep Networks,'' in \emph{Proc. Int. Conf. Mach. Learn. (ICML)},
+2017.
 
 \bibitem{delong1988} E.~R.~DeLong, D.~M.~DeLong, and D.~L.~Clarke-Pearson,
 ``Comparing the Areas under Two or More Correlated Receiver Operating
-Characteristic Curves,'' \emph{Biometrics}, 44(3), 837--845, 1988.
+Characteristic Curves,'' \emph{Biometrics}, vol.~44, no.~3, pp.~837--845, 1988.
 
 \bibitem{sun2014} X.~Sun and W.~Xu, ``Fast Implementation of DeLong's Algorithm for
 Comparing the Areas Under Correlated Receiver Operating Characteristic Curves,''
-\emph{IEEE Signal Processing Letters}, 21(11), 1389--1393, 2014.
+\emph{IEEE Signal Process. Lett.}, vol.~21, no.~11, pp.~1389--1393, 2014.
 
 \bibitem{lightkurve} Lightkurve Collaboration, ``Lightkurve: Kepler and TESS time
-series analysis in Python,'' ASCL:1812.013, 2018.
+series analysis in Python,'' Astrophys. Source Code Libr., ascl:1812.013, 2018.
 
-\bibitem{toi} NASA Exoplanet Archive, ``TESS Mission (TOI Catalog),''
-\url{https://exoplanetarchive.ipac.caltech.edu/docs/TESSMission.html}
+\bibitem{toi} NASA Exoplanet Archive, ``TESS Mission (TOI Catalog).'' [Online].
+Available: \url{https://exoplanetarchive.ipac.caltech.edu/docs/TESSMission.html}
 
-\bibitem{mast} MAST Archive, ``TESS Mission Data Archive,''
+\bibitem{mast} MAST Archive, ``TESS Mission Data Archive.'' [Online]. Available:
 \url{https://archive.stsci.edu/missions-and-data/tess}
 
 \end{thebibliography}
