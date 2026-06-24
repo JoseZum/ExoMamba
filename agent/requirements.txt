@@ -1,0 +1,11 @@
+# Dependencias del agente de vetting (Etapa 3).
+# Instalar dentro del .venv del proyecto:  pip install -r agent/requirements.txt
+
+streamlit>=1.49
+matplotlib>=3.8
+pandas>=2.0
+numpy>=1.26
+
+# --- Se activan al conectar el LLM real (semana 11), ya listados para no olvidar ---
+anthropic>=0.40        # cliente Claude (Haiku 4.5) para tool calling
+python-dotenv>=1.0     # cargar ANTHROPIC_API_KEY desde agent/.env

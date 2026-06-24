@@ -60,3 +60,11 @@ htmlcov/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# --- Agente (Etapa 3) ---
+agent/.env                 # secretos (ANTHROPIC_API_KEY) — NUNCA versionar
+agent/_figcache/           # figuras regeneradas por las tools
+agent/logs/                # sesiones reales del agente (ya cubierto por logs/, explícito)
+# Excepción: los resultados de la suite de validación SÍ se versionan (evidencia paper)
+!agent/eval/results/
+!agent/eval/results/**

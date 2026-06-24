@@ -1,0 +1,17 @@
+# Tema del agente de vetting (TOI Vetting Assistant).
+# Paleta oscura "espacio": fondo azul noche, acentos cyan/púrpura.
+# Verde = planeta confirmado, rojo = falso positivo.
+
+[theme]
+base = "dark"
+primaryColor = "#00d9ff"
+backgroundColor = "#0a0e1a"
+secondaryBackgroundColor = "#121829"
+textColor = "#e6edf3"
+font = "sans serif"
+
+[server]
+runOnSave = true
+
+[browser]
+gatherUsageStats = false

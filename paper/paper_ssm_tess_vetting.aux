@@ -1,0 +1,72 @@
+\relax 
+\providecommand \babel@aux [2]{\global \let \babel@toc \@gobbletwo }
+\@nameuse{bbl@beforestart}
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\citation{shallue2018}
+\citation{valizadegan2022}
+\citation{shallue2018}
+\citation{valizadegan2022}
+\citation{exominerpp}
+\citation{dartvetter}
+\citation{gu2023mamba}
+\babel@aux{english}{}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}\protected@file@percent }
+\citation{shallue2018}
+\citation{valizadegan2022}
+\citation{exominerpp}
+\citation{yu2019}
+\citation{dartvetter}
+\citation{armstrong2020}
+\citation{gu2023mamba}
+\citation{toi}
+\citation{mast}
+\citation{lightkurve}
+\@writefile{toc}{\contentsline {section}{\numberline {2}Related Work}{2}{section.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}Data and Problem Setup}{2}{section.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Star-level (TIC) splits. The local-view subset is a strict subset of the global split, filtered to TOIs with usable ephemerides ($P\le 27.4$\,d).}}{2}{table.caption.1}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{tab:splits}{{1}{2}{Star-level (TIC) splits. The local-view subset is a strict subset of the global split, filtered to TOIs with usable ephemerides ($P\le 27.4$\,d)}{table.caption.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Models}{2}{section.4}\protected@file@percent }
+\citation{shallue2018}
+\citation{delong1988}
+\citation{sun2014}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Experimental Protocol}{3}{section.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6}Results}{3}{section.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}Main comparison}{3}{subsection.6.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Statistical significance}{3}{subsection.6.2}\protected@file@percent }
+\citation{sundararajan2017}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Sealed test results. Global-view models use $N{=}237$; dual-branch models use the strict local-view subset $N{=}210$ (not directly comparable; see paired tests in Table~\ref {tab:delong}). $^{\dagger }$logistic-regression predictions were stored as a summary without per-sample probabilities, so no bootstrap CI is computed. $^{\ast }$negative ablation (below chance); recall $=1.0$ reflects a degenerate all-positive collapse.}}{4}{table.caption.2}\protected@file@percent }
+\newlabel{tab:main}{{2}{4}{Sealed test results. Global-view models use $N{=}237$; dual-branch models use the strict local-view subset $N{=}210$ (not directly comparable; see paired tests in Table~\ref {tab:delong}). $^{\dagger }$logistic-regression predictions were stored as a summary without per-sample probabilities, so no bootstrap CI is computed. $^{\ast }$negative ablation (below chance); recall $=1.0$ reflects a degenerate all-positive collapse}{table.caption.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Paired AUC-ROC comparisons on shared test samples. DeLong's test with stratified paired-bootstrap confidence intervals on $\Delta $AUC.}}{4}{table.caption.3}\protected@file@percent }
+\newlabel{tab:delong}{{3}{4}{Paired AUC-ROC comparisons on shared test samples. DeLong's test with stratified paired-bootstrap confidence intervals on $\Delta $AUC}{table.caption.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.3}Calibration, confusion and error structure}{4}{subsection.6.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.4}Explainability}{4}{subsection.6.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.5}Negative ablation: naive Mamba\,$+$\,CNN late fusion}{4}{subsection.6.5}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Test ROC curves for the global-view models. Mamba (upper-left) is clearly separated from the CNN and logistic regression (near the diagonal); the visual gap is the $+0.20$ AUC difference quantified in Table~\ref {tab:delong}.}}{5}{figure.caption.4}\protected@file@percent }
+\newlabel{fig:roc}{{1}{5}{Test ROC curves for the global-view models. Mamba (upper-left) is clearly separated from the CNN and logistic regression (near the diagonal); the visual gap is the $+0.20$ AUC difference quantified in Table~\ref {tab:delong}}{figure.caption.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Mamba ensemble on the sealed test set.}}{5}{figure.caption.5}\protected@file@percent }
+\newlabel{fig:cal}{{2}{5}{Mamba ensemble on the sealed test set}{figure.caption.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Error rate vs.\ binned period, transit depth and stellar magnitude. Errors concentrate in shallow transits near the noise floor.}}{5}{figure.caption.6}\protected@file@percent }
+\newlabel{fig:err}{{3}{5}{Error rate vs.\ binned period, transit depth and stellar magnitude. Errors concentrate in shallow transits near the noise floor}{figure.caption.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Attribution summary (8 cases $\times $ 3 methods) for the best Mamba seed. Red/blue indicate evidence toward "planet"/"not planet". True positives place mass on the transit dips.}}{6}{figure.caption.7}\protected@file@percent }
+\newlabel{fig:xai}{{4}{6}{Attribution summary (8 cases $\times $ 3 methods) for the best Mamba seed. Red/blue indicate evidence toward "planet"/"not planet". True positives place mass on the transit dips}{figure.caption.7}{}}
+\bibcite{gu2023mamba}{1}
+\bibcite{shallue2018}{2}
+\bibcite{valizadegan2022}{3}
+\bibcite{yu2019}{4}
+\bibcite{exominerpp}{5}
+\bibcite{dartvetter}{6}
+\@writefile{toc}{\contentsline {section}{\numberline {7}Discussion}{7}{section.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {8}Limitations}{7}{section.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {9}Conclusion and Future Work}{7}{section.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Reproducibility.}{7}{section*.8}\protected@file@percent }
+\bibcite{armstrong2020}{7}
+\bibcite{sundararajan2017}{8}
+\bibcite{delong1988}{9}
+\bibcite{sun2014}{10}
+\bibcite{lightkurve}{11}
+\bibcite{toi}{12}
+\bibcite{mast}{13}
+\gdef \@abspage@last{8}
