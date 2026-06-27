@@ -1,4 +1,4 @@
-"""CLI de XAI sobre runs entrenados (Fase 5 — AMBICIOSO).
+"""CLI de XAI sobre runs entrenados (Fase 5 - AMBICIOSO).
 
 Carga un run (`config.yaml` + `checkpoints/best.pt`) y un `predictions.csv` ya
 generado por `scripts/evaluate.py`. Identifica los cuadrantes de confusión
@@ -87,7 +87,7 @@ def _multiview_global_saliency_wrapper(
     **method_kwargs: Any,
 ) -> torch.Tensor:
     """Wrapper para atribuir SOLO sobre `global_view` manteniendo `local_view`
-    fijo. NO usado por ahora — todos los modelos del catalogue actual (CNN
+    fijo. NO usado por ahora - todos los modelos del catalogue actual (CNN
     single-branch, Mamba single) ignoran local_view / scalar_features.
 
     Implementación bocetada para el momento en que entren los modelos
@@ -213,7 +213,7 @@ def _to_xai_input(global_view: torch.Tensor, device: torch.device) -> torch.Tens
     """Convierte la `global_view` del dataset (1, L) a (L, 1) para xai.py.
 
     El Dataset devuelve `global_view` de shape `(1, L)` (channels-first, batch
-    NO incluido — el collate lo añadiría). Las funciones XAI esperan
+    NO incluido - el collate lo añadiría). Las funciones XAI esperan
     `(L, 1)` o `(B, L, 1)` (channels-last), así que transponemos.
     """
     if global_view.dim() != 2 or global_view.shape[0] != 1:
@@ -277,13 +277,13 @@ def _plot_summary_grid(
                 ax2.set_ylim(-1.05, 1.05)
                 ax2.set_yticks([])
             ax.set_title(
-                f"{quadrant} #{col + 1} — TIC {tic} (p={y_prob:.3f})", fontsize=9
+                f"{quadrant} #{col + 1} - TIC {tic} (p={y_prob:.3f})", fontsize=9
             )
             ax.tick_params(axis="x", labelsize=7)
             ax.tick_params(axis="y", labelsize=7)
 
     fig.suptitle(
-        f"XAI overview — overlay = {method_for_overlay}", fontsize=12
+        f"XAI overview - overlay = {method_for_overlay}", fontsize=12
     )
     fig.tight_layout(rect=[0, 0, 1, 0.97])
     fig.savefig(output_path)
@@ -477,8 +477,8 @@ def main() -> int:
                     attribution=attr_np,
                     output_path=out_png,
                     title=(
-                        f"{quadrant} rank {rank + 1} — TIC {tic} "
-                        f"(y_prob={y_prob:.3f}) — {method_name}"
+                        f"{quadrant} rank {rank + 1} - TIC {tic} "
+                        f"(y_prob={y_prob:.3f}) - {method_name}"
                     ),
                 )
                 n_emitted += 1

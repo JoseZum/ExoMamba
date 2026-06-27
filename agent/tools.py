@@ -1,4 +1,4 @@
-"""Las 7 tools del agente — capa única que consume el modelo del proyecto.
+"""Las 7 tools del agente - capa única que consume el modelo del proyecto.
 
 Cada tool:
   - recibe argumentos simples (típicamente `tic_id`),
@@ -21,7 +21,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
-from agent import mock
+from agent import mock, model_client
 
 # Cache de figuras generadas por las tools (gitignored).
 FIGCACHE = Path(__file__).resolve().parent / "_figcache"
@@ -46,6 +46,15 @@ def get_toi_info(tic_id: int) -> dict:
     info = mock.get_toi_info(int(tic_id))
     if info is None:
         return {"error": f"TIC {tic_id} no está en el catálogo TOI."}
+    return info
+
+
+def get_star_info(tic_id: int) -> dict:
+    """Datos ricos del candidato y su estrella: ubicacion (RA/Dec), distancia,
+    temperatura y radio estelar, tamano y temperatura del planeta. REAL."""
+    info = mock.get_star_info(int(tic_id))
+    if info is None:
+        return {"error": f"TIC {tic_id} no esta en el catalogo crudo."}
     return info
 
 
@@ -74,11 +83,21 @@ def load_light_curve(tic_id: int) -> dict:
 
 
 def classify(tic_id: int) -> dict:
-    """Corre el modelo (hoy mock) sobre la curva. Devuelve prob/label/confianza."""
+    """Corre el modelo Mamba real sobre la curva. Cae al mock si el servicio de
+    inferencia no está disponible (degradación elegante).
+
+    1. Intenta el servicio de inferencia (`agent/inference/server.py` en Docker/WSL2),
+       que carga el Mamba seed789 (test AUC 0.810) y hace forward real.
+    2. Si el servicio no responde, o el TIC no tiene curva preprocesada del lado del
+       servicio, usa la predicción mock determinista (marcada con `source="mock"`).
+    """
     info = mock.get_toi_info(int(tic_id))
     if info is None:
         return {"error": f"TIC {tic_id} no está en el catálogo TOI."}
-    return mock.classify(int(tic_id), info)
+    real = model_client.classify(int(tic_id))
+    if real is not None:
+        return real
+    return {**mock.classify(int(tic_id), info), "source": "mock"}
 
 
 def verify_prediction(tic_id: int) -> dict:
@@ -90,11 +109,17 @@ def verify_prediction(tic_id: int) -> dict:
 
 
 def compare_with_disposition(tic_id: int) -> dict:
-    """Compara la predicción del modelo contra la disposición oficial NASA."""
+    """Compara la predicción del modelo contra la disposición oficial NASA.
+
+    Usa la MISMA predicción que `classify` (real con fallback a mock), para que el
+    contraste con NASA sea coherente con el veredicto que ve el usuario.
+    """
     info = mock.get_toi_info(int(tic_id))
     if info is None:
         return {"error": f"TIC {tic_id} no está en el catálogo TOI."}
-    cls = mock.classify(int(tic_id), info)
+    cls = classify(int(tic_id))
+    if "error" in cls:
+        return cls
     return mock.compare_with_disposition(info, cls)
 
 
@@ -138,6 +163,7 @@ def explain(tic_id: int) -> dict:
 # --------------------------------------------------------------------------- #
 REGISTRY = {
     "get_toi_info": get_toi_info,
+    "get_star_info": get_star_info,
     "load_light_curve": load_light_curve,
     "classify": classify,
     "verify_prediction": verify_prediction,
@@ -161,7 +187,7 @@ def dispatch(name: str, args: dict) -> dict:
 
 
 # --------------------------------------------------------------------------- #
-# Esquemas de tool-use (formato Anthropic) — los consume agent/llm.py modo Claude
+# Esquemas de tool-use (formato Anthropic) - los consume agent/llm.py modo Claude
 # --------------------------------------------------------------------------- #
 _TIC_PROP = {
     "tic_id": {"type": "integer", "description": "TIC ID de la estrella objetivo."}
@@ -172,6 +198,14 @@ TOOL_SCHEMAS = [
         "name": "get_toi_info",
         "description": "Metadata del catálogo TOI: período, época, duración, profundidad, "
                        "magnitud y disposición oficial (CP/FP/PC/KP).",
+        "input_schema": {"type": "object", "properties": _TIC_PROP, "required": ["tic_id"]},
+    },
+    {
+        "name": "get_star_info",
+        "description": "Datos ricos del candidato y su estrella: ubicacion en el cielo "
+                       "(RA/Dec), distancia en parsecs, temperatura y radio estelar, y "
+                       "radio/temperatura del planeta. Usalo para responder donde se "
+                       "ubica, que tan lejos esta, que tipo de estrella es o si seria habitable.",
         "input_schema": {"type": "object", "properties": _TIC_PROP, "required": ["tic_id"]},
     },
     {

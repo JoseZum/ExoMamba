@@ -193,7 +193,7 @@ def plot_comparison_roc(
     ax.set_ylim([0.0, 1.05])
     ax.set_xlabel("False Positive Rate")
     ax.set_ylabel("True Positive Rate")
-    ax.set_title("ROC — Comparación de modelos")
+    ax.set_title("ROC - Comparación de modelos")
     ax.legend(loc="lower right")
     fig.tight_layout()
     fig.savefig(p)

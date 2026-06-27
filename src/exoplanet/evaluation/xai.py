@@ -21,7 +21,7 @@ Convenciones:
 
   * Loss/logit usado: para `target_class=1` (positivo) usamos el logit crudo
     de la cabeza (que `forward` ya devuelve squeezed). Para `target_class=0`,
-    usamos `-logit` — equivalente al logit de la clase negativa en BCE.
+    usamos `-logit` - equivalente al logit de la clase negativa en BCE.
 
   * Estas funciones operan en FP32 (el caller debe convertir si entrenó FP16).
 """

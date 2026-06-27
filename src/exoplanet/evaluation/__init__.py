@@ -1,7 +1,7 @@
 """Evaluación (Fase 9): métricas compartidas, plots y XAI.
 
 Reexporta lo que el resto del proyecto (y `scripts/evaluate.py`) consume.
-Mantener este `__init__` ligero — no importar nada pesado (mamba_ssm,
+Mantener este `__init__` ligero - no importar nada pesado (mamba_ssm,
 matplotlib backends interactivos) acá; los submódulos lo hacen.
 """
 

@@ -19,14 +19,14 @@ Es la versión simplificada que vive en Tier 1 (solo vista global).
 Decisiones tras debug:
 
   - Pooling: AvgPool en vez de MaxPool. La señal de interés es una BAJADA del
-    flujo, y MaxPool elige el valor más alto de cada ventana — literalmente
+    flujo, y MaxPool elige el valor más alto de cada ventana - literalmente
     descarta los puntos del tránsito a favor de los puntos sin tránsito.
     AvgPool preserva la bajada porque el promedio de la región baja cuando
     hay tránsito.
 
   - Centrado: se resta `input_offset` al input antes de la primera Conv1d.
     Las curvas viven alrededor de 1.0 (mediana normalizada). Restar 1.0
-    convierte la señal en desviaciones desde 0 — convención estándar para
+    convierte la señal en desviaciones desde 0 - convención estándar para
     redes neuronales, da gradientes iniciales más sanos.
 
   - Normalización: GroupNorm por default en vez de BatchNorm.

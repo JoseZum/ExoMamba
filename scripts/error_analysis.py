@@ -1,4 +1,4 @@
-"""CLI de análisis de errores (Fase 6 — AMBICIOSO).
+"""CLI de análisis de errores (Fase 6 - AMBICIOSO).
 
 Lee un `predictions.csv` ya generado por `scripts/evaluate.py` y el
 `toi_summary.csv` con features físicas por TIC. Identifica los cuadrantes de
@@ -10,7 +10,7 @@ confusión (TP, TN, FN, FP) con el threshold dado y produce:
   - `error_rate_by_feature.png`: 3 subplots (period, depth, tmag) con tasa
     de error por bin quantile. Sirve para detectar dónde falla más el modelo.
   - `top_fn_curves.png` / `top_fp_curves.png`: grid 1x5 con la curva del
-    test para cada uno de los top-5 FN / FP, con título "TIC X — y_prob=Y.YY".
+    test para cada uno de los top-5 FN / FP, con título "TIC X - y_prob=Y.YY".
   - `error_analysis_summary.md`: tabla en markdown con conteos + top-10 FN +
     top-10 FP + observaciones automáticas.
 
@@ -183,12 +183,12 @@ def _plot_error_rate_by_feature(
     for ax, feat in zip(axes, features, strict=False):
         sub = df[[feat, "error"]].dropna()
         if sub.empty:
-            ax.set_title(f"{feat} — sin datos")
+            ax.set_title(f"{feat} - sin datos")
             ax.set_axis_off()
             continue
         bins = _bin_quantile(sub[feat], n_bins)
         if bins.empty:
-            ax.set_title(f"{feat} — bins vacíos")
+            ax.set_title(f"{feat} - bins vacíos")
             ax.set_axis_off()
             continue
         sub = sub.assign(_bin=bins)
@@ -242,12 +242,12 @@ def _plot_curves_grid(
         y_prob = float(row["y_prob"])
         curve = curve_loader.get(tic)
         if curve is None:
-            ax.text(0.5, 0.5, f"TIC {tic} — sin curva", ha="center")
+            ax.text(0.5, 0.5, f"TIC {tic} - sin curva", ha="center")
             ax.set_axis_off()
             continue
         t = np.arange(curve.shape[0])
         ax.plot(t, curve, color="steelblue", lw=0.5)
-        ax.set_title(f"TIC {tic} — y_prob={y_prob:.2f}", fontsize=9)
+        ax.set_title(f"TIC {tic} - y_prob={y_prob:.2f}", fontsize=9)
         ax.tick_params(axis="x", labelsize=7)
         ax.tick_params(axis="y", labelsize=7)
 
@@ -267,7 +267,7 @@ def _try_load_curves(
     """Devuelve un dict tic_id -> numpy array de la curva (1, L) -> (L,).
 
     Si el split CSV o `processed_dir` no existen, devuelve dict vacío y deja
-    que los plots dibujen "sin curva" — útil en dry-run o cuando los .pt no
+    que los plots dibujen "sin curva" - útil en dry-run o cuando los .pt no
     están todavía generados.
     """
     if not split_csv.exists():
@@ -524,14 +524,14 @@ def main() -> int:
         top_fn,
         curves,
         output_dir / "top_fn_curves.png",
-        title_prefix="Top FN — curvas de test",
+        title_prefix="Top FN - curvas de test",
     )
     print("  -> top_fn_curves.png")
     _plot_curves_grid(
         top_fp,
         curves,
         output_dir / "top_fp_curves.png",
-        title_prefix="Top FP — curvas de test",
+        title_prefix="Top FP - curvas de test",
     )
     print("  -> top_fp_curves.png")
 

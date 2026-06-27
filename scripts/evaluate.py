@@ -3,8 +3,8 @@
 Carga el checkpoint `best.pt` de una corrida y evalúa sobre un split (default test).
 Genera un dump completo bajo `<run_dir>/eval_<split>/`:
 
-  * metrics.json     — métricas + threshold + n_samples + timestamp + meta
-  * predictions.csv  — (tic_id, y_true, y_prob, y_pred)
+  * metrics.json     - métricas + threshold + n_samples + timestamp + meta
+  * predictions.csv  - (tic_id, y_true, y_prob, y_pred)
   * roc_curve.png
   * pr_curve.png
   * confusion_matrix.png
@@ -15,7 +15,7 @@ Restricción operativa (CLAUDE.md §"Restricciones operativas críticas"):
   * El test sellado se evalúa UNA SOLA VEZ por modelo. Re-evaluar invalida
     el reporte final. Por eso este script imprime un warning explícito y
     además guarda timestamp en metrics.json para auditar.
-  * Augmentation NUNCA en eval — se fuerza `augment=None` aunque el config
+  * Augmentation NUNCA en eval - se fuerza `augment=None` aunque el config
     del entrenamiento tuviera `augment.enabled=true`.
 
 Uso:
@@ -141,7 +141,7 @@ def _load_checkpoint(ckpt_path: Path, model: torch.nn.Module, device: torch.devi
     if not ckpt_path.exists():
         raise FileNotFoundError(f"Checkpoint no encontrado: {ckpt_path}")
     # weights_only=False porque el checkpoint del proyecto guarda metadata adicional
-    # (epoch, optimizer_state, metrics) — formato del CheckpointManager.
+    # (epoch, optimizer_state, metrics) - formato del CheckpointManager.
     ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
     state = ckpt.get("model_state", ckpt)
     missing, unexpected = model.load_state_dict(state, strict=True)
@@ -250,7 +250,7 @@ def main() -> int:
     ckpt_meta = _load_checkpoint(ckpt_path, model, device)
     print(f"Checkpoint cargado: {ckpt_path.name} (epoch {ckpt_meta.get('epoch', '?')})")
 
-    # Data — augment FORZADO a None (restricción operativa).
+    # Data - augment FORZADO a None (restricción operativa).
     data_cfg = cfg["data"]
     split_csv = _resolve_split_csv(data_cfg, args.split)
     batch_size = int(args.batch_size if args.batch_size is not None else data_cfg.get("batch_size", 16))

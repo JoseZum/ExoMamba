@@ -5,7 +5,7 @@ y produce logits de forma (B,) para clasificación binaria con BCEWithLogitsLoss
 
 Tier 1 (CNN, Mamba puro) lee solo `global_view`.
 Tier 2 (ExoMamba V1/V2) leerá además `local_view` y `scalar_features`.
-La firma no cambia entre tiers — cambia qué llaves usa cada implementación.
+La firma no cambia entre tiers - cambia qué llaves usa cada implementación.
 """
 
 from __future__ import annotations

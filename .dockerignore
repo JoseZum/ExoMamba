@@ -1,0 +1,22 @@
+# Build context = raíz del repo. Mantener la imagen liviana: data/ y experiments/
+# se montan como volúmenes en runtime, no se copian a la imagen.
+.git
+.venv
+venv
+env
+data
+experiments
+paper
+notebooks
+videos
+3b1b
+manim
+**/__pycache__
+**/*.pyc
+agent/logs
+agent/_figcache
+agent/.env
+*.fits
+*.pt
+.pytest_cache
+.ruff_cache

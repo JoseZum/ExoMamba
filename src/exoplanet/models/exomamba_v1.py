@@ -1,4 +1,4 @@
-"""ExoMamba V1 — Mamba global + CNN local (Tier 2, Fase 10).
+"""ExoMamba V1 - Mamba global + CNN local (Tier 2, Fase 10).
 
 Arquitectura híbrida:
 
@@ -64,7 +64,7 @@ def _local_block(in_ch: int, out_ch: int, kernel: int) -> nn.Sequential:
 
 
 class ExoMambaV1(BaseModel):
-    """Mamba global + CNN local con fusión late concat. Tier 2 — Fase 10."""
+    """Mamba global + CNN local con fusión late concat. Tier 2 - Fase 10."""
 
     def __init__(
         self,

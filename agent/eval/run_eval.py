@@ -5,8 +5,8 @@ Uso:
     python -m agent.eval.run_eval --claude   # modo Claude (requiere ANTHROPIC_API_KEY)
 
 Genera:
-    eval/results/eval_<timestamp>.json   — métricas + detalle por caso
-    eval/results/SUMMARY.md              — tabla legible para el paper
+    eval/results/eval_<timestamp>.json   - métricas + detalle por caso
+    eval/results/SUMMARY.md              - tabla legible para el paper
 """
 
 from __future__ import annotations
@@ -55,7 +55,7 @@ def _markdown(report: dict) -> str:
     agg = report["aggregate"]
     g = agg["global"]
     lines = [
-        "# Resultados de validación del agente — suite S1–S6",
+        "# Resultados de validación del agente - suite S1–S6",
         "",
         f"- **Modo:** {report['mode']}",
         f"- **Sesiones totales:** {g['n_sessions']}",

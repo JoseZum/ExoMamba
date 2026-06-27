@@ -1,4 +1,4 @@
-"""Smoke train Mamba — PREFLIGHT obligatorio antes de Fase 8 real.
+"""Smoke train Mamba - PREFLIGHT obligatorio antes de Fase 8 real.
 
 Este script NO toca datos reales. Genera tensores random con la forma
 exacta que va a recibir el modelo en producción `(batch_size, L, 1)` y
@@ -10,7 +10,7 @@ hace 3 forward + backward + optimizer.step para confirmar que:
   4. El backward pasa sin errores numéricos.
 
 IMPORTANTE: Solo corre en Linux/WSL2 con CUDA + nvcc + mamba-ssm compilado.
-mamba-ssm NO tiene wheels para Windows nativo — confirmado en CLAUDE.md.
+mamba-ssm NO tiene wheels para Windows nativo - confirmado en CLAUDE.md.
 
 Uso (en WSL2 Ubuntu 24.04):
   source .venv/bin/activate
@@ -61,7 +61,7 @@ def main() -> int:
     section("2) Verificar CUDA")
     if not torch.cuda.is_available():
         sys.exit("\n[FAIL] CUDA no disponible. Mamba requiere GPU.")
-    print(f"[OK] CUDA disponible — {torch.cuda.get_device_name(0)}")
+    print(f"[OK] CUDA disponible - {torch.cuda.get_device_name(0)}")
     print(f"      torch {torch.__version__}")
     print(f"      VRAM disponible: ~{torch.cuda.mem_get_info()[1] / 1e9:.2f} GB")
 

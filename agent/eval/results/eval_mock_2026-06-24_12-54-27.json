@@ -1,0 +1,386 @@
+{
+  "mode": "mock",
+  "aggregate": {
+    "per_scenario": {
+      "S1": {
+        "desc": "10 CP confirmados",
+        "n": 10,
+        "tool_call_accuracy": "10/10",
+        "faithfulness": "10/10",
+        "non_hallucination": "10/10",
+        "avg_latency_ms": 977.7,
+        "model_accuracy_vs_nasa": "7/10"
+      },
+      "S2": {
+        "desc": "10 FP conocidos",
+        "n": 10,
+        "tool_call_accuracy": "10/10",
+        "faithfulness": "10/10",
+        "non_hallucination": "10/10",
+        "avg_latency_ms": 976.4,
+        "model_accuracy_vs_nasa": "6/10"
+      },
+      "S3": {
+        "desc": "5 discrepancias modelo vs NASA",
+        "n": 5,
+        "tool_call_accuracy": "5/5",
+        "faithfulness": "5/5",
+        "non_hallucination": "5/5",
+        "avg_latency_ms": 1062.1,
+        "flag_recall": "5/5"
+      },
+      "S4": {
+        "desc": "TIC inexistente / malformado",
+        "n": 3,
+        "tool_call_accuracy": "3/3",
+        "faithfulness": "3/3",
+        "non_hallucination": "3/3",
+        "avg_latency_ms": 0.1
+      },
+      "S5": {
+        "desc": "período > 27 d (límite físico)",
+        "n": 5,
+        "tool_call_accuracy": "5/5",
+        "faithfulness": "5/5",
+        "non_hallucination": "5/5",
+        "avg_latency_ms": 1063.2,
+        "long_period_declared": "5/5"
+      },
+      "S6": {
+        "desc": "off-topic",
+        "n": 3,
+        "tool_call_accuracy": "3/3",
+        "faithfulness": "3/3",
+        "non_hallucination": "3/3",
+        "avg_latency_ms": 0.0
+      }
+    },
+    "global": {
+      "n_sessions": 36,
+      "tool_call_accuracy": 1.0,
+      "faithfulness": 1.0,
+      "non_hallucination_rate": 1.0,
+      "avg_latency_ms": 838.0
+    }
+  },
+  "detail": {
+    "S1": {
+      "desc": "10 CP confirmados",
+      "cases": [
+        {
+          "query": "Analiza TIC 1003831",
+          "kind": "analysis",
+          "prob": 0.506,
+          "flagged": false,
+          "n_tools": 8,
+          "log": "2026-06-24_12-53-57_dd5c2b.json"
+        },
+        {
+          "query": "Analiza TIC 1167538",
+          "kind": "analysis",
+          "prob": 0.528,
+          "flagged": false,
+          "n_tools": 8,
+          "log": "2026-06-24_12-53-58_890efe.json"
+        },
+        {
+          "query": "Analiza TIC 1528696",
+          "kind": "analysis",
+          "prob": 0.599,
+          "flagged": false,
+          "n_tools": 8,
+          "log": "2026-06-24_12-53-59_854d66.json"
+        },
+        {
+          "query": "Analiza TIC 4070275",
+          "kind": "analysis",
+          "prob": 0.83,
+          "flagged": false,
+          "n_tools": 8,
+          "log": "2026-06-24_12-54-00_a7b20d.json"
+        },
+        {
+          "query": "Analiza TIC 4646810",
+          "kind": "analysis",
+          "prob": 0.552,
+          "flagged": false,
+          "n_tools": 8,
+          "log": "2026-06-24_12-54-01_610661.json"
+        },
+        {
+          "query": "Analiza TIC 4897275",
+          "kind": "analysis",
+          "prob": 0.395,
+          "flagged": true,
+          "n_tools": 8,
+          "log": "2026-06-24_12-54-02_6cd65d.json"
+        },
+        {
+          "query": "Analiza TIC 4918918",
+          "kind": "analysis",
+          "prob": 0.464,
+          "flagged": true,
+          "n_tools": 8,
+          "log": "2026-06-24_12-54-03_b14c87.json"
+        },
+        {
+          "query": "Analiza TIC 7548817",
+          "kind": "analysis",
+          "prob": 0.448,
+          "flagged": true,
+          "n_tools": 8,
+          "log": "2026-06-24_12-54-04_829ae9.json"
+        },
+        {
+          "query": "Analiza TIC 8260536",
+          "kind": "analysis",
+          "prob": 0.84,
+          "flagged": false,
+          "n_tools": 8,
+          "log": "2026-06-24_12-54-05_02b44f.json"
+        },
+        {
+          "query": "Analiza TIC 8348911",
+          "kind": "analysis",
+          "prob": 0.809,
+          "flagged": false,
+          "n_tools": 8,
+          "log": "2026-06-24_12-54-06_18f487.json"
+        }
+      ]
+    },
+    "S2": {
+      "desc": "10 FP conocidos",
+      "cases": [
+        {
+          "query": "Analiza TIC 1133072",
+          "kind": "analysis",
+          "prob": 0.453,
+          "flagged": false,
+          "n_tools": 8,
+          "log": "2026-06-24_12-54-07_f252ff.json"
+        },
+        {
+          "query": "Analiza TIC 1449756",
+          "kind": "analysis",
+          "prob": 0.168,
+          "flagged": false,
+          "n_tools": 8,
+          "log": "2026-06-24_12-54-08_503e62.json"
+        },
+        {
+          "query": "Analiza TIC 1950736",
+          "kind": "analysis",
+          "prob": 0.579,
+          "flagged": true,
+          "n_tools": 8,
+          "log": "2026-06-24_12-54-09_510c6d.json"
+        },
+        {
+          "query": "Analiza TIC 4294779",
+          "kind": "analysis",
+          "prob": 0.552,
+          "flagged": true,
+          "n_tools": 8,
+          "log": "2026-06-24_12-54-10_e93dda.json"
+        },
+        {
+          "query": "Analiza TIC 4426490",
+          "kind": "analysis",
+          "prob": 0.251,
+          "flagged": false,
+          "n_tools": 8,
+          "log": "2026-06-24_12-54-11_bbbca1.json"
+        },
+        {
+          "query": "Analiza TIC 4999813",
+          "kind": "analysis",
+          "prob": 0.432,
+          "flagged": false,
+          "n_tools": 8,
+          "log": "2026-06-24_12-54-11_8ddd76.json"
+        },
+        {
+          "query": "Analiza TIC 5024743",
+          "kind": "analysis",
+          "prob": 0.345,
+          "flagged": false,
+          "n_tools": 8,
+          "log": "2026-06-24_12-54-12_f73ee1.json"
+        },
+        {
+          "query": "Analiza TIC 5109298",
+          "kind": "analysis",
+          "prob": 0.284,
+          "flagged": false,
+          "n_tools": 8,
+          "log": "2026-06-24_12-54-13_07ede6.json"
+        },
+        {
+          "query": "Analiza TIC 5772442",
+          "kind": "analysis",
+          "prob": 0.525,
+          "flagged": true,
+          "n_tools": 8,
+          "log": "2026-06-24_12-54-15_bc9fd6.json"
+        },
+        {
+          "query": "Analiza TIC 5800958",
+          "kind": "analysis",
+          "prob": 0.517,
+          "flagged": true,
+          "n_tools": 8,
+          "log": "2026-06-24_12-54-15_92b269.json"
+        }
+      ]
+    },
+    "S3": {
+      "desc": "5 discrepancias modelo vs NASA",
+      "cases": [
+        {
+          "query": "Analiza TIC 1333933",
+          "kind": "analysis",
+          "prob": 0.423,
+          "flagged": true,
+          "n_tools": 8,
+          "log": "2026-06-24_12-54-17_59bef0.json"
+        },
+        {
+          "query": "Analiza TIC 1950736",
+          "kind": "analysis",
+          "prob": 0.579,
+          "flagged": true,
+          "n_tools": 8,
+          "log": "2026-06-24_12-54-18_54a68a.json"
+        },
+        {
+          "query": "Analiza TIC 4294779",
+          "kind": "analysis",
+          "prob": 0.552,
+          "flagged": true,
+          "n_tools": 8,
+          "log": "2026-06-24_12-54-19_e22709.json"
+        },
+        {
+          "query": "Analiza TIC 4610830",
+          "kind": "analysis",
+          "prob": 0.392,
+          "flagged": true,
+          "n_tools": 8,
+          "log": "2026-06-24_12-54-20_29faba.json"
+        },
+        {
+          "query": "Analiza TIC 4897275",
+          "kind": "analysis",
+          "prob": 0.395,
+          "flagged": true,
+          "n_tools": 8,
+          "log": "2026-06-24_12-54-21_cf23c6.json"
+        }
+      ]
+    },
+    "S4": {
+      "desc": "TIC inexistente / malformado",
+      "cases": [
+        {
+          "query": "Analiza TIC 999999999",
+          "kind": "notfound",
+          "prob": null,
+          "flagged": false,
+          "n_tools": 1,
+          "log": "2026-06-24_12-54-22_c234a9.json"
+        },
+        {
+          "query": "Analiza TIC 123456789",
+          "kind": "notfound",
+          "prob": null,
+          "flagged": false,
+          "n_tools": 1,
+          "log": "2026-06-24_12-54-22_b30173.json"
+        },
+        {
+          "query": "vetea el TIC 0",
+          "kind": "offtopic",
+          "prob": null,
+          "flagged": false,
+          "n_tools": 0,
+          "log": "2026-06-24_12-54-22_d265f2.json"
+        }
+      ]
+    },
+    "S5": {
+      "desc": "período > 27 d (límite físico)",
+      "cases": [
+        {
+          "query": "Analiza TIC 1042432",
+          "kind": "analysis",
+          "prob": 0.798,
+          "flagged": true,
+          "n_tools": 8,
+          "log": "2026-06-24_12-54-22_900bd7.json"
+        },
+        {
+          "query": "Analiza TIC 3224605",
+          "kind": "analysis",
+          "prob": 0.709,
+          "flagged": true,
+          "n_tools": 8,
+          "log": "2026-06-24_12-54-23_9cc129.json"
+        },
+        {
+          "query": "Analiza TIC 7422496",
+          "kind": "analysis",
+          "prob": 0.778,
+          "flagged": true,
+          "n_tools": 8,
+          "log": "2026-06-24_12-54-24_ac2d48.json"
+        },
+        {
+          "query": "Analiza TIC 17932757",
+          "kind": "analysis",
+          "prob": 0.712,
+          "flagged": true,
+          "n_tools": 8,
+          "log": "2026-06-24_12-54-25_7fcbad.json"
+        },
+        {
+          "query": "Analiza TIC 20299658",
+          "kind": "analysis",
+          "prob": 0.339,
+          "flagged": false,
+          "n_tools": 8,
+          "log": "2026-06-24_12-54-26_5c2c9c.json"
+        }
+      ]
+    },
+    "S6": {
+      "desc": "off-topic",
+      "cases": [
+        {
+          "query": "¿hay vida en Marte?",
+          "kind": "offtopic",
+          "prob": null,
+          "flagged": false,
+          "n_tools": 0,
+          "log": "2026-06-24_12-54-27_5185fe.json"
+        },
+        {
+          "query": "escribime un poema sobre el sol",
+          "kind": "offtopic",
+          "prob": null,
+          "flagged": false,
+          "n_tools": 0,
+          "log": "2026-06-24_12-54-27_133905.json"
+        },
+        {
+          "query": "cuánto es 2+2",
+          "kind": "offtopic",
+          "prob": null,
+          "flagged": false,
+          "n_tools": 0,
+          "log": "2026-06-24_12-54-27_4ac3b8.json"
+        }
+      ]
+    }
+  }
+}

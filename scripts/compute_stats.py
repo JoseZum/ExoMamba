@@ -12,8 +12,8 @@ Uso:
     python scripts/compute_stats.py
 
 Salida:
-    paper/results/statistics.json   — todas las cifras
-    stdout                          — tabla legible
+    paper/results/statistics.json   - todas las cifras
+    stdout                          - tabla legible
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-"""Mamba puro para clasificación binaria de curvas de luz (Fase 8 — Tier 1).
+"""Mamba puro para clasificación binaria de curvas de luz (Fase 8 - Tier 1).
 
 Arquitectura:
 

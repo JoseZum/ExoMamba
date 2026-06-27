@@ -1,5 +1,5 @@
 """
-Augmentations para curvas de luz (Fase 8 — sweep Tier 1).
+Augmentations para curvas de luz (Fase 8 - sweep Tier 1).
 
 Todas las funciones operan sobre tensores `(L,)` o `(L, 1)` (también soportan
 `(1, L)`, que es la forma usada por LightCurveDataset). NO mutan el input:
@@ -220,7 +220,7 @@ class Compose:
         return f"Compose([{', '.join(names)}])"
 
 
-# Registry de augmentations por nombre — usado por runner.py al construir el
+# Registry de augmentations por nombre - usado por runner.py al construir el
 # pipeline desde el YAML. Cada entrada es una factory que recibe el dict de
 # kwargs del YAML y devuelve una función `(x, generator=None) -> tensor`.
 def _build_temporal_shift(params: dict) -> Callable[..., torch.Tensor]:

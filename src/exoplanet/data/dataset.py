@@ -1,5 +1,5 @@
 """
-Dataset PyTorch para curvas de luz preprocesadas (Fase 4 — Tier 1 y Tier 2).
+Dataset PyTorch para curvas de luz preprocesadas (Fase 4 - Tier 1 y Tier 2).
 
 Lee un split CSV (train / val / test) generado por scripts/make_splits.py o
 scripts/make_tier2_splits.py y, para cada TIC, carga el .pt correspondiente
@@ -13,7 +13,7 @@ compartan la misma firma:
     {
         "tic_id":          int,
         "global_view":     tensor (1, L)     # L = 18000
-        "local_view":      tensor (1, 201) | None    # Tier 2 — opcional
+        "local_view":      tensor (1, 201) | None    # Tier 2 - opcional
         "scalar_features": None                       # se completará en Tier 2 V2
         "label":           int                        # 0 = FP, 1 = CP
     }
@@ -24,7 +24,7 @@ necesarias por modelo. Esa es decisión del training loop, no del Dataset.
 
 Reglas:
 
-  - Si `local_dir` es None (default), `local_view` SIEMPRE es None — comportamiento
+  - Si `local_dir` es None (default), `local_view` SIEMPRE es None - comportamiento
     Tier 1 inalterado.
   - Si `local_dir` está seteado y existe `<local_dir>/<tid>.pt`, se carga.
   - Si `local_dir` está seteado y NO existe el archivo del TIC, `local_view` es
@@ -67,11 +67,11 @@ class LightCurveDataset(Dataset):
                 NO se verifican aquí.
             augment: Compose opcional de augmentations a aplicar SOLO al
                 `global_view` en cada __getitem__. **Es responsabilidad del
-                caller** pasar `augment=None` para val y test — el dataset no
+                caller** pasar `augment=None` para val y test - el dataset no
                 sabe en qué split está. Si `local_view` o `scalar_features`
                 están poblados (Tier 2), el augmentation actual NO los toca.
             local_dir: directorio con los .pt locales por TIC (Fase 3.b /
-                Tier 2). Default None — mantiene comportamiento Tier 1.
+                Tier 2). Default None - mantiene comportamiento Tier 1.
         """
         self.processed_dir = Path(processed_dir)
         self.local_dir = Path(local_dir) if local_dir is not None else None

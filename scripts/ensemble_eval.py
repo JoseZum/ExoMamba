@@ -8,7 +8,7 @@ Diseño:
 
   * Alineación por `tic_id` (inner join). Si algún tic_id falta en algún run,
     falla fuerte para no esconder un bug silencioso.
-  * Promedia `y_prob` aritméticamente (NO geométrica) — es el agregador
+  * Promedia `y_prob` aritméticamente (NO geométrica) - es el agregador
     estándar para ensembles de clasificadores binarios calibrados.
   * Recalcula `y_pred = y_prob_mean >= threshold`. Default threshold=0.5.
   * Reusa `compute_classification_metrics` para AUC-ROC, AUC-PR, F1,
@@ -262,10 +262,10 @@ def _print_comparison_table(
 def _fmt(x: Any) -> str:
     try:
         if x is None:
-            return "—"
+            return "-"
         return f"{float(x):.4f}"
     except (TypeError, ValueError):
-        return "—"
+        return "-"
 
 
 def _write_ensemble_predictions(

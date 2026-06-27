@@ -100,7 +100,7 @@ def main() -> int:
             free, total = torch.cuda.mem_get_info()
             print(f"       VRAM total: {total / 1e9:.2f} GB | libre: {free / 1e9:.2f} GB")
 
-    section("4) nvcc (compilador CUDA — necesario para compilar mamba-ssm)")
+    section("4) nvcc (compilador CUDA - necesario para compilar mamba-ssm)")
     nvcc_path = shutil.which("nvcc")
     failures += not check(
         "nvcc en PATH",

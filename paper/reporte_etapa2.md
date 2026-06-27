@@ -1,10 +1,10 @@
-# Reporte Técnico — Etapa 2
+# Reporte Técnico - Etapa 2
 
 **Proyecto:** Modelos de Espacio de Estados (Mamba) para Detección de Exoplanetas en Curvas de Luz de TESS
-**Curso:** Inteligencia Artificial — Escuela de Ingeniería en Computación, ITCR
+**Curso:** Inteligencia Artificial - Escuela de Ingeniería en Computación, ITCR
 **Profesor:** Kenneth Obando Rodríguez
 **Equipo:** José Fabián Zumbado Ruiz · Jeremmy Aguilar Villanueva
-**Fecha:** Semestre I — 2026 (cierre semana 10)
+**Fecha:** Semestre I - 2026 (cierre semana 10)
 
 ---
 
@@ -18,8 +18,8 @@ El hallazgo principal:
 
 Adicionalmente reportamos dos hallazgos secundarios paper-worthy:
 
-1. **AstroNet multibranch (1.34 M parámetros) con vista local supera al CNN single-branch en +11 pp** — confirma que el phase-folding del tránsito aporta señal real al CNN.
-2. **Una fusión naive late-concat de Mamba + CNN local (ExoMamba V1) colapsa por debajo del azar** (AUC 0.46) — ablation negativa que demuestra que la dirección de fusión global+local con SSM exige operadores no-triviales (cross-attention, FiLM o gating learnable).
+1. **AstroNet multibranch (1.34 M parámetros) con vista local supera al CNN single-branch en +11 pp** - confirma que el phase-folding del tránsito aporta señal real al CNN.
+2. **Una fusión naive late-concat de Mamba + CNN local (ExoMamba V1) colapsa por debajo del azar** (AUC 0.46) - ablation negativa que demuestra que la dirección de fusión global+local con SSM exige operadores no-triviales (cross-attention, FiLM o gating learnable).
 
 | Métrica | Aceptable | Excelente | **Nuestro Mamba ensemble** |
 |---|---|---|---|
@@ -35,7 +35,7 @@ Adicionalmente reportamos dos hallazgos secundarios paper-worthy:
 
 La misión **TESS** (Transiting Exoplanet Survey Satellite, NASA, 2018+) observa más de 200,000 estrellas con cadencia de 2 minutos. Cada estrella produce una serie temporal de ~18,000 mediciones de brillo por sector de ~27 días. Las señales de tránsito planetario aparecen como **caídas periódicas y simétricas** de ~0.01–1% del flujo, frecuentemente confundibles con binarias eclipsantes y artefactos instrumentales.
 
-Nuestro problema **NO es detección desde cero** (eso lo hace la pipeline de NASA con BLS). Es **vetting**: clasificar candidatos ya detectados (TOIs — TESS Objects of Interest) como planeta confirmado (CP) o falso positivo (FP). Para cada TIC tenemos:
+Nuestro problema **NO es detección desde cero** (eso lo hace la pipeline de NASA con BLS). Es **vetting**: clasificar candidatos ya detectados (TOIs - TESS Objects of Interest) como planeta confirmado (CP) o falso positivo (FP). Para cada TIC tenemos:
 
 - La **curva de luz cruda** (~18,000 puntos de flujo PDCSAP normalizado).
 - **Metadatos del catálogo TOI** disponibles porque el TOI ya existe: período orbital `P`, profundidad del tránsito, época de tránsito `T₀`, magnitud estelar `Tmag`, duración `D`.
@@ -72,12 +72,12 @@ Implementamos seis modelos que forman una **escalera controlada** donde cada esc
 
 | # | Modelo | Global | Local | Catálogo | Params | Tier |
 |---|---|---|---|---|---|---|
-| 1 | Random estratificado | — | — | — | 0 | 1 |
-| 2 | Catalog Logistic Regression | — | — | ✓ | ~10 | 1 |
-| 3 | CNN single-branch (AstroNet-single) | ✓ | — | — | 62,881 | 1 |
-| 4 | **Mamba single-view (modelo principal)** | ✓ | — | — | 131,393 | 1 |
-| 5 | ExoMamba V1 (Mamba + local, late-concat) | ✓ | ✓ | — | ~153K | 2 |
-| 6 | AstroNet multibranch (reproducción fiel) | ✓ | ✓ | — | 1,338,081 | 2 |
+| 1 | Random estratificado | - | - | - | 0 | 1 |
+| 2 | Catalog Logistic Regression | - | - | ✓ | ~10 | 1 |
+| 3 | CNN single-branch (AstroNet-single) | ✓ | - | - | 62,881 | 1 |
+| 4 | **Mamba single-view (modelo principal)** | ✓ | - | - | 131,393 | 1 |
+| 5 | ExoMamba V1 (Mamba + local, late-concat) | ✓ | ✓ | - | ~153K | 2 |
+| 6 | AstroNet multibranch (reproducción fiel) | ✓ | ✓ | - | 1,338,081 | 2 |
 
 Esta escalera satisface holgadamente el requisito *"≥2 baselines razonables"* del rubric (Excelente, 10%) y permite **atribuir cada delta de AUC a un componente concreto** en la discusión.
 
@@ -121,7 +121,7 @@ $$
 (x \star w)_t = \sum_{k=0}^{K-1} x_{t+k} \cdot w_k
 $$
 
-El filtro aprendido captura **patrones locales** (e.g. una caída en forma de U típica de un tránsito) en una vecindad de $K$ puntos. Apilando capas con pooling, el campo receptivo crece geométricamente pero **nunca alcanza los 18,000 puntos completos** — un CNN ve la curva como una colección de patches locales, no como un todo.
+El filtro aprendido captura **patrones locales** (e.g. una caída en forma de U típica de un tránsito) en una vecindad de $K$ puntos. Apilando capas con pooling, el campo receptivo crece geométricamente pero **nunca alcanza los 18,000 puntos completos** - un CNN ve la curva como una colección de patches locales, no como un todo.
 
 ### 2.4 Modelo principal: Mamba single-view (Fase 8)
 
@@ -133,7 +133,7 @@ $$
 
 donde $\bar{\mathbf{A}}, \bar{\mathbf{B}}, \mathbf{C}$ son matrices que **dependen del input** $x_t$ (eso es lo "selective"). Esto le permite a Mamba:
 
-1. **Capturar dependencias a 18,000 pasos** en complejidad $O(L)$ — un Transformer requeriría $O(L^2) = O(3.24 \times 10^8)$ operaciones por capa, inviable en una RTX 3050.
+1. **Capturar dependencias a 18,000 pasos** en complejidad $O(L)$ - un Transformer requeriría $O(L^2) = O(3.24 \times 10^8)$ operaciones por capa, inviable en una RTX 3050.
 2. **Ignorar selectivamente partes irrelevantes** de la secuencia (ruido instrumental, gaps por mala calidad) ajustando $\bar{\mathbf{B}}_t$ cerca de cero.
 3. **Acumular evidencia a largo plazo**: si hay 5 tránsitos espaciados cada 5 días en una curva de 27 días, Mamba puede integrar los 5 en el estado $h$, mientras que un CNN los procesa de forma independiente.
 
@@ -148,7 +148,7 @@ GlobalAveragePool(L) → (B, 64)
 Linear(64 → 1) → logit
 ```
 
-**131,393 parámetros entrenables**. Mixed precision (FP16) opcional (descartado en sanity y baseline final por estabilidad numérica), gradient clipping `max_norm=1.0` (crítico — sin clipping Mamba diverge con NaN sobre secuencias largas).
+**131,393 parámetros entrenables**. Mixed precision (FP16) opcional (descartado en sanity y baseline final por estabilidad numérica), gradient clipping `max_norm=1.0` (crítico - sin clipping Mamba diverge con NaN sobre secuencias largas).
 
 ### 2.5 Ablation Tier 2: ExoMamba V1 (Mamba + CNN local, late-concat)
 
@@ -198,7 +198,7 @@ Hicimos el split a nivel de **TIC ID** (estrella) en proporción 70/15/15, mante
 | test (sellado) | 237 | 91 / 146 | 210 | 78 / 132 |
 | total | 1576 | 603 / 973 | 1406 | 531 / 875 |
 
-**Tier 2 es un subconjunto estricto de Tier 1** (mismos TICs por split, solo filtrados a aquellos con `period+epoch+duration` válidos para construir `local_view`). Esto preserva la comparabilidad cualitativa pero implica $N_{\text{test}}$ distintos (237 vs. 210) — las cifras absolutas no son comparables 1:1.
+**Tier 2 es un subconjunto estricto de Tier 1** (mismos TICs por split, solo filtrados a aquellos con `period+epoch+duration` válidos para construir `local_view`). Esto preserva la comparabilidad cualitativa pero implica $N_{\text{test}}$ distintos (237 vs. 210) - las cifras absolutas no son comparables 1:1.
 
 ### 3.2 Test sellado: protocolo de evaluación única
 
@@ -241,23 +241,23 @@ Realizamos un **Random Search ad-hoc** estructurado (no Optuna automatizado) sob
 
 ## 5. Resultados y análisis de errores
 
-### 5.1 Tabla principal — Test sellado
+### 5.1 Tabla principal - Test sellado
 
 | # | Modelo | Test AUC | AUC-PR | F₁ | Recall | Precision | Brier |
 |---|---|---:|---:|---:|---:|---:|---:|
-| 1 | Random estratificado | 0.500 | — | 0.000 | 0.000 | — | 0.237 |
-| 2 | LogReg (catalog) | 0.605 | 0.464 | 0.486 | 0.571 | 0.423 | — |
-| 3 | CNN single-branch | 0.604 | 0.551 | 0.539 | 0.758 | 0.418 | — |
+| 1 | Random estratificado | 0.500 | - | 0.000 | 0.000 | - | 0.237 |
+| 2 | LogReg (catalog) | 0.605 | 0.464 | 0.486 | 0.571 | 0.423 | - |
+| 3 | CNN single-branch | 0.604 | 0.551 | 0.539 | 0.758 | 0.418 | - |
 | 4 | Mamba single (locked) | 0.763 | 0.650 | 0.633 | 0.835 | 0.510 | 0.210 |
-| 4' | Mamba single multi-seed mean ± std | 0.750 ± 0.065 | — | — | — | — | — |
-| **4''** | **Mamba single — ensemble (5 seeds)** | **0.806** | **0.711** | **0.679** | **0.824** | **0.577** | **0.192** |
-| 4''' | Mamba single — best seed (789) | **0.810** | 0.722 | 0.661 | 0.802 | 0.561 | 0.190 |
+| 4' | Mamba single multi-seed mean ± std | 0.750 ± 0.065 | - | - | - | - | - |
+| **4''** | **Mamba single - ensemble (5 seeds)** | **0.806** | **0.711** | **0.679** | **0.824** | **0.577** | **0.192** |
+| 4''' | Mamba single - best seed (789) | **0.810** | 0.722 | 0.661 | 0.802 | 0.561 | 0.190 |
 | 5 | ExoMamba V1 ensemble (3 seeds) | 0.460 ❌ | 0.371 | 0.542 | 1.000 | 0.371 | 0.254 |
 | 6 | AstroNet multibranch ensemble (3 seeds) | 0.716 | 0.582 | 0.563 | 0.603 | 0.528 | 0.217 |
 
 ### 5.2 Curva ROC comparativa Tier 1
 
-![ROC comparativa Tier 1 — Random, LogReg, CNN, Mamba locked, Mamba ensemble](figures/roc_tier1.png){width=85%}
+![ROC comparativa Tier 1 - Random, LogReg, CNN, Mamba locked, Mamba ensemble](figures/roc_tier1.png){width=85%}
 
 La curva ROC plotea **True Positive Rate** vs. **False Positive Rate** para todos los umbrales. Un modelo perfecto va por el codo superior izquierdo (AUC=1.0); el azar es la diagonal (AUC=0.5). La separación visual entre Mamba (verde/azul, arriba) y CNN/LogReg (más cerca de la diagonal) es la representación gráfica del **+20 pp de mejora**.
 
@@ -277,35 +277,35 @@ La curva ROC plotea **True Positive Rate** vs. **False Positive Rate** para todo
 | FN (planeta perdido) | 16 | 22 | -6 |
 | FP (FP marcado como planeta) | 55 | 96 | **-41** |
 
-Mamba **reduce los FP a casi la mitad** y **casi duplica los TN**. La ganancia de +20 pp en AUC no es solo "mejor ranking" — es **discriminación cualitativa**: el modelo aprendió a separar tránsitos planetarios reales de eclipsing binaries que los CNN confunden.
+Mamba **reduce los FP a casi la mitad** y **casi duplica los TN**. La ganancia de +20 pp en AUC no es solo "mejor ranking" - es **discriminación cualitativa**: el modelo aprendió a separar tránsitos planetarios reales de eclipsing binaries que los CNN confunden.
 
 La **calibración** (derecha) muestra qué tan bien las probabilidades predichas reflejan frecuencias observadas. La diagonal es la calibración perfecta; nuestro Mamba está razonablemente cerca, importante para el agente downstream de Etapa 3 que tomará decisiones basadas en estas probabilidades.
 
-### 5.4 Análisis de errores — Mamba ensemble
+### 5.4 Análisis de errores - Mamba ensemble
 
 #### Distribución de probabilidades por clase
 
 ![Histograma de y_prob por clase verdadera (Mamba ensemble)](results/error_analysis/mamba_ensemble/prob_histogram.png){width=70%}
 
-Las dos distribuciones se solapan en la zona $\hat{p} \in [0.4, 0.6]$ — es ahí donde están los errores. La cola derecha (verde, CP con $\hat{p}>0.7$) muestra los TP confiados; la cola izquierda (rojo, FP con $\hat{p}<0.3$) los TN confiados.
+Las dos distribuciones se solapan en la zona $\hat{p} \in [0.4, 0.6]$ - es ahí donde están los errores. La cola derecha (verde, CP con $\hat{p}>0.7$) muestra los TP confiados; la cola izquierda (rojo, FP con $\hat{p}<0.3$) los TN confiados.
 
 #### Tasa de error por feature física
 
 ![Tasa de error por bins de período, profundidad y magnitud](results/error_analysis/mamba_ensemble/error_rate_by_feature.png){width=95%}
 
-**Hallazgo automático**: el modelo falla más en `pl_trandep ∈ (136, 770]` ppm (error rate 45.8%, n=48). Estos son **tránsitos poco profundos**, cerca del piso de ruido fotométrico de TESS. Esto sugiere que el límite del modelo es la SNR intrínseca de la señal — un problema físico, no de arquitectura.
+**Hallazgo automático**: el modelo falla más en `pl_trandep ∈ (136, 770]` ppm (error rate 45.8%, n=48). Estos son **tránsitos poco profundos**, cerca del piso de ruido fotométrico de TESS. Esto sugiere que el límite del modelo es la SNR intrínseca de la señal - un problema físico, no de arquitectura.
 
 #### Top falsos negativos (planetas perdidos)
 
-![Top-5 falsos negativos — curvas del test que Mamba clasificó como FP siendo CP](results/error_analysis/mamba_ensemble/top_fn_curves.png){width=95%}
+![Top-5 falsos negativos - curvas del test que Mamba clasificó como FP siendo CP](results/error_analysis/mamba_ensemble/top_fn_curves.png){width=95%}
 
-Los planetas perdidos tienen $\hat{p} \in [0.41, 0.50]$ — está al filo del umbral 0.5. Bajar el threshold a 0.45 recupera ~5 de estos 16 FN al costo de aceptar ~10 FP adicionales (trade-off recall-precisión que se podría ajustar por aplicación).
+Los planetas perdidos tienen $\hat{p} \in [0.41, 0.50]$ - está al filo del umbral 0.5. Bajar el threshold a 0.45 recupera ~5 de estos 16 FN al costo de aceptar ~10 FP adicionales (trade-off recall-precisión que se podría ajustar por aplicación).
 
 #### Top falsos positivos (falsas alarmas)
 
-![Top-5 falsos positivos — curvas del test que Mamba clasificó como CP siendo FP](results/error_analysis/mamba_ensemble/top_fp_curves.png){width=95%}
+![Top-5 falsos positivos - curvas del test que Mamba clasificó como CP siendo FP](results/error_analysis/mamba_ensemble/top_fp_curves.png){width=95%}
 
-Los FP más confiados son típicamente eclipsing binaries con tránsitos profundos y simétricos — comparten morfología con tránsitos planetarios reales y son el desafío fundamental del vetting.
+Los FP más confiados son típicamente eclipsing binaries con tránsitos profundos y simétricos - comparten morfología con tránsitos planetarios reales y son el desafío fundamental del vetting.
 
 ### 5.5 Diagnóstico de overfitting
 
@@ -314,7 +314,7 @@ Los FP más confiados son típicamente eclipsing binaries con tránsitos profund
 | LogReg | 0.502 | 0.605 | -10 pp (test mejor → no overfitting) |
 | CNN single | 0.680 | 0.604 | +7.6 pp |
 | Mamba single locked | 0.750 | 0.763 | -1.3 pp (consistente) |
-| Mamba ensemble | — | 0.806 | (no val directo, agregado) |
+| Mamba ensemble | - | 0.806 | (no val directo, agregado) |
 | AstroNet ensemble | 0.736 | 0.716 | +2 pp (consistente) |
 | ExoMamba V1 ensemble | 0.568 | 0.460 | +11 pp (overfitting fuerte) |
 
@@ -328,7 +328,7 @@ Cada run guarda `metrics.csv` con (epoch, train_loss, val_loss, val_auc, ...). R
 tensorboard --logdir experiments/
 ```
 
-Las curvas típicas muestran: para Mamba, convergencia de `val_auc` desde ~0.6 (epoch 1) hasta ~0.75 (epoch 15-25) con plateau. Para ExoMamba V1, `val_auc` se estanca en 0.5-0.55 desde el epoch 3 sin mejora — el modelo no aprende.
+Las curvas típicas muestran: para Mamba, convergencia de `val_auc` desde ~0.6 (epoch 1) hasta ~0.75 (epoch 15-25) con plateau. Para ExoMamba V1, `val_auc` se estanca en 0.5-0.55 desde el epoch 3 sin mejora - el modelo no aprende.
 
 ---
 
@@ -338,18 +338,18 @@ Aplicamos **tres métodos de atribución** sobre el Mamba seed789 (mejor por tes
 
 ### 6.1 Métodos
 
-**Gradient saliency** — qué tan sensible es el logit a cada punto de la curva:
+**Gradient saliency** - qué tan sensible es el logit a cada punto de la curva:
 $$
 \text{Sal}(x_t) = \left| \frac{\partial \text{logit}}{\partial x_t} \right|
 $$
 
-**Integrated Gradients** (Sundararajan et al. 2017) — atribución más robusta integrando a lo largo de un camino desde un baseline $x'$:
+**Integrated Gradients** (Sundararajan et al. 2017) - atribución más robusta integrando a lo largo de un camino desde un baseline $x'$:
 $$
 \text{IG}(x_t) = (x_t - x'_t) \cdot \int_{\alpha=0}^{1} \frac{\partial f(x' + \alpha(x - x'))}{\partial x_t} \, d\alpha
 $$
 Aproximamos la integral con suma de Riemann (50 pasos, baseline = ceros).
 
-**Occlusion sensitivity** — atribución por intervención: cuánto cae el logit si reemplazamos una ventana de la curva por su mediana:
+**Occlusion sensitivity** - atribución por intervención: cuánto cae el logit si reemplazamos una ventana de la curva por su mediana:
 $$
 \text{Occ}(x_{t:t+W}) = f(x) - f(x \oplus \text{mask}_{t:t+W})
 $$
@@ -361,10 +361,10 @@ Ventana $W=200$ puntos, stride 100 (cubre ~7.5 horas de observación por ventana
 
 Cada panel muestra la curva original (arriba) y el mapa de atribución (abajo, escala roja-azul: rojo = aporta al "es planeta", azul = aporta al "no es planeta"). **Observaciones clave**:
 
-- **True Positives (planetas confirmados)**: la atribución se concentra **en los dips del tránsito**. El modelo "mira el lugar correcto" — confianza ganada.
+- **True Positives (planetas confirmados)**: la atribución se concentra **en los dips del tránsito**. El modelo "mira el lugar correcto" - confianza ganada.
 - **True Negatives (FP correctamente rechazados)**: atribución dispersa o concentrada en variabilidad estelar fuera de tránsito.
 - **False Negatives (planetas perdidos)**: atribución débil o focalizada en ruido aleatorio. El modelo no detecta el tránsito real.
-- **False Positives (FP marcados como planeta)**: atribución concentrada en dips reales — el modelo **detecta** el dip, pero no distingue tránsito planetario de eclipsing binary. Es el límite informacional de single-view.
+- **False Positives (FP marcados como planeta)**: atribución concentrada en dips reales - el modelo **detecta** el dip, pero no distingue tránsito planetario de eclipsing binary. Es el límite informacional de single-view.
 
 ### 6.3 Ejemplo concreto: True Positive (TIC 218795833)
 
@@ -372,7 +372,7 @@ Cada panel muestra la curva original (arriba) y el mapa de atribución (abajo, e
 |---|---|---|
 | ![TP saliency](figures/xai/mamba_seed789/TP_1_tic218795833_saliency.png){width=240} | ![TP IG](figures/xai/mamba_seed789/TP_1_tic218795833_integrated_gradients.png){width=240} | ![TP occlusion](figures/xai/mamba_seed789/TP_1_tic218795833_occlusion.png){width=240} |
 
-Los tres métodos coinciden en señalar los dips periódicos del tránsito — convergencia metodológica de la atribución, **hallazgo XAI accionable**: el modelo aprendió la morfología correcta del tránsito.
+Los tres métodos coinciden en señalar los dips periódicos del tránsito - convergencia metodológica de la atribución, **hallazgo XAI accionable**: el modelo aprendió la morfología correcta del tránsito.
 
 ---
 
@@ -380,20 +380,20 @@ Los tres métodos coinciden en señalar los dips periódicos del tránsito — c
 
 ### 7.1 Mamba domina porque modela 18,000 puntos a la vez
 
-El delta de +20 pp Mamba vs. CNN no se explica por número de parámetros (Mamba 131K vs. CNN 63K — solo 2x más). Se explica por **arquitectura**:
+El delta de +20 pp Mamba vs. CNN no se explica por número de parámetros (Mamba 131K vs. CNN 63K - solo 2x más). Se explica por **arquitectura**:
 
 - **CNN** ve la curva como una colección de patches locales de tamaño $K=5$ por capa. Su campo receptivo efectivo en la última capa es ~80 puntos, ~20 minutos de observación. **No "ve" la periodicidad** de tránsitos espaciados días.
 - **Mamba** propaga un estado latente $h_t$ por los 18,000 puntos en una sola pasada de complejidad $O(L)$. **Sí "ve" la periodicidad**: si hay 5 tránsitos a $P=5.4$ días, los 5 contribuyen al $h_T$ final.
 
 ### 7.2 AstroNet multibranch (1.34 M params) no compensa la ausencia de long-range
 
-AstroNet con `local_view` supera a CNN single (+11 pp) — confirma que el phase-folding aporta. Pero queda **9 pp debajo de Mamba single**:
+AstroNet con `local_view` supera a CNN single (+11 pp) - confirma que el phase-folding aporta. Pero queda **9 pp debajo de Mamba single**:
 
 > En este dataset pequeño (985 train Tier 2, sin transfer learning desde Kepler), **un modelo de 1.3 M parámetros con dual-branch CNN no compensa la falta de modelado de secuencia larga sobre la vista global completa.**
 
 El paper original de AstroNet pre-entrena en Kepler (~16,000 TCEs); ExoMiner++ y DART-Vetter hacen lo mismo. Sin transfer, AstroNet sufre underfitting severo.
 
-### 7.3 ExoMamba V1 colapsa por late-concat naive — ablation negativa válida
+### 7.3 ExoMamba V1 colapsa por late-concat naive - ablation negativa válida
 
 **Diagnóstico** (ver curvas de val_auc por epoch en `experiments/<run>/metrics.csv`):
 
@@ -415,7 +415,7 @@ Esta ablation negativa motiva la dirección para **ExoMamba V2** (Future Work / 
 - **Dataset pequeño**: 1576 etiquetados, ~1/10 de lo que usaron AstroNet/ExoMiner en Kepler.
 - **No transfer learning**: no hay checkpoint público confiable de AstroNet pre-entrenado.
 - **Sin K-fold CV**: costo prohibitivo en RTX 3050; reemplazado por multi-seed.
-- **No augmentation activada en runs finales**: implementada (`src/exoplanet/data/augment.py`) pero descartada porque empeoraba marginalmente Mamba single — para no romper la equivalencia con el sweep histórico.
+- **No augmentation activada en runs finales**: implementada (`src/exoplanet/data/augment.py`) pero descartada porque empeoraba marginalmente Mamba single - para no romper la equivalencia con el sweep histórico.
 - **Multi-view XAI no ejecutado**: las funciones en `src/exoplanet/evaluation/xai.py` son single-view; el wrapper multi-view (para ExoMamba V1 y AstroNet) requiere construir un `nn.Module` envoltorio con `local_view` fijo. Pendiente para Etapa 3.
 
 ---
@@ -451,14 +451,14 @@ mamba-exoplanet/
 
 Cada run produce un directorio `experiments/<timestamp>_<name>/` con:
 
-- `config.yaml` — snapshot exacto del input
-- `git_info.txt` — commit hash, branch, dirty flag
-- `env_info.txt` — Python, torch, CUDA versions
-- `train.log` — log textual completo
-- `tensorboard/` — eventos TB para `tensorboard --logdir`
-- `checkpoints/best.pt` + `last.pt` — pesos del modelo
-- `metrics.csv` — curva (epoch, train_loss, val_loss, val_auc, ...)
-- `eval_test/{metrics.json, predictions.csv, *.png}` — tras `evaluate.py --split test`
+- `config.yaml` - snapshot exacto del input
+- `git_info.txt` - commit hash, branch, dirty flag
+- `env_info.txt` - Python, torch, CUDA versions
+- `train.log` - log textual completo
+- `tensorboard/` - eventos TB para `tensorboard --logdir`
+- `checkpoints/best.pt` + `last.pt` - pesos del modelo
+- `metrics.csv` - curva (epoch, train_loss, val_loss, val_auc, ...)
+- `eval_test/{metrics.json, predictions.csv, *.png}` - tras `evaluate.py --split test`
 
 ### 8.3 Cómo reproducir los resultados clave
 
@@ -478,12 +478,12 @@ Ver `README.md` sección **"Reproducir resultados de Etapa 2"** para comandos ex
 
 Entregamos una escalera completa de 6 modelos sobre el problema de vetting de candidatos a exoplaneta de TESS, evaluados rigurosamente sobre un test sellado. El hallazgo central confirma la hipótesis del proyecto:
 
-> **Los Selective State Space Models (Mamba) ofrecen ventaja medible sobre CNN convencionales para vetting de secuencias largas de fotometría TESS bajo restricciones reales de datos y hardware** — +20 puntos porcentuales en AUC-ROC sobre la mejor CNN single-branch, equivalente a 7 × el umbral "Excelente" declarado en la propuesta de Etapa 1.
+> **Los Selective State Space Models (Mamba) ofrecen ventaja medible sobre CNN convencionales para vetting de secuencias largas de fotometría TESS bajo restricciones reales de datos y hardware** - +20 puntos porcentuales en AUC-ROC sobre la mejor CNN single-branch, equivalente a 7 × el umbral "Excelente" declarado en la propuesta de Etapa 1.
 
 Adicionalmente reportamos:
-1. **AstroNet multibranch con vista local** (reproducción NASA) supera a CNN single (+11 pp) pero queda 9 pp debajo de Mamba — el local view ayuda pero no compensa la falta de modelado long-range.
-2. **ExoMamba V1 (fusión late-concat naive Mamba + CNN local)** colapsa por debajo de azar — ablation negativa que demuestra que la fusión no-trivial es requerida para combinar SSM con vista local.
-3. **XAI sobre Mamba** muestra que el modelo se enfoca correctamente en los dips de tránsito en los casos TP, y dispersa la atribución en FN — el modelo aprendió morfología, no shortcuts.
+1. **AstroNet multibranch con vista local** (reproducción NASA) supera a CNN single (+11 pp) pero queda 9 pp debajo de Mamba - el local view ayuda pero no compensa la falta de modelado long-range.
+2. **ExoMamba V1 (fusión late-concat naive Mamba + CNN local)** colapsa por debajo de azar - ablation negativa que demuestra que la fusión no-trivial es requerida para combinar SSM con vista local.
+3. **XAI sobre Mamba** muestra que el modelo se enfoca correctamente en los dips de tránsito en los casos TP, y dispersa la atribución en FN - el modelo aprendió morfología, no shortcuts.
 
 ### Trabajo futuro (Etapa 3)
 
@@ -506,9 +506,9 @@ Adicionalmente reportamos:
 
 [5] Lightkurve Collaboration (2018). *Lightkurve: Kepler and TESS time series analysis in Python*. ASCL:1812.013.
 
-[6] NASA Exoplanet Archive — TESS Mission (TOI Catalog). https://exoplanetarchive.ipac.caltech.edu/docs/TESSMission.html
+[6] NASA Exoplanet Archive - TESS Mission (TOI Catalog). https://exoplanetarchive.ipac.caltech.edu/docs/TESSMission.html
 
-[7] MAST Archive — TESS Mission Data Archive. https://archive.stsci.edu/missions-and-data/tess
+[7] MAST Archive - TESS Mission Data Archive. https://archive.stsci.edu/missions-and-data/tess
 
 [8] Fiscale, S. et al. (2025). *DART-Vetter: A Deep LeARning Tool for automatic triage of exoplanet candidates*. arXiv:2506.05556.
 

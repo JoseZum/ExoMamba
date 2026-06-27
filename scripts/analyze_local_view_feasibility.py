@@ -120,7 +120,7 @@ def evaluate_split(split_df: pd.DataFrame, catalog: pd.DataFrame, name: str) -> 
 
 def render_report(results: list[dict], catalog_summary: dict) -> str:
     lines = []
-    lines.append("# Análisis de factibilidad — local_view (Fase 3.b / Tier 2)\n")
+    lines.append("# Análisis de factibilidad - local_view (Fase 3.b / Tier 2)\n")
     lines.append("Generado por `scripts/analyze_local_view_feasibility.py`.\n")
     lines.append("## Catálogo TOI\n")
     lines.append(f"- Total TOIs (rows en `toi_summary.csv`): **{catalog_summary['n_rows']:,}**")
@@ -211,7 +211,7 @@ def main() -> int:
     train_n = next(r["n_ok"] for r in results if r["split"] == "train")
     print(f"\nHARD STOP: N_train_tier2 = {train_n} (umbral {HARD_STOP_N_TRAIN})")
     if train_n < HARD_STOP_N_TRAIN:
-        print(">>> Tier 2 INVIABLE — abortar pipeline local_view.")
+        print(">>> Tier 2 INVIABLE - abortar pipeline local_view.")
         verdict = 1
     else:
         print(">>> Tier 2 viable, continuar con preprocess_local.py.")

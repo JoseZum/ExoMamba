@@ -6,6 +6,9 @@ matplotlib>=3.8
 pandas>=2.0
 numpy>=1.26
 
-# --- Se activan al conectar el LLM real (semana 11), ya listados para no olvidar ---
-anthropic>=0.40        # cliente Claude (Haiku 4.5) para tool calling
-python-dotenv>=1.0     # cargar ANTHROPIC_API_KEY desde agent/.env
+# LLM real con tool calling (opcional). El agente usa el primero con API key:
+#   ANTHROPIC_API_KEY -> Claude   |   OPENAI_API_KEY / OPEN_AI_API_KEY -> OpenAI
+# Sin ninguna, corre en modo mock determinista (sin costo).
+anthropic>=0.40        # cliente Claude (Haiku 4.5)
+openai>=1.40           # cliente OpenAI (gpt-4o-mini) para function calling
+python-dotenv>=1.0     # cargar las API keys desde .env

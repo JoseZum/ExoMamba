@@ -24,7 +24,7 @@
 % --- Style ---
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\small Reporte Etapa 2 — Mamba Exoplanet}
+\fancyhead[L]{\small Reporte Etapa 2 - Mamba Exoplanet}
 \fancyhead[R]{\small ITCR · IA · 2026-I}
 \fancyfoot[C]{\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
@@ -58,15 +58,15 @@
 % --- Title ---
 \title{
     \vspace{-1.5cm}
-    \textbf{Reporte Técnico — Etapa 2}\\[0.3em]
+    \textbf{Reporte Técnico - Etapa 2}\\[0.3em]
     \large Modelos de Espacio de Estados (Mamba) para Detección\\ de Exoplanetas en Curvas de Luz de TESS
 }
 \author{
     José Fabián Zumbado Ruiz \and Jeremmy Aguilar Villanueva\\
-    \small Curso: Inteligencia Artificial — Prof. Kenneth Obando Rodríguez\\
+    \small Curso: Inteligencia Artificial - Prof. Kenneth Obando Rodríguez\\
     \small Escuela de Ingeniería en Computación, Instituto Tecnológico de Costa Rica
 }
-\date{Semestre I — 2026 (cierre semana 10)}
+\date{Semestre I - 2026 (cierre semana 10)}
 
 \begin{document}
 
@@ -84,8 +84,8 @@ Este reporte cubre la \textbf{Etapa 2} del proyecto: modelado, entrenamiento, op
 
 Hallazgos secundarios paper-worthy:
 \begin{enumerate}[leftmargin=*, topsep=0pt]
-    \item \textbf{AstroNet multibranch} (1.34\,M parámetros) con vista local supera al CNN single-branch en \textbf{+11 pp} — el phase-folding del tránsito aporta señal real al CNN.
-    \item Una fusión naive late-concat de Mamba + CNN local (\textbf{ExoMamba V1}) \textbf{colapsa por debajo del azar} (AUC 0.46) — ablation negativa que demuestra que la dirección de fusión global+local con SSM exige operadores no-triviales.
+    \item \textbf{AstroNet multibranch} (1.34\,M parámetros) con vista local supera al CNN single-branch en \textbf{+11 pp} - el phase-folding del tránsito aporta señal real al CNN.
+    \item Una fusión naive late-concat de Mamba + CNN local (\textbf{ExoMamba V1}) \textbf{colapsa por debajo del azar} (AUC 0.46) - ablation negativa que demuestra que la dirección de fusión global+local con SSM exige operadores no-triviales.
 \end{enumerate}
 
 \begin{table}[h]

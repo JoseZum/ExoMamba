@@ -154,7 +154,7 @@ def run_training(cfg: dict[str, Any]) -> dict[str, Any]:
             aug_repr = getattr(train_loader.dataset.dataset, "augment", None)
         logger.info(f"Augmentation (train-only): {aug_repr}")
     # Contamos sobre el dataset realmente cargado (respeta subset si aplica),
-    # no sobre el CSV crudo — antes mezclábamos los dos y el log mentía con subset.
+    # no sobre el CSV crudo - antes mezclábamos los dos y el log mentía con subset.
     pos_count, neg_count = _count_labels_from_dataset(train_loader.dataset)
     val_pos, val_neg = _count_labels_from_dataset(val_loader.dataset)
     logger.info(f"Train: {len(train_loader.dataset)} samples (pos={pos_count}, neg={neg_count})")

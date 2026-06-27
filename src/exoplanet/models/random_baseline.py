@@ -8,10 +8,10 @@ Si una arquitectura "compleja" no supera consistentemente este baseline,
 entonces algo está roto.
 
 Como necesita conocer el prior del train ANTES del primer forward, se le
-pasa explícitamente vía constructor (no se calcula dentro del modelo —
+pasa explícitamente vía constructor (no se calcula dentro del modelo -
 eso requeriría romper la abstracción del DataLoader).
 
-Output: el modelo NO entrena (no tiene parámetros entrenables — un Linear
+Output: el modelo NO entrena (no tiene parámetros entrenables - un Linear
 fantasma sin uso para que el optimizer no se queje); siempre devuelve el
 mismo logit (logit(prior)).
 """
@@ -36,7 +36,7 @@ class RandomBaseline(BaseModel):
             raise ValueError(f"prior_positive fuera de (0, 1): {prior_positive}")
         # Calculamos el logit que dará sigmoid(logit) = prior.
         logit = math.log(prior_positive / (1 - prior_positive))
-        # Parámetro "fantasma" sin uso real — Adam exige al menos 1 param entrenable.
+        # Parámetro "fantasma" sin uso real - Adam exige al menos 1 param entrenable.
         self.dummy = nn.Parameter(torch.zeros(1), requires_grad=True)
         # El logit base se guarda como buffer (no se actualiza con gradient).
         self.register_buffer("base_logit", torch.tensor(logit, dtype=torch.float32))

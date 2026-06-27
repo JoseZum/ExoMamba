@@ -1,4 +1,4 @@
-"""AstroNet multibranch — reproducción fiel de Shallue & Vanderburg (2018).
+"""AstroNet multibranch - reproducción fiel de Shallue & Vanderburg (2018).
 
 Referencia: Shallue, C. J. & Vanderburg, A. (2018).
   "Identifying Exoplanets with Deep Learning: A Five-planet Resonant Chain

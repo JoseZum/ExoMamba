@@ -1,5 +1,5 @@
 """
-Splits train/val/test por TIC ID (Fase 4 — Tier 1).
+Splits train/val/test por TIC ID (Fase 4 - Tier 1).
 
 Contrato:
 
@@ -79,7 +79,7 @@ def load_eligible_tics() -> pd.DataFrame:
 
     df = proc_ok.merge(labels, on="tid", how="inner")
 
-    # Verificar existencia física del .pt — un manifest correcto pero sin archivo
+    # Verificar existencia física del .pt - un manifest correcto pero sin archivo
     # en disco (p. ej. archivo borrado) indicaría inconsistencia.
     df["pt_exists"] = df["tid"].apply(lambda t: (PROCESSED_DIR / f"{t}.pt").exists())
     missing = df[~df["pt_exists"]]

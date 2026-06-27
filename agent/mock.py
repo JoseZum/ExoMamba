@@ -1,4 +1,4 @@
-"""Backend MOCK del agente — datos reales del catálogo, predicción simulada.
+"""Backend MOCK del agente - datos reales del catálogo, predicción simulada.
 
 Este módulo es el punto de conexión con el sistema real. Hoy:
   - `get_toi_info`      → LEE datos reales de data/splits/toi_summary.csv.
@@ -32,6 +32,7 @@ import pandas as pd
 # --------------------------------------------------------------------------- #
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG_CSV = ROOT / "data" / "splits" / "toi_summary.csv"
+RAW_CATALOG_CSV = ROOT / "data" / "raw" / "toi_catalog.csv"
 LOCKED_JSON = ROOT / "experiments" / "_LOCKED_BASELINE.json"
 
 # Paleta consistente con .streamlit/config.toml
@@ -107,7 +108,57 @@ def get_toi_info(tic_id: int) -> dict | None:
 
 
 # --------------------------------------------------------------------------- #
-# Tool: classify  (SIMULADO — placeholder del Mamba locked)
+# Tool: get_star_info  (DATOS RICOS del catalogo crudo, para conversar)
+# --------------------------------------------------------------------------- #
+@lru_cache(maxsize=1)
+def load_raw_catalog() -> pd.DataFrame:
+    """Catalogo TOI crudo (91 columnas: coordenadas, estrella y planeta). Cacheado."""
+    df = pd.read_csv(RAW_CATALOG_CSV, comment="#")
+    df = df.dropna(subset=["tid"]).copy()
+    df["tid"] = df["tid"].astype(int)
+    return df.set_index("tid", drop=False)
+
+
+def get_star_info(tic_id: int) -> dict | None:
+    """Datos ricos del candidato y su estrella (ubicacion, distancia, tipo estelar,
+    tamano y temperatura del planeta), para que el agente responda preguntas de
+    seguimiento ('donde se ubica', 'que tan lejos', 'es habitable', etc.)."""
+    try:
+        cat = load_raw_catalog()
+    except Exception:
+        return None
+    if tic_id not in cat.index:
+        return None
+    row = cat.loc[tic_id]
+    if isinstance(row, pd.DataFrame):
+        row = row.iloc[0]
+
+    def _num(key):
+        v = row.get(key)
+        return None if pd.isna(v) else round(float(v), 4)
+
+    def _str(key):
+        v = row.get(key)
+        return None if pd.isna(v) else str(v)
+
+    return {
+        "tic_id": int(tic_id),
+        "ra_str": _str("rastr"),                    # ascension recta legible (h m s)
+        "dec_str": _str("decstr"),                  # declinacion legible (d m s)
+        "ra_deg": _num("ra"),
+        "dec_deg": _num("dec"),
+        "distance_pc": _num("st_dist"),             # distancia a la estrella (parsecs)
+        "star_teff_k": _num("st_teff"),             # temperatura estelar (Kelvin)
+        "star_radius_rsun": _num("st_rad"),         # radio estelar (radios solares)
+        "tmag": _num("st_tmag"),                    # magnitud TESS (brillo)
+        "planet_radius_rearth": _num("pl_rade"),    # radio del planeta (radios terrestres)
+        "planet_eq_temp_k": _num("pl_eqt"),         # temperatura de equilibrio (Kelvin)
+        "insolation_earth": _num("pl_insol"),       # insolacion (relativa a la Tierra)
+    }
+
+
+# --------------------------------------------------------------------------- #
+# Tool: classify  (SIMULADO - placeholder del Mamba locked)
 # --------------------------------------------------------------------------- #
 def _rng_for(tic_id: int) -> np.random.RandomState:
     """RNG determinista por TIC ID (mismo TIC → misma figura/predicción siempre)."""

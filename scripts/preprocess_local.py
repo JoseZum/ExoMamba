@@ -340,7 +340,7 @@ def process_tic(
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--tics-csv", type=Path, default=DEFAULT_TICS_CSV,
-                        help="CSV con columnas (tid, label) — qué TICs procesar.")
+                        help="CSV con columnas (tid, label) - qué TICs procesar.")
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR,
                         help="Directorio destino para los .pt locales.")
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST_PATH,
@@ -403,7 +403,7 @@ def main() -> int:
     if len(ok):
         print(f"\nTICs ok: {len(ok):,}")
         print(f"Distribución label: {ok['label'].value_counts().to_dict()}")
-        print(f"n_transits_seen — mean={ok['n_transits_seen'].mean():.1f}, "
+        print(f"n_transits_seen - mean={ok['n_transits_seen'].mean():.1f}, "
               f"min={ok['n_transits_seen'].min()}, max={ok['n_transits_seen'].max()}")
     print(f"\nManifest: {args.manifest}")
     return 0

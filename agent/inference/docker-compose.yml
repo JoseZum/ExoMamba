@@ -1,0 +1,34 @@
+# Servicio de inferencia Mamba para el agente.
+#
+# Levantar (desde la raíz del repo o desde agent/inference/):
+#   docker compose -f agent/inference/docker-compose.yml up --build
+#
+# Requiere NVIDIA Container Toolkit en el host (GPU passthrough). mamba-ssm no
+# corre en CPU. El agente Streamlit (Windows) habla con este servicio en :8077.
+
+services:
+  mamba-inference:
+    build:
+      # Context = raíz del repo (mamba-exoplanet/) para que COPY src/ agent/ funcione.
+      context: ../..
+      dockerfile: agent/inference/Dockerfile
+    image: mamba-toi-inference:latest
+    container_name: mamba-toi-inference
+    ports:
+      - "8077:8077"
+    volumes:
+      # Checkpoints y curvas preprocesadas: read-only, fuera de la imagen.
+      - ../../experiments:/app/experiments:ro
+      - ../../data:/app/data:ro
+    environment:
+      # Mejor modelo Mamba por test AUC (0.810). Cambiar aquí para usar otro run.
+      MAMBA_RUN_DIR: experiments/2026-05-28_01-44-54_mamba_small_seed789
+      MAMBA_SERVICE_PORT: "8077"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped

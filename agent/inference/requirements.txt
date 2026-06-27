@@ -1,0 +1,10 @@
+# Dependencias EXTRA del servicio de inferencia (lado Linux: Docker o WSL2).
+# El stack del modelo (torch, mamba-ssm, causal-conv1d) y el paquete `exoplanet`
+# ya están en el entorno de WSL2 / en la imagen Docker (ver Dockerfile).
+#
+# En WSL2, dentro del venv del proyecto:
+#   pip install -r agent/inference/requirements.txt
+
+fastapi>=0.110
+uvicorn[standard]>=0.27
+pydantic>=2.0

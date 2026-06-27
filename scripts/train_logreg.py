@@ -242,7 +242,7 @@ def save_report(
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     out_path = output_path or OUTPUT_FILES[split_name]
     lines = []
-    lines.append("Baseline Tier 1 — Catalog-feature Logistic Regression (Fase 5.b)\n")
+    lines.append("Baseline Tier 1 - Catalog-feature Logistic Regression (Fase 5.b)\n")
     lines.append("=" * 64 + "\n\n")
     lines.append("Etiquetas: CP=1, FP=0 (PC excluido por los splits de Fase 4).\n")
     lines.append(f"Seed: {SEED}\n")
@@ -291,7 +291,7 @@ def _print_warning_test_sealed() -> None:
     print()
     print(bar)
     print("!!" + " " * 74 + "!!")
-    print("!!  WARNING: EVALUANDO TEST SELLADO — SOLO UNA VEZ POR MODELO            !!")
+    print("!!  WARNING: EVALUANDO TEST SELLADO - SOLO UNA VEZ POR MODELO            !!")
     print("!!  Esta corrida consume la única evaluación de test del LogReg baseline. !!")
     print("!!  Re-evaluar invalida el reporte final (data leakage por uso múltiple). !!")
     print("!!" + " " * 74 + "!!")
