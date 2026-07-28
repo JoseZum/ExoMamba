@@ -31,7 +31,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 SPLITS_DIR = Path("data/splits")
@@ -132,9 +131,9 @@ def render_report(results: list[dict], catalog_summary: dict) -> str:
     lines.append("\nColumnas usadas: `pl_orbper`, `pl_tranmid` (BJD), `pl_trandurh` (horas).\n")
 
     lines.append("## Filtros aplicados\n")
-    lines.append(f"1. Los 3 campos no-NaN y > 0.")
+    lines.append("1. Los 3 campos no-NaN y > 0.")
     lines.append(f"2. `pl_orbper` <= **{PERIOD_MAX_DAYS}** días (1 sector TESS).")
-    lines.append(f"3. `pl_trandurh / 24 < pl_orbper / 2` (descarta duraciones degeneradas).\n")
+    lines.append("3. `pl_trandurh / 24 < pl_orbper / 2` (descarta duraciones degeneradas).\n")
 
     lines.append("## Conteos por split\n")
     lines.append("| Split | N total | Con metadata | Period > 27.4d | Dur degen | **N Tier 2 OK** | OK · CP | OK · FP |")

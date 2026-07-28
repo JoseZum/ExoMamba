@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: lint + tests (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      # CPU-only wheel: the CUDA build is ~2 GB and nothing in CI needs a GPU.
+      - name: Install PyTorch (CPU)
+        run: pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+      # The `mamba` extra is deliberately NOT installed: mamba-ssm requires nvcc
+      # and has no Linux CPU / Windows wheels. Tests that need it are skipped.
+      - name: Install package
+        run: pip install -e ".[dev]"
+
+      - name: Lint
+        run: ruff check .
+
+      # Tests touching data/processed/*.pt skip themselves on a clean checkout,
+      # since the preprocessed light curves are not versioned.
+      - name: Tests
+        run: pytest -q

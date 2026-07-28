@@ -16,7 +16,7 @@ def load_config(path: Path | str) -> dict[str, Any]:
 
     No valida el contenido completo pq eso lo hacen las funciones constructoras
     como build_optimizer, build_loss, etc., al consumir cada sección del config.
-    
+
     """
     p = Path(path)
     if not p.exists():

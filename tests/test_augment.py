@@ -32,7 +32,7 @@ def _make_curve(length: int = 18000, channels: int = 1) -> torch.Tensor:
     return base
 
 
-# Desplazamiento temporal 
+# Desplazamiento temporal
 
 
 def test_temporal_shift_preserva_shape_y_dtype() -> None:
@@ -71,7 +71,7 @@ def test_temporal_shift_1d_tensor() -> None:
     assert out.shape == x.shape
 
 
-# Ruido gaussiano 
+# Ruido gaussiano
 
 
 def test_gaussian_noise_preserva_shape_y_dtype() -> None:

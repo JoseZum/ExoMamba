@@ -413,7 +413,7 @@ def make_lightcurve_saliency(tic_id: int, info: dict):
     )
     col = C_PLANET if is_planet else C_FP
 
-    _style_ax(ax1, "Curva phase-folded + saliency (XAI)")
+    _style_ax(ax1, "Curva phase-folded + saliency [ILUSTRATIVO]")
     ax1.scatter(phase, flux, s=6, c=C_MUTED, alpha=0.6, edgecolors="none")
     ax1.plot(phase, 1.0 + transit, color=col, linewidth=1.8, zorder=4)
     ax1.axvline(0, color=C_ACCENT, linewidth=0.6, linestyle=":", alpha=0.6)
@@ -429,8 +429,18 @@ def make_lightcurve_saliency(tic_id: int, info: dict):
     for spine in ax2.spines.values():
         spine.set_color("#26324a")
 
+    # La figura lleva su propio descargo impreso: estos PNG salen del _figcache y
+    # circulan sueltos (demos, capturas), donde no hay contexto que aclare su origen.
+    # Sin esta línea son indistinguibles de la XAI real de paper/figures/xai/,
+    # que sí es atribución calculada sobre el modelo por scripts/run_xai.py.
+    fig.text(
+        0.5, 0.015,
+        "Curva sintética con fines ilustrativos - NO es atribución del modelo",
+        ha="center", va="bottom", color=C_FP, fontsize=6.5, style="italic",
+    )
+
     # gridspec con hspace manual no es compatible con tight_layout; márgenes a mano.
-    fig.subplots_adjust(left=0.10, right=0.97, top=0.90, bottom=0.14)
+    fig.subplots_adjust(left=0.10, right=0.97, top=0.90, bottom=0.17)
     return fig
 
 

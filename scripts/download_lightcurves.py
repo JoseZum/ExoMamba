@@ -26,7 +26,7 @@ Uso:
   python scripts/download_lightcurves.py --max-sectors 3      # capear sectores (piloto)
   python scripts/download_lightcurves.py --shuffle            # orden aleatorio (seed 42)
   python scripts/download_lightcurves.py --no-retry-failed    # no reintentar fallos
-  
+
 """
 
 from __future__ import annotations

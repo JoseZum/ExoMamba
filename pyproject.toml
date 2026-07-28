@@ -76,6 +76,9 @@ where = ["src"]
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+# Los notebooks son exploratorios (EDA, pruebas en Colab): se versiona el código,
+# no el estilo. Linterlos sólo produce ruido de semicolons e imports de celda.
+extend-exclude = ["notebooks"]
 
 [tool.ruff.lint]
 select = [
@@ -86,6 +89,30 @@ select = [
     "B",       # flake8-bugbear
     "UP",      # pyupgrade
 ]
+
+[tool.ruff.lint.per-file-ignores]
+# El código científico usa notación matemática que choca con pep8-naming, y
+# renombrarla haría el código MENOS legible frente a la fuente que implementa:
+#   N806/N803  `X`, `X_train` = matriz de diseño (convención de scikit-learn);
+#              `J`, `Z`, `N`, `T` = matrices de DeLong según Sun & Xu (2014);
+#              `L` = longitud de secuencia; `flux_L`/`mask_L` = arrays de largo L.
+#   E741       `l` = vector de contraste de DeLong, y en los modelos multibranch
+#              `g`/`l` = global view / local view (Shallue & Vanderburg, 2018).
+"scripts/compute_stats.py" = ["N806", "E741"]
+"scripts/train_logreg.py" = ["N806", "N803"]
+"scripts/preprocess_global.py" = ["N806"]
+"src/exoplanet/data/augment.py" = ["N806"]
+"src/exoplanet/models/astronet_multibranch.py" = ["E741"]
+"src/exoplanet/models/exomamba_v1.py" = ["E741"]
+"agent/eval/metrics.py" = ["N806"]
+# Streamlit exige que st.set_page_config() corra antes que cualquier otro import
+# que toque st, así que los imports no pueden ir todos arriba.
+"agent/app.py" = ["E402"]
+# En los CLI operativos las líneas largas son textos de --help y mensajes de log:
+# partirlos los vuelve más difíciles de leer y de grepear. El paquete instalable
+# (src/) sí se mantiene estricto en 100 columnas.
+"scripts/*.py" = ["E501"]
+"agent/*.py" = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -11,7 +11,7 @@ class EarlyStopping:
     Args:
         metric: nombre de la métrica a vigilar (para logs).
         patience: cuántos epochs sin mejora se toleran.
-        mode: - max: (mayor es mejor: AUC, F1, ..) 
+        mode: - max: (mayor es mejor: AUC, F1, ..)
               - min: (menor es mejor: loss).
         min_delta: mejora mínima para contar como mejora.
     """

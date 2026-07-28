@@ -37,7 +37,6 @@ from sklearn.metrics import (
 )
 from sklearn.preprocessing import StandardScaler
 
-
 FEATURES = ["pl_orbper", "pl_trandep", "st_tmag"]
 LABEL_COLUMN = "label"
 SEED = 42

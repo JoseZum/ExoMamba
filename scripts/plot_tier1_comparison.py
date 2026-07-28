@@ -31,7 +31,6 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -42,7 +41,6 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from exoplanet.evaluation.plots import plot_comparison_roc  # noqa: E402
-
 
 # Defaults: los paths que CLAUDE.md / AMBICIOSO.md fijan como locked.
 DEFAULT_RUNS: dict[str, tuple[str, str]] = {
@@ -82,7 +80,7 @@ def _parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
-def _load_run(name: str, path_str: str, prob_col: str) -> Optional[tuple[np.ndarray, np.ndarray]]:
+def _load_run(name: str, path_str: str, prob_col: str) -> tuple[np.ndarray, np.ndarray] | None:
     path = PROJECT_ROOT / path_str if not Path(path_str).is_absolute() else Path(path_str)
     if not path.exists():
         return None

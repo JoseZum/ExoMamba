@@ -8,7 +8,9 @@ from pathlib import Path
 from typing import Any
 
 
-def setup_logger(name: str, log_file: Path | None = None, level: int = logging.INFO) -> logging.Logger:
+def setup_logger(
+    name: str, log_file: Path | None = None, level: int = logging.INFO
+) -> logging.Logger:
     """Crea un logger que escribe a stdout y opcionalmente a un archivo."""
     logger = logging.getLogger(name)
     logger.setLevel(level)

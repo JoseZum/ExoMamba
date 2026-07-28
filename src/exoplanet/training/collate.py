@@ -4,7 +4,7 @@ El `default_collate` de PyTorch falla si algún campo del sample es `None`.
 Como nuestro Dataset devuelve `local_view=None` y `scalar_features=None` en
 Tier 1, necesitamos un collate explícito que los maneje.
 
-Si un campo es None en algún sample, debe ser None en todos los samples del batch, 
+Si un campo es None en algún sample, debe ser None en todos los samples del batch,
 sino lanzamos un error para evitar batches mixtos que confunden al modelo.
 """
 

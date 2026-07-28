@@ -19,7 +19,6 @@ Uso (dentro de WSL2 con el venv activado):
 
 from __future__ import annotations
 
-import os
 import shutil
 import subprocess
 import sys

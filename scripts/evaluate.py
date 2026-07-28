@@ -10,18 +10,24 @@ Genera un dump completo bajo `<run_dir>/eval_<split>/`:
   * confusion_matrix.png
   * calibration.png
 
-Restricción operativa (CLAUDE.md §"Restricciones operativas críticas"):
+Restricción operativa — TEST SELLADO:
 
-  * El test sellado se evalúa UNA SOLA VEZ por modelo. Re-evaluar invalida
-    el reporte final. Por eso este script imprime un warning explícito y
-    además guarda timestamp en metrics.json para auditar.
+  * El split por defecto es `val`. Tocar el test exige pedirlo explícitamente
+    con `--split test`, para que nunca ocurra por descuido.
+  * El test sellado se evalúa UNA SOLA VEZ por corrida. Antes de cargarlo, el
+    guard consulta `test_seal_ledger.json` (versionado en la raíz del repo) y
+    aborta con código 3 si esa corrida ya fue evaluada. Repetir exige
+    `--force-reeval-test`, y la repetición queda marcada en la bitácora.
+  * Cada evaluación de test anota run_dir, timestamp, commit de git, número de
+    muestras y AUC, de modo que la disciplina sea auditable por un tercero y no
+    dependa de la palabra de los autores.
   * Augmentation NUNCA en eval - se fuerza `augment=None` aunque el config
     del entrenamiento tuviera `augment.enabled=true`.
 
 Uso:
 
-  python scripts/evaluate.py --run experiments/<run_dir>
-  python scripts/evaluate.py --run experiments/<run_dir> --split val
+  python scripts/evaluate.py --run experiments/<run_dir>               # val
+  python scripts/evaluate.py --run experiments/<run_dir> --split test  # sellado
   python scripts/evaluate.py --run experiments/<run_dir> --split test --threshold 0.5
 """
 
@@ -54,13 +60,18 @@ from exoplanet.training.config import load_config
 from exoplanet.training.loop import evaluate_one_epoch
 from exoplanet.training.losses import build_loss
 from exoplanet.training.registry import build_model
-
+from exoplanet.utils.git_info import get_git_commit
 
 SPLIT_CSV_KEYS = {
     "train": "train_csv",
     "val": "val_csv",
     "test": "test_csv",
 }
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+# Bitácora del test sellado. Va versionada a propósito: es la evidencia de que el
+# test se tocó una sola vez por corrida, verificable por cualquier revisor.
+TEST_SEAL_LEDGER = REPO_ROOT / "test_seal_ledger.json"
 
 
 def parse_args() -> argparse.Namespace:
@@ -76,9 +87,18 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--split",
         type=str,
-        default="test",
+        default="val",
         choices=["train", "val", "test"],
-        help="Split a evaluar. Default: test (CUIDADO: test es sellado).",
+        help="Split a evaluar. Default: val. `test` está sellado y exige pedirlo explícitamente.",
+    )
+    p.add_argument(
+        "--force-reeval-test",
+        action="store_true",
+        help=(
+            "Repite la evaluación del test sellado en una corrida que ya lo evaluó. "
+            "Invalida el reporte final como resultado limpio: usar sólo para reproducir "
+            "un número, y queda marcado como reevaluación en test_seal_ledger.json."
+        ),
     )
     p.add_argument(
         "--threshold",
@@ -213,6 +233,79 @@ def _write_predictions_csv(path: Path, preds: dict[str, np.ndarray]) -> None:
             w.writerow([int(tic), int(yt), float(yp), int(yh)])
 
 
+def _load_seal_ledger() -> dict[str, Any]:
+    """Lee la bitácora del test sellado, o devuelve una vacía si aún no existe."""
+    if not TEST_SEAL_LEDGER.exists():
+        return {
+            "_comment": (
+                "Bitácora del test sellado: una entrada por corrida evaluada contra "
+                "data/splits/test_tics.csv. La escribe scripts/evaluate.py; no editar a mano."
+            ),
+            "evaluations": {},
+        }
+    with TEST_SEAL_LEDGER.open(encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def _check_test_seal(run_key: str, *, force: bool) -> bool:
+    """Guard del test sellado. Devuelve True si la evaluación puede proceder.
+
+    El test se evalúa una sola vez por corrida: si ya hay historial en la
+    bitácora, aborta salvo que se pase `--force-reeval-test`.
+    """
+    history = _load_seal_ledger().get("evaluations", {}).get(run_key, [])
+
+    if not history:
+        print(
+            "AVISO: EVALUANDO CONTRA TEST SELLADO. Esto se corre UNA SOLA VEZ por corrida.",
+            flush=True,
+        )
+        return True
+
+    last = history[-1]
+    if not force:
+        print(
+            "ERROR: el test sellado ya fue evaluado para esta corrida.\n"
+            f"  run         : {run_key}\n"
+            f"  evaluado el : {last.get('timestamp', '?')}\n"
+            f"  commit      : {last.get('git_commit', '?')}\n"
+            f"  AUC-ROC     : {last.get('auc_roc', '?')}\n"
+            "Volver a evaluarlo equivale a hacer tuning contra el test e invalida el\n"
+            "reporte final. Si sólo necesitás reproducir el número, pasá\n"
+            f"--force-reeval-test: quedará marcado como reevaluación en {TEST_SEAL_LEDGER.name}.",
+            file=sys.stderr,
+        )
+        return False
+
+    print(
+        f"AVISO: RE-EVALUACION FORZADA del test sellado (ya evaluado el "
+        f"{last.get('timestamp', '?')}). Queda registrada en la bitacora y NO cuenta "
+        "como resultado limpio.",
+        flush=True,
+    )
+    return True
+
+
+def _record_test_seal(
+    run_key: str, *, auc_roc: float, n_samples: int, forced: bool
+) -> None:
+    """Anota la evaluación del test en la bitácora versionada."""
+    ledger = _load_seal_ledger()
+    evaluations = ledger.setdefault("evaluations", {})
+    evaluations.setdefault(run_key, []).append(
+        {
+            "timestamp": datetime.now().isoformat(timespec="seconds"),
+            "git_commit": get_git_commit(),
+            "n_samples": int(n_samples),
+            "auc_roc": round(float(auc_roc), 6),
+            "forced_reevaluation": bool(forced),
+        }
+    )
+    TEST_SEAL_LEDGER.write_text(
+        json.dumps(ledger, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+
+
 def main() -> int:
     args = parse_args()
 
@@ -224,13 +317,11 @@ def main() -> int:
     ckpt_path = run_dir / "checkpoints" / "best.pt"
     cfg = load_config(cfg_path)
 
-    # WARNING explícito sobre el test sellado.
-    if args.split == "test":
-        print(
-            "⚠️  EVALUANDO CONTRA TEST SELLADO. "
-            "Esto debe correrse UNA SOLA VEZ por modelo al final.",
-            flush=True,
-        )
+    # Guard del test sellado: corre ANTES de cargar el split, para que un intento
+    # de re-evaluación aborte sin siquiera leer las etiquetas del test.
+    run_key = run_dir.as_posix()
+    if args.split == "test" and not _check_test_seal(run_key, force=args.force_reeval_test):
+        return 3
 
     # Device
     if args.device == "cuda" and not torch.cuda.is_available():
@@ -318,6 +409,16 @@ def main() -> int:
         json.dump(metrics_payload, f, indent=2, ensure_ascii=False)
 
     _write_predictions_csv(out_dir / "predictions.csv", preds)
+
+    # Sellado consumido: se registra sólo después de que la evaluación terminó bien,
+    # para que un crash a mitad de camino no queme el único uso permitido del test.
+    if args.split == "test":
+        _record_test_seal(
+            run_key,
+            auc_roc=metrics_payload["metrics"]["auc_roc"],
+            n_samples=len(dataset),
+            forced=args.force_reeval_test,
+        )
 
     # Plots (si y_true tiene una sola clase, plot_roc/pr/calibration pueden fallar;
     # con N=237 y dataset balanceado a propósito esto no debería ocurrir).

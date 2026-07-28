@@ -5,7 +5,7 @@ Por cada TIC con status=ok en data/splits/manifest.csv:
 
   1. Lee todos sus archivos _lc.fits en los diferentes sectores.
 
-  2. Elige el sector con mayor fracción de puntos validos, 
+  2. Elige el sector con mayor fracción de puntos validos,
     donde un punto es valido si QUALITY=0 y PDCSAP_FLUX (columna de brillo) es finito.
 
   3. Enmascara puntos con QUALITY != 0 (los pone NaN).

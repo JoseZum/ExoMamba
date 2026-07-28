@@ -44,6 +44,22 @@ logs/
 # --- Notebooks: guardamos código, no outputs ---
 .ipynb_checkpoints/
 
+# --- Artefactos de compilación LaTeX (el .tex y el .pdf SÍ se versionan) ---
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.lot
+*.out
+*.synctex.gz
+*.toc
+paper/*.log
+
+# --- Notas privadas (guías de envío, credenciales, borradores personales) ---
+_private/
+
 # --- Caches de herramientas ---
 .pytest_cache/
 .ruff_cache/

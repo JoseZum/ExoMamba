@@ -1,0 +1,28 @@
+{
+  "title": "ExoMamba: Selective State-Space Models for TESS Exoplanet Vetting",
+  "upload_type": "software",
+  "license": "MIT",
+  "creators": [
+    {
+      "name": "Zumbado Ruiz, José Fabián",
+      "affiliation": "Instituto Tecnológico de Costa Rica"
+    },
+    {
+      "name": "Aguilar Villanueva, Jeremmy",
+      "affiliation": "Instituto Tecnológico de Costa Rica"
+    }
+  ],
+  "description": "<p>Research code for a controlled feasibility study of selective state-space models (Mamba) applied to confirmed-planet (CP) versus false-positive (FP) vetting of TESS Objects of Interest from complete global light curves of length L = 18,000.</p><p>The repository contains the full data pipeline (MAST download, preprocessing, TIC-level split generation), the Mamba model and its AstroNet-style CNN and catalog logistic-regression baselines, the versioned sealed split files, stored per-sample test predictions, and a single script that recomputes every bootstrap confidence interval and DeLong test reported in the accompanying paper without retraining.</p><p>Headline result: on 1,576 labelled TOIs under a sealed TIC-level split, a compact 131K-parameter Mamba model reaches AUC-ROC 0.806 (95% bootstrap CI [0.747, 0.857]) against 0.604 for a single-branch CNN and 0.605 for catalog logistic regression (DeLong p = 3.7e-8). The work is framed as controlled feasibility evidence, not a state-of-the-art vetting catalog.</p>",
+  "keywords": [
+    "exoplanets",
+    "TESS",
+    "state-space models",
+    "Mamba",
+    "deep learning",
+    "astroinformatics",
+    "time series",
+    "light curves",
+    "transit detection"
+  ],
+  "access_right": "open"
+}

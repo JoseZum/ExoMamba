@@ -67,7 +67,8 @@ exoplanet vetting, TESS, Mamba, state-space models, light curves, reproducibilit
 % =============================================================================
 \section{Introduction}
 
-The Transiting Exoplanet Survey Satellite (TESS) observes $>$200{,}000 stars at
+The Transiting Exoplanet Survey Satellite (TESS)~\cite{ricker2015} observes
+$>$200{,}000 stars at
 2-minute cadence, producing $\sim$18{,}000 photometric measurements per star per
 $\sim$27-day sector. Transit signals are shallow ($\sim$0.01--1\% flux dips) and
 morphologically degenerate with eclipsing binaries and instrumental systematics,
@@ -129,15 +130,19 @@ work as competing for state of the art.
 Mamba~\cite{gu2023mamba} introduced selective state-space sequence modeling with
 linear-time scaling and a hardware-aware scan. It has been applied across
 language, audio and vision, but---to our knowledge---not to CP/FP vetting of TESS
-TOIs from the full global light curve. That gap is the niche this study addresses
-with a controlled, low-cost experimental comparison.
+TOIs from the full global light curve. Concurrent work on Kepler transit detection
+identifies the same opening independently: ExoVeil~\cite{exoveil} notes that a
+linear-complexity backbone such as Mamba would allow a complete 65{,}000-point
+light curve to be processed in a single pass, but records this as future work
+rather than evaluating it. That gap is the niche this study addresses with a
+controlled, low-cost experimental comparison.
 
 % =============================================================================
 \section{Data and Problem Setup}
 
 \textbf{Sources.} Labels come from the NASA Exoplanet Archive TOI
-catalog~\cite{toi}; light curves are the PDCSAP\_FLUX series retrieved from
-MAST~\cite{mast} via \texttt{lightkurve}~\cite{lightkurve}. We define a binary
+catalog~\cite{toi,guerrero2021}; light curves are the PDCSAP\_FLUX series
+retrieved from MAST~\cite{mast} via \texttt{lightkurve}~\cite{lightkurve}. We define a binary
 task: confirmed planets (CP) as the positive class and false positives (FP) as the
 negative class, yielding 1{,}576 labelled TOIs after quality filtering (603 CP /
 973 FP, a $\sim$1{:}1.6 imbalance).
@@ -449,10 +454,17 @@ on independent TOI snapshots or held-out sectors.
 
 \textbf{Reproducibility.} All splits are versioned at the TIC level; every run
 stores its config, git commit, environment, training curve, checkpoints and
-per-sample test predictions; the test set is loaded once behind an explicit guard;
-49 unit tests cover the data and metrics paths. Inference statistics are computed
-from the stored predictions by a single script, so all confidence intervals and
-DeLong tests in this paper are reproducible without retraining.
+per-sample test predictions. The sealed test set is guarded programmatically: the
+evaluation CLI defaults to the validation split, and evaluating the test split
+appends a record (timestamp, git commit, sample count, AUC) to a versioned ledger
+and then refuses to run again for any run directory already listed there unless an
+explicit override flag is passed---an override that is itself written to the
+ledger. A suite of 73 unit tests covers the data and metrics paths and asserts the
+split guarantees directly: no TIC is shared across train/validation/test, class
+balance is preserved under stratification, and the Tier-2 subsets are nested
+inside their Tier-1 parents. Inference statistics are computed from the stored
+predictions by a single script, so all confidence intervals and DeLong tests in
+this paper are reproducible without retraining.
 
 \textbf{Code availability.} Code, split files, experiment configurations and stored
 prediction files are available at \url{https://github.com/JoseZum/ExoMamba}.
@@ -488,6 +500,10 @@ for automatic triage of exoplanet candidates,'' arXiv:2506.05556, 2025.
 Validation with Machine Learning: 50 new validated Kepler planets,''
 arXiv:2008.10516, 2020.
 
+\bibitem{exoveil} P.~Priyanshu, ``One Transit Is All You Need: Detecting
+Exoplanets Through Learned Stellar Behaviour with ExoVeil,'' arXiv:2606.02778,
+2026.
+
 \bibitem{sundararajan2017} M.~Sundararajan, A.~Taly, and Q.~Yan, ``Axiomatic
 Attribution for Deep Networks,'' in \emph{Proc. Int. Conf. Mach. Learn. (ICML)},
 2017.
@@ -502,6 +518,14 @@ Comparing the Areas Under Correlated Receiver Operating Characteristic Curves,''
 
 \bibitem{lightkurve} Lightkurve Collaboration, ``Lightkurve: Kepler and TESS time
 series analysis in Python,'' Astrophys. Source Code Libr., ascl:1812.013, 2018.
+
+\bibitem{ricker2015} G.~R.~Ricker \emph{et al.}, ``Transiting Exoplanet Survey
+Satellite (TESS),'' \emph{J. Astron. Telesc. Instrum. Syst.}, vol.~1, no.~1,
+p.~014003, 2015.
+
+\bibitem{guerrero2021} N.~M.~Guerrero \emph{et al.}, ``The TESS Objects of
+Interest Catalog from the TESS Prime Mission,'' \emph{Astrophys. J. Suppl. Ser.},
+vol.~254, no.~2, p.~39, 2021.
 
 \bibitem{toi} NASA Exoplanet Archive, ``TESS Mission (TOI Catalog).'' [Online].
 Available: \url{https://exoplanetarchive.ipac.caltech.edu/docs/TESSMission.html}

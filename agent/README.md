@@ -48,7 +48,7 @@ python -m agent.eval.run_eval
 agent/
 ├── app.py              # Streamlit UI (chat + panel)
 ├── llm.py              # Agent: orquestación mock/claude + informe
-├── tools.py            # 7 tools + dispatch + schemas Anthropic
+├── tools.py            # 8 tools + dispatch + schemas Anthropic
 ├── model_client.py     # cliente HTTP del servicio Mamba (stdlib, con fallback)
 ├── mock.py             # datos reales + verifier real + classify/figuras mock (fallback)
 ├── logs.py             # logger de sesiones → logs/

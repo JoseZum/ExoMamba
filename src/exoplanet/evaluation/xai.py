@@ -2,7 +2,7 @@
 Explicabilidad (XAI) sobre curvas de luz (Fase 9).
 
 Tres técnicas explícitas: **gradient saliency, integrated
-gradients y occlusion sensitivity**. 
+gradients y occlusion sensitivity**.
 incorrecto.
 
 Convenciones:
@@ -139,7 +139,8 @@ def integrated_gradients(
         baseline_batched, _ = _ensure_batched(baseline.detach().clone().float())
         if baseline_batched.shape != x_batched.shape:
             raise ValueError(
-                f"baseline shape {tuple(baseline_batched.shape)} != x shape {tuple(x_batched.shape)}"
+                f"baseline shape {tuple(baseline_batched.shape)} "
+                f"!= x shape {tuple(x_batched.shape)}"
             )
         baseline = baseline_batched
 

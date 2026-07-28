@@ -165,7 +165,9 @@ def run_training(cfg: dict[str, Any]) -> dict[str, Any]:
     n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     logger.info(f"Modelo: {cfg['model']['type']} | params entrenables: {n_params:,}")
 
-    if cfg["training"].get("gradient_checkpointing", False) and hasattr(model, "gradient_checkpointing_enable"):
+    if cfg["training"].get("gradient_checkpointing", False) and hasattr(
+        model, "gradient_checkpointing_enable"
+    ):
         model.gradient_checkpointing_enable()
         logger.info("Gradient checkpointing: ACTIVADO")
 
@@ -194,7 +196,8 @@ def run_training(cfg: dict[str, Any]) -> dict[str, Any]:
         metric=es_cfg.get("metric", "val_auc"),
         mode=es_cfg.get("mode", "max"),
     )
-    tb_writer = TensorBoardWriter(run_dir / "tensorboard") if cfg.get("logging", {}).get("tensorboard", True) else TensorBoardWriter(None)
+    tb_enabled = cfg.get("logging", {}).get("tensorboard", True)
+    tb_writer = TensorBoardWriter(run_dir / "tensorboard" if tb_enabled else None)
 
     # 7) Loop de epochs
     epochs = int(cfg["training"].get("epochs", 50))
@@ -289,6 +292,6 @@ def run_training(cfg: dict[str, Any]) -> dict[str, Any]:
         "best_val_auc": ckpt_mgr.best_value,
         "best_epoch": ckpt_mgr.best_epoch,
     }
-    logger.info(f"=== Fin del entrenamiento ===")
+    logger.info("=== Fin del entrenamiento ===")
     logger.info(f"Mejor val_auc: {summary['best_val_auc']:.4f} (epoch {summary['best_epoch']})")
     return summary

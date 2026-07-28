@@ -1,4 +1,4 @@
-"""Las 7 tools del agente - capa única que consume el modelo del proyecto.
+"""Las 8 tools del agente - capa única que consume el modelo del proyecto.
 
 Cada tool:
   - recibe argumentos simples (típicamente `tic_id`),
@@ -39,7 +39,8 @@ def _save_fig(fig, name: str) -> str:
 
 
 # --------------------------------------------------------------------------- #
-# Las 7 tools
+# Las 8 tools. Este orden es el mismo de TOOL_SCHEMAS y el de
+# agent/prompts/system.md: si se agrega una tool, los tres se actualizan juntos.
 # --------------------------------------------------------------------------- #
 def get_toi_info(tic_id: int) -> dict:
     """Metadata del catálogo TOI para un TIC ID."""

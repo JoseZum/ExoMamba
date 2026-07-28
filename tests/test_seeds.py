@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+
 import numpy as np
 import torch
 
@@ -30,3 +32,28 @@ def test_seeds_distintas_dan_resultados_distintos() -> None:
     set_seed(2)
     b = torch.randn(10)
     assert not torch.equal(a, b)
+
+
+def test_flag_deterministic_configura_cudnn() -> None:
+    """`deterministic=True` tiene que apagar el autotuner de cuDNN, no sólo la semilla.
+
+    Importa para el paper: sin esto, dos corridas con la misma semilla pueden diferir
+    en los últimos decimales porque cuDNN elige algoritmos distintos entre corridas.
+    """
+    previo = (torch.backends.cudnn.deterministic, torch.backends.cudnn.benchmark)
+    try:
+        set_seed(42, deterministic=True)
+        assert torch.backends.cudnn.deterministic is True
+        assert torch.backends.cudnn.benchmark is False
+
+        set_seed(42, deterministic=False)
+        assert torch.backends.cudnn.deterministic is False
+        assert torch.backends.cudnn.benchmark is True
+    finally:
+        torch.backends.cudnn.deterministic, torch.backends.cudnn.benchmark = previo
+
+
+def test_set_seed_fija_python_hashseed() -> None:
+    """PYTHONHASHSEED afecta el orden de iteración de sets, que puede filtrarse a los splits."""
+    set_seed(789)
+    assert os.environ["PYTHONHASHSEED"] == "789"

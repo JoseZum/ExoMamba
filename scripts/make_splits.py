@@ -50,10 +50,7 @@ from sklearn.model_selection import train_test_split
 PROCESSED_MANIFEST = Path("data/splits/processed_manifest.csv")
 LABELS_PATH = Path("data/splits/tics_labeled.csv")
 PROCESSED_DIR = Path("data/processed/global")
-
-OUT_TRAIN = Path("data/splits/train_tics.csv")
-OUT_VAL = Path("data/splits/val_tics.csv")
-OUT_TEST = Path("data/splits/test_tics.csv")
+SPLITS_DIR = Path("data/splits")
 
 
 def parse_args() -> argparse.Namespace:
@@ -61,21 +58,39 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--seed", type=int, default=42, help="Semilla de aleatoriedad (default: 42).")
     p.add_argument("--train", type=float, default=0.70, help="Fracción train (default: 0.70).")
     p.add_argument("--val", type=float, default=0.15, help="Fracción val (default: 0.15).")
+    p.add_argument(
+        "--labels",
+        type=Path,
+        default=LABELS_PATH,
+        help=(
+            "CSV de etiquetas (tid,label). Default: el de la tarea CP/FP del paper. "
+            "Para otra formulación, generarlo con scripts/make_labels.py --task."
+        ),
+    )
+    p.add_argument(
+        "--out-prefix",
+        type=str,
+        default="",
+        help=(
+            "Prefijo de los CSV de salida, para no pisar los splits sellados del paper. "
+            "Ej: --out-prefix pc_fp_ escribe data/splits/pc_fp_train_tics.csv."
+        ),
+    )
     return p.parse_args()
 
 
-def load_eligible_tics() -> pd.DataFrame:
+def load_eligible_tics(labels_path: Path = LABELS_PATH) -> pd.DataFrame:
     """Devuelve dataframe con (tid, label) de TICs preprocesados con .pt en disco."""
     if not PROCESSED_MANIFEST.exists():
         sys.exit(f"[ERROR] No existe {PROCESSED_MANIFEST}. Corré preprocess_global.py primero.")
-    if not LABELS_PATH.exists():
-        sys.exit(f"[ERROR] No existe {LABELS_PATH}.")
+    if not labels_path.exists():
+        sys.exit(f"[ERROR] No existe {labels_path}.")
 
     proc = pd.read_csv(PROCESSED_MANIFEST)
     proc["status"] = proc["status"].astype(str).str.strip().str.lower()
     proc_ok = proc[proc["status"] == "ok"][["tid"]].drop_duplicates(subset="tid")
 
-    labels = pd.read_csv(LABELS_PATH)[["tid", "label"]].drop_duplicates(subset="tid")
+    labels = pd.read_csv(labels_path)[["tid", "label"]].drop_duplicates(subset="tid")
 
     df = proc_ok.merge(labels, on="tid", how="inner")
 
@@ -91,7 +106,7 @@ def load_eligible_tics() -> pd.DataFrame:
 
     if df["label"].isna().any():
         n_na = int(df["label"].isna().sum())
-        sys.exit(f"[ERROR] {n_na} TICs sin label tras el merge. Revisar tics_labeled.csv.")
+        sys.exit(f"[ERROR] {n_na} TICs sin label tras el merge. Revisar {labels_path}.")
 
     df["label"] = df["label"].astype(int)
     return df
@@ -138,13 +153,13 @@ def stratified_split(
 
 def report(name: str, df: pd.DataFrame, total: int) -> None:
     n = len(df)
-    n_cp = int((df["label"] == 1).sum())
-    n_fp = int((df["label"] == 0).sum())
+    n_pos = int((df["label"] == 1).sum())
+    n_neg = int((df["label"] == 0).sum())
     pct = 100 * n / total
-    ratio = (n_fp / n_cp) if n_cp > 0 else float("inf")
+    ratio = (n_neg / n_pos) if n_pos > 0 else float("inf")
     print(
         f"  {name:<6} | n={n:>4} ({pct:5.2f}%) | "
-        f"CP={n_cp:>4} | FP={n_fp:>4} | ratio FP:CP = {ratio:.2f}:1"
+        f"pos={n_pos:>4} | neg={n_neg:>4} | ratio neg:pos = {ratio:.2f}:1"
     )
 
 
@@ -163,11 +178,12 @@ def assert_no_overlap(train: pd.DataFrame, val: pd.DataFrame, test: pd.DataFrame
 def main() -> None:
     args = parse_args()
 
-    df = load_eligible_tics()
+    df = load_eligible_tics(args.labels)
     total = len(df)
-    n_cp = int((df["label"] == 1).sum())
-    n_fp = int((df["label"] == 0).sum())
-    print(f"\n[INFO] TICs elegibles: {total} (CP={n_cp}, FP={n_fp})")
+    n_pos = int((df["label"] == 1).sum())
+    n_neg = int((df["label"] == 0).sum())
+    print(f"\n[INFO] Etiquetas: {args.labels}")
+    print(f"[INFO] TICs elegibles: {total} (pos={n_pos}, neg={n_neg})")
     print(f"[INFO] Split: train={args.train}, val={args.val}, test={1 - args.train - args.val:.2f}")
     print(f"[INFO] Seed: {args.seed}\n")
 
@@ -182,16 +198,20 @@ def main() -> None:
     assert_no_overlap(train_df, val_df, test_df)
     print("[OK] Sin overlap de TICs entre folds.")
 
-    OUT_TRAIN.parent.mkdir(parents=True, exist_ok=True)
-    train_df[["tid", "label"]].to_csv(OUT_TRAIN, index=False)
-    val_df[["tid", "label"]].to_csv(OUT_VAL, index=False)
-    test_df[["tid", "label"]].to_csv(OUT_TEST, index=False)
+    out_train = SPLITS_DIR / f"{args.out_prefix}train_tics.csv"
+    out_val = SPLITS_DIR / f"{args.out_prefix}val_tics.csv"
+    out_test = SPLITS_DIR / f"{args.out_prefix}test_tics.csv"
 
-    print(f"\n[OK] Escritos:")
-    print(f"  - {OUT_TRAIN}")
-    print(f"  - {OUT_VAL}")
-    print(f"  - {OUT_TEST}")
-    print("\n[POLÍTICA] test_tics.csv queda SELLADO hasta Fase 9. No tocar en tuning.")
+    SPLITS_DIR.mkdir(parents=True, exist_ok=True)
+    train_df[["tid", "label"]].to_csv(out_train, index=False)
+    val_df[["tid", "label"]].to_csv(out_val, index=False)
+    test_df[["tid", "label"]].to_csv(out_test, index=False)
+
+    print("\n[OK] Escritos:")
+    print(f"  - {out_train}")
+    print(f"  - {out_val}")
+    print(f"  - {out_test}")
+    print(f"\n[POLÍTICA] {out_test.name} queda SELLADO. No tocar en tuning.")
 
 
 if __name__ == "__main__":

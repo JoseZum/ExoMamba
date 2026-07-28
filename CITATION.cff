@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+message: "If you use this software or its results, please cite it as below."
+title: "ExoMamba: Selective State-Space Models for TESS Exoplanet Vetting"
+abstract: >-
+  Research code for a controlled feasibility study of selective state-space
+  models (Mamba) applied to confirmed-planet versus false-positive vetting of
+  TESS Objects of Interest from complete global light curves (L = 18,000).
+  Includes the data pipeline, model implementations, baselines, the sealed
+  TIC-level split files, stored per-sample test predictions, and the inference
+  statistics script that reproduces every confidence interval and DeLong test
+  reported in the accompanying paper.
+type: software
+authors:
+  - family-names: "Zumbado Ruiz"
+    given-names: "José Fabián"
+    affiliation: "Instituto Tecnológico de Costa Rica"
+  - family-names: "Aguilar Villanueva"
+    given-names: "Jeremmy"
+    affiliation: "Instituto Tecnológico de Costa Rica"
+version: "0.1.0"
+date-released: "2026-07-27"
+license: MIT
+repository-code: "https://github.com/JoseZum/ExoMamba"
+keywords:
+  - exoplanets
+  - TESS
+  - state-space models
+  - Mamba
+  - deep learning
+  - astroinformatics
+  - time series
+  - light curves
