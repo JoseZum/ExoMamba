@@ -1,12 +1,34 @@
+<div align="center">
+
+<img src="./public/exomamba-logo.png" alt="ExoMamba" width="600">
+
 # ExoMamba
 
-> Selective state-space models for exoplanet *vetting* in TESS light curves, measured against a ladder of baselines (stratified random, catalog logistic regression, single-branch CNN, dual-branch AstroNet).
+### Selective state-space models for exoplanet vetting in TESS light curves.
 
-**Authors:** José Fabián Zumbado Ruiz, Jeremmy Aguilar Villanueva.
-**Affiliation:** School of Computing, Instituto Tecnológico de Costa Rica.
-**Course context:** Artificial Intelligence, ITCR, Semester I 2026. Advisor: Kenneth Obando Rodríguez.
+Linear-time sequence modeling over complete 18,000-cadence light curves, measured against a ladder of baselines: stratified random, catalog logistic regression, single-branch CNN and dual-branch AstroNet. Reported with bootstrap confidence intervals, DeLong tests and a negative ablation.
 
-The accompanying paper is `paper/paper_ssm_tess_vetting.tex` ("Selective State-Space Models for TESS Exoplanet Vetting from Long Light Curves").
+[![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-Deep_Learning-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/)
+[![Mamba](https://img.shields.io/badge/Mamba-State_Space_Model-111827?style=for-the-badge)](https://github.com/state-spaces/mamba)
+[![TESS](https://img.shields.io/badge/TESS-Light_Curves-0B3D91?style=for-the-badge)](https://science.nasa.gov/mission/tess/)
+[![CI](https://img.shields.io/github/actions/workflow/status/JoseZum/ExoMamba/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI)](https://github.com/JoseZum/ExoMamba/actions)
+[![License](https://img.shields.io/badge/License-MIT-22C55E?style=for-the-badge)](LICENSE)
+
+<br>
+
+**José Fabián Zumbado Ruiz · Jeremmy Aguilar Villanueva**<br>
+School of Computing · Instituto Tecnológico de Costa Rica
+
+<br>
+
+[Results](#results-sealed-test-set) · [Background](#background-what-is-this-project-about) · [Installation](#installation) · [Pipeline](#reproducing-the-full-pipeline) · [Status](#project-status)
+
+</div>
+
+---
+
+The accompanying paper is `paper/paper_ssm_tess_vetting.tex` — *Selective State-Space Models for TESS Exoplanet Vetting from Long Light Curves*. Developed for the Artificial Intelligence course at ITCR, Semester I 2026, advised by Kenneth Obando Rodríguez.
 
 ## Goal
 
