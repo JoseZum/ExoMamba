@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="./public/exomamba-logo.png" alt="ExoMamba" width="400">
+<img src="./public/exomamba-logo.png" alt="ExoMamba" width="450">
 
-# ExoMamba
+# 
 
 ### Selective state-space models for exoplanet vetting in TESS light curves.
 
