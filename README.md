@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./public/exomamba-logo.png" alt="ExoMamba" width="350">
+<img src="./public/exomamba-logo.png" alt="ExoMamba" width="400">
 
 # ExoMamba
 
